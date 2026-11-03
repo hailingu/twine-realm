@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-平台处于**起步阶段**：`dev` 分支当前只有文档与 `.gitignore`，尚无任何源码、`go.mod`、`package.json` 或构建配置。规范中所有自动检查（类型检查、lint、测试、构建）均**尚未配置**；每份规范都区分「目标要求」与「已接入事实」，禁止把目标描述成已接入。
+平台处于**起步阶段**：`dev` 分支尚无 `server/`、`web/`、`deploy/` 源码或构建配置，Go / TS / compose 模块检查**尚未配置**。仓库工具与质量门禁已建立：根 `package.json` 承载 `npm run test:quality`（工具脚本行为测试）、`npm run issue:status`（issue 元数据校验）、`npm run sonar` 与 `npm run quality:gate`（真实 Sonar Quality Gate，项目 `twine-realm`），详见[质量检查与证据](quality-gates.md)。每份规范都区分「目标要求」与「已接入事实」，禁止把目标描述成已接入。
 
 平台目标形态见[平台设计概览](../platform-design/README.md)。`main` 分支的能力实验室、模拟器是历史演示，不约束新实现，也不作为可复用代码来源。
 
@@ -17,7 +17,7 @@
 | [软件工程规范](software-engineering-standard.md) | 修改生产或测试代码前 | 职责、依赖、规模、抽象、状态与错误边界 |
 | [Go 规范](go-standard.md) | 平台服务与后端代码变更时 | 项目布局、错误处理、context、并发、数据库与 API 边界 |
 | [TypeScript 规范](typescript-standard.md) | 前端画布与 TS 工具变更时 | 严格类型、React 与 React Flow 投影、Promise 与错误处理 |
-| [质量检查与证据](quality-gates.md) | 验证、提交与完成报告前 | 当前已接入（尚无）与计划接入的检查、证据与报告边界 |
+| [质量检查与证据](quality-gates.md) | 验证、提交与完成报告前 | 当前已接入（工具链门禁）与计划接入的检查、证据与报告边界 |
 | [问题记录规范](issue-standard.md) | 记录缺陷、功能、债务或评审意见时 | 本地 issues 目录、编号、状态、验收标准与关闭证据 |
 
 所有代码先读通用工程规范，再读对应语言规范。

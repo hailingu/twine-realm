@@ -7,11 +7,13 @@
 | 组件 | 基线 | 本机现状（2026-11-03） | 差距与动作 |
 | --- | --- | --- | --- |
 | Go（平台服务） | **1.27.x**（最新稳定 1.27.3） | 1.25.6 | 初始化 `server/` 前升级本机 Go 到 1.27.x，`go.mod` 锁定 `go 1.27` |
-| Node.js（前端与工具） | **26 LTS**（Active LTS，26.13+） | 24.18.0（Maintenance LTS） | 初始化 `web/` 前升级，`.nvmrc` 固定版本，`engines` 开启严格检查 |
-| npm | 随 Node 26 附带版本 | 11.16.0 | 升级 Node 后核对，`package-lock.json` 锁定 |
+| Node.js（前端与工具） | **26 LTS**（Active LTS，26.13+） | 24.18.0（Maintenance LTS） | 仓库工具链当前按本机版本锁定：根 `.nvmrc` 为 24.18.0、`engines` 为 `>=24.18.0`；初始化 `web/` 前升级到 26 LTS 并同步 `.nvmrc` |
+| npm | 随 Node 26 附带版本 | 11.16.0 | 升级 Node 后核对；仓库工具依赖由根 `package-lock.json` 锁定 |
 | MySQL（平台元数据） | 最新 LTS 系列 | 未安装（本机经 docker 使用） | 平台自用元数据库经 deploy compose 定义并锁定镜像 tag；画布内业务 MySQL 属于中间件目录，版本由目录定义 |
 | Docker / Compose | Docker 29.x / Compose v5.x | 29.9.2 / v5.6.1 | 已满足；compose 文件锁定 `version` 语义，不依赖已弃用的顶层 version 字段 |
 | React / React Flow | React 19.x / `@xyflow/react` 12.x | 未安装 | `web/package.json` 安装时锁定最新稳定补丁 |
+| SonarQube 服务（本地门禁） | 本地 docker 社区版 | 26.8.0（`localhost:9000`，项目 `twine-realm` 已建立） | 已满足；服务地址与凭据只经环境注入，不入库 |
+| sonar-scanner CLI | 7.x | 7.3.0 | 已满足；可用 `SONAR_SCANNER_BIN` 覆盖路径 |
 
 ## 锁定位置
 
@@ -19,6 +21,8 @@
 | --- | --- |
 | Go 工具链与依赖 | `server/go.mod`、`server/go.sum` |
 | Node 版本 | `.nvmrc`（仓库根） |
+| 仓库工具依赖与脚本 | 根 `package.json`、`package-lock.json` |
+| Sonar 项目标识与扫描范围 | 根 `sonar-project.properties`（服务地址与凭据除外，只经环境注入） |
 | 前端依赖与脚本 | `web/package.json`、`web/package-lock.json` |
 | 平台自用 MySQL 镜像 | `deploy/` 下的 compose 定义 |
 | 中间件目录版本 | 目录定义文件（后续建立），每类中间件锁定镜像 tag |

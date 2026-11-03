@@ -2,7 +2,7 @@
 
 本仓库建设**数字孪生的软件定义平台**：用户在网页画布中以类 UML 图的方式拖入标准中间件（MySQL、RabbitMQ 等）与通用服务组件，由平台 AI 完成数据模型设计、开发、测试与部署；一个画布对应一个真实的 docker-compose / k8s 项目空间，服务以零感知方式替换升级，真实运行状态与配置实时回显到画布，构成业务系统的数字孪生。
 
-仓库目标结构：Go 平台服务（`server/`）、TypeScript 前端画布（`web/`）、部署与项目空间模板（`deploy/`）、设计文档（`docs/platform-design/`）、开发规范（`docs/development/`）与本地问题记录（`issues/`）。**当前仓库处于起步阶段：以上源码目录均未建立，仅存在文档与 `.gitignore`。**
+仓库目标结构：Go 平台服务（`server/`）、TypeScript 前端画布（`web/`）、部署与项目空间模板（`deploy/`）、设计文档（`docs/platform-design/`）、开发规范（`docs/development/`）、本地问题记录（`issues/`）与仓库工具脚本（`scripts/`，含根 `package.json` 与 Sonar 项目配置）。**当前仓库处于起步阶段：`server/`、`web/`、`deploy/` 源码目录均未建立，已有文档、`.gitignore` 与仓库工具链。**
 
 ## 分支与历史边界
 
@@ -13,6 +13,7 @@
 ## 技术栈与版本基线
 
 - 服务端 **Go**（基线 1.27.x），前端 **TypeScript + React + React Flow**（Node 26 LTS），平台元数据 **MySQL**（最新 LTS 系列），项目空间编排本机以 **docker-compose** 为一等公民、接口按 k8s 可移植设计。
+- 仓库工具与质量门禁由根 `package.json` 维护（Node ≥24.18.0，`.nvmrc` 锁定）：issue 元数据校验、Sonar 门禁（本地 SonarQube 的 `twine-realm` 项目，地址与凭据只经环境注入）与完整门禁编排；命令与边界见[质量检查与证据](docs/development/quality-gates.md)。
 - 版本尽可能新但 LTS 优先，具体锁定位置、本机现状差距与升级政策见[运行时与工具链](docs/development/runtime-toolchain.md)。
 
 本仓库的文档、代码注释与提交信息均使用中文；本指南亦以中文书写。
@@ -81,10 +82,11 @@
 | --- | --- | --- | --- | --- |
 | `AGENTS.md` 与伴随 agent 入口文件 | 本指南「不可协商的底线」「执行工作流」「版本控制安全」各节 | 仓库根 | 未配置——做结构化评审并报告无自动检查 | 纯文档变更不要求红-绿-重构 |
 | `README.md`、`docs/**` | 本指南与 [docs/README.md](docs/README.md)（文档索引） | 仓库根 | 未配置——做结构化评审并报告无自动检查 | 设计只在 `docs/platform-design/` 维护；目标与已实现必须分开表述 |
-| `issues/**` | 本指南、[问题记录规范](docs/development/issue-standard.md)、[issues/README.md](issues/README.md) | 仓库根 | 未配置——做结构化评审 | 编号唯一、字段完整、关闭有证据 |
+| `issues/**` | 本指南、[问题记录规范](docs/development/issue-standard.md)、[issues/README.md](issues/README.md) | 仓库根 | `npm run issue:status`；验收与证据仍做结构化评审 | 自动校验文件头字段、枚举、编号唯一与日期一致，并报告状态分布及未关闭记录（未关闭不构成失败，元数据违规才非零退出）；`--json` 输出结构化摘要。项目 issue 只在根目录 `issues/` 创建与维护，不向外部平台创建或同步 |
+| `scripts/**`、`sonar-project.properties`、根 `package.json`、`package-lock.json`、`.nvmrc` | 本指南、[通用工程规范](docs/development/software-engineering-standard.md)、[质量检查与证据](docs/development/quality-gates.md) | 仓库根 | `npm run test:quality`；实现变更后执行 `npm run quality:gate` | Node 行为测试覆盖 Sonar 门禁、完整门禁编排与 issue 状态检查；完整门禁含本次脚本覆盖率导入与真实 Sonar Quality Gate。Sonar 服务地址及凭据只从环境读取（`SONAR_HOST_URL` 与 `SONAR_TOKEN` / `TWINE_REALM_SONAR_TOKEN`），不得写入仓库 |
 | `.gitignore` 及其他根配置 | 本指南与[运行时与工具链](docs/development/runtime-toolchain.md) | 仓库根 | 未配置——做结构化评审 | 不提交密钥与本地环境文件 |
 
-**当前没有受维护的源码路径。** 首次建立 `server/`、`web/`、`deploy/` 等路径时，必须在同一变更中：接入真实工具配置（`go.mod` / `package.json` / compose 等）、定义真实验证命令、补充本表对应路由行（含适用规范链接与工作目录），并同步更新[质量检查与证据](docs/development/quality-gates.md)。在路由行与检查真实落地前，不得声称该路径受自动门禁保护。
+**`server/`、`web/`、`deploy/` 等源码路径尚未建立。** 首次建立这些路径时，必须在同一变更中：接入真实工具配置（`go.mod` / `package.json` / compose 等）、定义真实验证命令、补充本表对应路由行（含适用规范链接与工作目录），并同步更新[质量检查与证据](docs/development/quality-gates.md)与完整门禁编排步骤。在路由行与检查真实落地前，不得声称该路径受自动门禁保护。
 
 无路由行命中时，为每个受影响路径发现并运行最窄相关的非交互检查；不存在自动检查时，做结构化评审、报告未配置自动检查、记录实际检查了什么，不得臆造命令。
 
@@ -136,13 +138,23 @@
 | 版本基线、锁定位置与升级政策 | `docs/development/runtime-toolchain.md` |
 | 检查现状、计划门禁与证据口径 | `docs/development/quality-gates.md` |
 | 本地问题与处置 | `issues/`、`docs/development/issue-standard.md` |
-| 依赖与工具版本（建立后） | `server/go.mod`、`web/package.json`、`.nvmrc`、`deploy/` compose 定义 |
+| 依赖与工具版本 | 根 `package.json`、`package-lock.json`、`.nvmrc`（仓库工具）；`server/go.mod`、`web/package.json`、`deploy/` compose 定义（建立后） |
 | `main` 分支历史演示（仅背景） | `main` 分支 Git 历史，不承担兼容义务 |
 | 版本化源码、配置与实现证据 | Git 提交与合并请求 |
 
 ## 本地开发环境
 
-尚无可运行环境。首批工程初始化任务将按[运行时与工具链](docs/development/runtime-toolchain.md)升级本机 Go / Node、建立 `server/` 与 `web/` 并在 `deploy/` 定义平台自用 MySQL；届时在本节补充启动命令与配置说明。
+尚无可运行的平台服务。仓库工具链已就绪，在仓库根执行：
+
+```bash
+npm install              # 安装仓库工具依赖（marked）
+npm run issue:status     # 校验 issues/ 元数据与状态
+npm run test:quality     # 工具脚本行为测试
+npm run sonar            # 单独 Sonar 扫描（需 SONAR_HOST_URL 与 SONAR_TOKEN / TWINE_REALM_SONAR_TOKEN）
+npm run quality:gate     # 完整质量门禁（脚本测试 + issue 校验 + Sonar）
+```
+
+Sonar 凭据由 `~/.zshrc` 等环境注入，不写入仓库。首批工程初始化任务将按[运行时与工具链](docs/development/runtime-toolchain.md)升级本机 Go / Node、建立 `server/` 与 `web/` 并在 `deploy/` 定义平台自用 MySQL；届时在本节补充启动命令与配置说明。
 
 ## 附录：开发者守则
 

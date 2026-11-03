@@ -1,0 +1,20 @@
+{
+  "name": "twine-realm",
+  "description": "数字孪生软件定义平台——仓库工具与质量门禁",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "engines": {
+    "node": ">=24.18.0",
+    "npm": ">=11 <12"
+  },
+  "scripts": {
+    "issue:status": "node scripts/issue-status.mjs",
+    "sonar": "node scripts/sonar-gate.mjs",
+    "quality:gate": "node scripts/quality-gate.mjs",
+    "test:quality": "node --test scripts/sonar-gate.node.mjs scripts/quality-gate.node.mjs scripts/issue-status.node.mjs"
+  },
+  "dependencies": {
+    "marked": "^18.0.4"
+  }
+}
