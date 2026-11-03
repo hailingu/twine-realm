@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 构建产物
+dist/
+build/
+target/
+
+# 环境变量与密钥
+.env
+.env.*
+!.env.example
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
+
+# 日志与缓存
+*.log
+.cache/
+coverage/
+.playwright-mcp/
