@@ -6,7 +6,7 @@
 
 ## 分支与历史边界
 
-- **`dev` 是平台日常开发基线**（当前所在分支），平台的一切实现在此进行。
+- **`develop` 是平台日常开发基线**（当前所在分支），平台的一切实现在此进行。
 - **`main` 受保护**，承载历史演示（能力实验室 v4.0、模拟器 v2/v3）：它们是背景参考，**不构成平台的约束、依赖或可复用代码来源**；不主动合并、不引用其实现、不删除其内容。
 - 平台按[平台设计概览](docs/platform-design/README.md)全新实现，不为历史演示的数据、接口或交互承担兼容。
 
@@ -84,6 +84,7 @@
 | `README.md`、`docs/**` | 本指南与 [docs/README.md](docs/README.md)（文档索引） | 仓库根 | 未配置——做结构化评审并报告无自动检查 | 设计只在 `docs/platform-design/` 维护；目标与已实现必须分开表述 |
 | `issues/**` | 本指南、[问题记录规范](docs/development/issue-standard.md)、[issues/README.md](issues/README.md) | 仓库根 | `npm run issue:status`；验收与证据仍做结构化评审 | 自动校验文件头字段、枚举、编号唯一与日期一致，并报告状态分布及未关闭记录（未关闭不构成失败，元数据违规才非零退出）；`--json` 输出结构化摘要。项目 issue 只在根目录 `issues/` 创建与维护，不向外部平台创建或同步 |
 | `scripts/**`、`sonar-project.properties`、根 `package.json`、`package-lock.json`、`.nvmrc` | 本指南、[通用工程规范](docs/development/software-engineering-standard.md)、[质量检查与证据](docs/development/quality-gates.md) | 仓库根 | `npm run test:quality`；实现变更后执行 `npm run quality:gate` | Node 行为测试覆盖 Sonar 门禁、完整门禁编排与 issue 状态检查；完整门禁含本次脚本覆盖率导入与真实 Sonar Quality Gate。Sonar 服务地址及凭据只从环境读取（`SONAR_HOST_URL` 与 `SONAR_TOKEN` / `TWINE_REALM_SONAR_TOKEN`），不得写入仓库 |
+| `.github/**` | 本指南与[质量检查与证据](docs/development/quality-gates.md) | 仓库根 | 未配置本地检查——做结构化评审（YAML 语法与 action 钉版核对）；真实行为证据是 GitHub 上 ci 工作流运行 | GitHub Actions CI：`ci.yml` 面向 develop / main 的 PR/push 执行 tooling 检查（`npm audit --audit-level=high`、`npm run test:quality`、`npm run issue:status`），Node 版本取自 `.nvmrc`、action 按提交 SHA 钉版；Sonar 保留在本机门禁，CI 不削弱它。`dependabot.yml` 按 npm 与 github-actions 周粒度开依赖 PR 到 develop，只开 PR 不自动合并。凭据与日志不引入密钥 |
 | `.gitignore` 及其他根配置 | 本指南与[运行时与工具链](docs/development/runtime-toolchain.md) | 仓库根 | 未配置——做结构化评审 | 不提交密钥与本地环境文件 |
 
 **`server/`、`web/`、`deploy/` 等源码路径尚未建立。** 首次建立这些路径时，必须在同一变更中：接入真实工具配置（`go.mod` / `package.json` / compose 等）、定义真实验证命令、补充本表对应路由行（含适用规范链接与工作目录），并同步更新[质量检查与证据](docs/development/quality-gates.md)与完整门禁编排步骤。在路由行与检查真实落地前，不得声称该路径受自动门禁保护。
@@ -107,8 +108,8 @@
 ### 分支、提交与推送政策
 
 - **保护分支**：`main` 禁止直接提交与推送，其历史演示内容保持原样。
-- **日常开发基线**：`dev` 承载平台开发，直接提交即可；不主动推送，除非用户授权。
-- **任务分支**：确需新分支时，检查工作区后从当前本地 `dev` 创建，使用 `feature/`、`fix/`、`docs/`、`chore/` 前缀；保留已授权的任务分支而非仅为命名规范切换。
+- **日常开发基线**：`develop` 承载平台开发，直接提交即可；不主动推送，除非用户授权。
+- **任务分支**：确需新分支时，检查工作区后从当前本地 `develop` 创建，使用 `feature/`、`fix/`、`docs/`、`chore/` 前缀；保留已授权的任务分支而非仅为命名规范切换。
 - **合并请求**：目标分支遵循用户指示；向 `main` 的合并属发布动作，按运维级授权处理。
 - **提交信息**：使用中文「类型：描述」（如 `功能：画布期望态存储`、`文档：补充 Go 规范`），Conventional Commits 风格（`feat:`、`fix:` 等）亦可接受。
 

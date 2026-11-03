@@ -1,0 +1,31 @@
+# 依赖与供应链浮现机制：Dependabot 按 ecosystem 周粒度开 PR——只开 PR、
+# 从不自动合并，合并仍走 ci 工作流的必需检查。目标分支固定 develop：依赖
+# 更新属于普通任务变更（根指南分支策略：任务变更在基线分支集成），不直接
+# 面向 main。npm 只覆盖根 package.json（仓库工具链；server/、web/ 建立后
+# 各自补充 directory 条目）；github-actions 覆盖 .github/workflows 的钉版
+# action 更新。工具链钉版（.nvmrc）不属于这些 ecosystem，不受影响。
+# npm 的 minor/patch 成组降噪；major 更新单独评审，分组不保证代际兼容，
+# CI 安装/测试门禁继续阻断。
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5

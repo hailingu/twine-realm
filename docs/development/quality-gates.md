@@ -24,6 +24,14 @@
 - 覆盖率结论须核对采集范围与服务端实际分析：完整门禁只导入本次临时目录的真实 LCOV，缺失报告拒绝扫描，不回退历史 `coverage/`。2026-11-03 首次扫描（分析 `9edb59eb-733b-41f0-b21b-f65d3abe2e63`）conditions 为空，属建立初始基线，不冒充覆盖率达标；随后含覆盖率导入的完整门禁（分析 `97faa9c8-5ec5-4612-b95d-934debe35cc6`）返回 `OK`，`new_violations=0`。未调整服务端门槛，新代码周期实际生效范围由服务端配置决定。
 - 纯文档提交（规范、Agent 指南与 issue 记录）只需结构化评审、链接与空白检查，不要求通过 SonarQube 门禁。包含源码或配置（含 `scripts/`、`package.json`、`sonar-project.properties`）的变更须通过适用检查与完整门禁；混合变更不能按纯文档豁免。
 
+## 持续集成（GitHub Actions）
+
+`.github/workflows/ci.yml` 面向 develop / main 的 PR 与 push 运行单一 `tooling` job（`ubuntu-latest`，Node 版本取自 `.nvmrc`，npm 缓存，action 按提交 SHA 钉版），执行范围路由的工具链与 issues 行检查：`npm audit --audit-level=high`（high/critical 漏洞或审计执行错误阻断；无重试包装，审计端点瞬时网络故障按失败处理，如实重跑）→ `npm ci` → `npm run test:quality` → `npm run issue:status`。范围路由检查因此在 GitHub 上有独立、绑定提交 SHA 的记录，不再只依赖本机环境。
+
+Sonar 扫描与完整门禁不进 CI：Sonar 服务在本机，GitHub 托管 runner 不可达；覆盖率与 Sonar 证据由本地门禁保留，CI 不重复扫描也不削弱本地门禁。`.github/dependabot.yml` 按 npm（根 `package.json`）与 github-actions 两个 ecosystem 周粒度（周一，Asia/Shanghai）开依赖更新 PR 到 `develop`，只开 PR 从不自动合并，合入仍须通过 CI；minor/patch 成组降噪，major 单独评审。
+
+CI 真实运行以 GitHub Actions 结果为准；当前未配置分支保护必需检查与 `server/`、`web/`、`deploy/` 的 CI job，对应工程初始化时按范围路由扩展，启用分支保护属仓库设置变更、另行授权。
+
 ## 计划接入的门禁
 
 以下门禁在对应工程初始化任务中接入，并同步扩展 `quality:gate` 编排步骤；接入前它们是目标，不是事实。接入后须同步更新本文与根指南范围路由。

@@ -1,0 +1,45 @@
+# 面向 develop / main 的持续集成——范围路由（AGENTS.md）检查在 GitHub 上
+# 有独立、绑定提交 SHA 的记录，不再只依赖调用者本机环境。工具版本复用
+# .nvmrc（单一事实源，不在工作流里重复钉版）。
+# SonarQube 扫描保留在本机门禁（npm run quality:gate / sonar）——Sonar
+# 服务在本机，GitHub 托管 runner 不可达；CI 不重复扫描也不削弱本地门禁
+# （覆盖率与 Sonar 证据由本地门禁日志保留）。
+name: ci
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # 范围路由「scripts/**、根 package.json 等工具链」+「issues/**」行：
+  # 纯 Node 工具链，无需 PlotWeave 那类 macOS/Xcode 运行环境，用 ubuntu。
+  tooling:
+    name: tooling（scripts、根清单与 issues 行）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # 依赖审计：high/critical 漏洞或审计执行错误均阻断。与 PlotWeave 的
+      # ci-npm-audit.sh 口径一致但不做网络重试：审计端点瞬时故障时任务
+      # 失败（fail-closed），如实重跑即可。
+      - name: npm audit --audit-level=high
+        run: npm audit --audit-level=high
+      - run: npm ci
+      # scripts 行为测试（含 Sonar 门禁适配器、完整门禁编排与 issue 状态
+      # 检查的失败传播、报告隔离与凭据脱敏契约）。
+      - name: test:quality（scripts 行）
+        run: npm run test:quality
+      # issues 元数据与状态：未关闭记录不构成失败，元数据违规才非零退出。
+      - name: issue:status（issues 行）
+        run: npm run issue:status

@@ -71,6 +71,6 @@ issues/           # 本地问题记录
 
 ## 版本控制与交付
 
-遵循根指南：`main` 受保护禁止直接提交；平台开发在 `dev` 进行，不主动推送；任务分支用 `feature/`、`fix/`、`docs/`、`chore/` 前缀。提交信息使用中文「类型：描述」。
+遵循根指南：`main` 受保护禁止直接提交；平台开发在 `develop` 进行，不主动推送；任务分支用 `feature/`、`fix/`、`docs/`、`chore/` 前缀。提交信息使用中文「类型：描述」。
 
 纯文档提交做结构化评审、链接与空白检查；包含源码或配置的提交须通过当时已接入的适用检查（仓库工具链已接入 `npm run test:quality`、`npm run issue:status` 与 `npm run quality:gate`，见[质量检查与证据](quality-gates.md)；模块级检查随 `server/`、`web/` 初始化接入）。容器构建、compose 启停、部署与远端数据操作属运维级，另需授权。
