@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-平台处于**起步阶段**：`dev` 分支尚无 `server/`、`web/`、`deploy/` 源码或构建配置，Go / TS / compose 模块检查**尚未配置**。仓库工具与质量门禁已建立：根 `package.json` 承载 `npm run test:quality`（工具脚本行为测试）、`npm run issue:status`（issue 元数据校验）、`npm run sonar` 与 `npm run quality:gate`（真实 Sonar Quality Gate，项目 `twine-realm`），详见[质量检查与证据](quality-gates.md)。每份规范都区分「目标要求」与「已接入事实」，禁止把目标描述成已接入。
+平台处于**起步阶段**：`develop` 分支尚无 `server/`、`web/`、`deploy/` 源码或构建配置，Go / TS / compose 模块检查**尚未配置**。仓库工具与质量门禁已建立：根 `package.json` 承载 `npm run test:quality`（工具脚本行为测试）、`npm run issue:status`（issue 元数据校验）、`npm run sonar` 与 `npm run quality:gate`（真实 Sonar Quality Gate，项目 `twine-realm`），详见[质量检查与证据](quality-gates.md)。每份规范都区分「目标要求」与「已接入事实」，禁止把目标描述成已接入。
 
 平台目标形态见[平台设计概览](../platform-design/README.md)。`main` 分支的能力实验室、模拟器是历史演示，不约束新实现，也不作为可复用代码来源。
 
@@ -21,6 +21,8 @@
 | [问题记录规范](issue-standard.md) | 记录缺陷、功能、债务或评审意见时 | 本地 issues 目录、编号、状态、验收标准与关闭证据 |
 
 所有代码先读通用工程规范，再读对应语言规范。
+
+本目录约束平台自身开发；用户业务服务按所选技术栈采用[对应的工程最佳实践文档包](../platform-design/service-engineering.md#每种受支持技术栈的工程最佳实践文档)，每服务仓库 `AGENTS.md` 引用适用规范，agents 开发前加载固定版本并记录。业务通用条款须经范围映射后发布，平台专属 Go / React、目录与工具命令不自动套用；当前尚未发布业务技术栈文档包或实现自动加载。
 
 ## 文档职责
 
