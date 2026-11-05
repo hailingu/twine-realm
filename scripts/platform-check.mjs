@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
 import { runCommand } from './sonar-gate.mjs'
 import { checkCommand } from './check-command.mjs'
+import { cleanupRuntimeResources, parseRuntimeInstallation, requiresPreservation } from './runtime-check.mjs'
 
 const MYSQL_IMAGE = 'mysql:9.7.4@sha256:df90258da46f6e7ff8574ff84f17618aba0765cac749928299c69fd4e7cb8ad8'
 
@@ -53,6 +54,8 @@ export async function runPlatformChecks({ root, temporary, env = process.env, ex
   const password = randomBytes(24).toString('hex')
   const envFile = join(temporary, 'mysql.env')
   const binary = join(temporary, 'platform')
+  const runtimeInit = join(temporary, 'runtime-init')
+  const runtimeDirectory = join(temporary, 'runtime')
   const goCoverage = join(temporary, 'go-coverage.out')
   const webCoverage = join(temporary, 'web-coverage')
   const webBuild = join(temporary, 'web-dist')
@@ -66,6 +69,7 @@ export async function runPlatformChecks({ root, temporary, env = process.env, ex
   }
   await writeFile(envFile, `MYSQL_ROOT_PASSWORD=${randomBytes(24).toString('hex')}\nMYSQL_DATABASE=twine_test\nMYSQL_USER=twine\nMYSQL_PASSWORD=${password}\n`, { mode: 0o600 })
   let started = false
+  let runtimeInstallation
   let reports
   const failures = []
   try {
@@ -79,11 +83,17 @@ export async function runPlatformChecks({ root, temporary, env = process.env, ex
     if ((await checked('gofmt', ['-l', 'server'])).trim()) throw new Error('Go 格式检查未通过')
     childEnv.GOCOVERDIR = browserGoCoverage
     await checked('go', ['build', '-cover', '-coverpkg=./...', '-o', binary, './cmd/platform'], join(root, 'server'))
+    await checked('go', ['build', '-cover', '-coverpkg=./...', '-o', runtimeInit, './cmd/runtime-init'], join(root, 'server'))
+    childEnv.TWINE_REPOSITORY_ROOTS = JSON.stringify([root])
+    runtimeInstallation = parseRuntimeInstallation(await checked(runtimeInit, ['--directory', runtimeDirectory]))
+    Object.assign(childEnv, { TWINE_RUNTIME_ADAPTER: 'file-secrets-v1', TWINE_RUNTIME_DIRECTORY: runtimeDirectory, TWINE_TEST_RUNTIME_DIRECTORY: runtimeDirectory, TWINE_TEST_DOCKER_CONTEXT: runtimeInstallation.context, TWINE_TEST_DOCKER_DAEMON_ID: runtimeInstallation.daemonId, TWINE_TEST_RUNTIME_INSTALLATION_ID: runtimeInstallation.installationId })
     await checked('go', ['vet', '-tags=integration', './...'], join(root, 'server'))
     for (const script of ['contract:check', 'typecheck', 'lint']) await checked('npm', ['run', script], join(root, 'web'))
     await checked('npm', ['run', 'test', '--', '--coverage.reportsDirectory', webCoverage], join(root, 'web'))
     await checked('npm', ['run', 'build', '--', '--outDir', webBuild, '--emptyOutDir'], join(root, 'web'))
     await checked('npm', ['run', 'test:e2e'], join(root, 'web'))
+    // 先结束浏览器拥有者并清理其一次性资源，再执行会构造旧schema的隔离迁移夹具。
+    await cleanupRuntimeResources({ installation: runtimeInstallation, env, execute })
     await checked('go', ['test', '-count=1', '-race', '-tags=integration', '-coverpkg=./...', `-coverprofile=${goCoverage}`, './...'], join(root, 'server'))
     const browserProfile = join(temporary, 'browser-go.out')
     await checked('go', ['tool', 'covdata', 'textfmt', `-i=${browserGoCoverage}`, `-o=${browserProfile}`], join(root, 'server'))
@@ -95,6 +105,8 @@ export async function runPlatformChecks({ root, temporary, env = process.env, ex
   } catch (error) {
     failures.push(error)
   } finally {
+    try { await cleanupRuntimeResources({ installation: runtimeInstallation, env, execute }) }
+    catch (error) { failures.push(error) }
     try { await cleanupDatabase(started, name, envFile, execute, env) }
     catch (error) { failures.push(error) }
   }
@@ -104,7 +116,8 @@ export async function runPlatformChecks({ root, temporary, env = process.env, ex
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const temporary = await mkdtemp(join(tmpdir(), 'twine-platform-'))
+  let preserve = false
   try { await runPlatformChecks({ root: process.cwd(), temporary }); process.stdout.write('[PLATFORM_OK] 检查通过\n') }
-  catch (error) { process.stderr.write(`${error.message}\n`); process.exitCode = 1 }
-  finally { await rm(temporary, { recursive: true, force: true }) }
+  catch (error) { preserve = requiresPreservation(error); process.stderr.write(`${error.message}\n`); process.exitCode = 1 }
+  finally { if (preserve) process.stderr.write(`运行测试现场保留在 ${temporary}\n`); else await rm(temporary, { recursive: true, force: true }) }
 }

@@ -4,6 +4,8 @@
 
 [Issue #6 标准组件目录与配置草稿](component-catalog-slice.md) 另行记录增量完整画布、MySQL 定义、混合布局和专用回执。下文原 v1 项目 / 服务及源码契约继续保持原义；500 容量现由服务与中间件共同使用。
 
+[Issue #12 MySQL 运行](mysql-runtime-slice.md) 另行记录显式执行器与文件秘密、持久运行目标 / 步骤 / 事件、认证事实和数据保留恢复；不改变本页原回执含义。
+
 ## 当前范围
 
 Go 标准 HTTP + `database/sql`，MySQL 9.7.4 LTS 平台元数据库，golang-migrate 版本迁移；React 19 / TypeScript / React Flow 12 投影。用户另已确认首个业务工程组合为 Go + 标准库 `net/http`；其模板待后续切片。不创建或改写导入仓库。
@@ -70,4 +72,4 @@ Issue #2 以增量端点扩展 v1，不给原 `Project`、`Repository`、`Receip
 | v1 数据库升级后保留实体、坐标、版本与原始回执 | `server/internal/httpapi/migration_integration_test.go`，门禁独占临时 MySQL |
 | 对象类型、完整 SHA、过滤器不执行、对象库边界、只读保证 | `server/internal/gitworkspace/source_test.go` |
 
-各检查的实际运行结果在交付报告列明；用例存在不等于本次已通过。账号、AI、业务中间件、部署、编辑器和 SSE 不在此矩阵中冒称完成。
+各检查的实际运行结果在交付报告列明；用例存在不等于本次已通过。账号、AI、业务服务部署、编辑器和 SSE 不在此矩阵中冒称完成；项目 MySQL 运行的独立证据见运行切片。

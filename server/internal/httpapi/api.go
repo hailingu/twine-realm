@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/hailingu/twine-realm/server/contract"
+	"github.com/hailingu/twine-realm/server/internal/mysqlruntime"
 	"github.com/hailingu/twine-realm/server/internal/project"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
@@ -23,15 +24,22 @@ type API struct {
 	service *project.Service
 	schemas map[string]*jsonschema.Schema
 	logger  *slog.Logger
+	runtime *mysqlruntime.Service
 }
 
 // New 装配路由和最小本机防护，Host/Origin 来源必须由启动配置确定。
-func New(service *project.Service, host string, origins []string, webDirectory string, logger *slog.Logger) (http.Handler, error) {
+func New(service *project.Service, host string, origins []string, webDirectory string, logger *slog.Logger, runtimes ...*mysqlruntime.Service) (http.Handler, error) {
+	if len(runtimes) > 1 {
+		return nil, errors.New("HTTP仅接受一个明确运行服务")
+	}
 	schemas, err := contract.Load()
 	if err != nil {
 		return nil, err
 	}
 	api := &API{service: service, schemas: schemas, logger: logger}
+	if len(runtimes) == 1 {
+		api.runtime = runtimes[0]
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		api.write(w, http.StatusOK, map[string]string{"status": "ready"})
@@ -51,6 +59,7 @@ func New(service *project.Service, host string, origins []string, webDirectory s
 	mux.HandleFunc("PUT /api/v1/projects/{id}/canvas/layout", api.canvasLayout)
 	mux.HandleFunc("GET /api/v1/canvas-mutations/{id}", api.canvasReceipt)
 	mux.HandleFunc("GET /api/v1/mutations/{id}", api.receipt)
+	api.runtimeRoutes(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		api.failure(w, project.Failure("NOT_FOUND", "接口不存在"))
 	})
@@ -178,11 +187,13 @@ func (api *API) failure(w http.ResponseWriter, err error) {
 	if errors.As(err, &domain) {
 		failure = domain
 		switch domain.Code {
-		case "PROJECT_NOT_FOUND", "SERVICE_NOT_FOUND", "COMPONENT_NOT_FOUND", "MUTATION_NOT_FOUND", "NOT_FOUND":
+		case "PROJECT_NOT_FOUND", "SERVICE_NOT_FOUND", "COMPONENT_NOT_FOUND", "MUTATION_NOT_FOUND", "NOT_FOUND", "RUNTIME_OPERATION_NOT_FOUND":
 			status = http.StatusNotFound
-		case "DUPLICATE_REPOSITORY", "REVISION_CONFLICT", "IDEMPOTENCY_CONFLICT", "DEFINITION_CONFLICT":
+		case "DUPLICATE_REPOSITORY", "REVISION_CONFLICT", "IDEMPOTENCY_CONFLICT", "DEFINITION_CONFLICT", "RUNTIME_GENERATION_CONFLICT", "RUNTIME_COMPONENT_CONFLICT", "RUNTIME_CONFIGURATION_LOCKED", "RUNTIME_RETRY_CONFLICT", "RUNTIME_BUSY", "RUNTIME_INSTALLATION_CONFLICT":
 			status = http.StatusConflict
 		case "RESULT_UNKNOWN":
+			status = http.StatusServiceUnavailable
+		case "RUNTIME_DISABLED":
 			status = http.StatusServiceUnavailable
 		case "FORBIDDEN":
 			status = http.StatusForbidden

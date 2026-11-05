@@ -27,7 +27,7 @@ export function MySQLPanel({ api, node, blocked, onSave }: Readonly<{ api: Proje
     {definition && <><small>定义 {definition.reference.id} / {definition.reference.version}</small><code className="definition-digest" title={definition.reference.digest}>{definition.reference.digest}</code><p className="field-help">具名提供端口：{definition.ports.map(port => `${port.id}（${port.protocol} / ${port.contract}）`).join('、')}。配置生效：需替换。</p></>}
     <MySQLForm node={node} blocked={blocked || !definition} onSave={onSave} />
     {node?.notReadyReasons.map(reason => <p key={reason} className="field-help">{reason}</p>)}
-    <p className="field-help">保存只建立配置草稿。当前不会启动 MySQL、生成密码或执行部署。</p>
+    <p className="field-help">保存更新画布配置。运行面板会单独接受并执行固定运行目标。</p>
   </section>
 }
 

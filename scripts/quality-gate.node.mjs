@@ -1,6 +1,6 @@
 /** 验证完整门禁的真实编排契约、报告隔离和失败后的资源清理。 */
 import assert from 'node:assert/strict'
-import { access, writeFile } from 'node:fs/promises'
+import { access, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
 import { runQualityGate } from './quality-gate.mjs'
@@ -92,4 +92,23 @@ test('issue 校验失败会停止扫描且不宣告整体通过', async () => {
   assert.match(fake.calls.output.join(''), /本次 issue 元数据校验失败/)
   assert.doesNotMatch(fake.calls.output.join(''), /QUALITY_GATE_OK/)
   await assert.rejects(access(fake.calls.temporary), { code: 'ENOENT' })
+})
+
+test('运行清理未知时上层门禁保留绑定文件，不以普通失败清理覆盖资源所有者决定', async () => {
+  const fake = harness()
+  let retained
+  const platform = async ({ temporary }) => {
+    retained = temporary
+    await writeFile(join(temporary, 'owned-bind-marker'), '测试自有文件，无秘密')
+    const failure = new Error('受控清理结果未知')
+    failure.preserveTemporary = true
+    throw new AggregateError([failure], '运行资源未确认清理')
+  }
+  try {
+    await assert.rejects(runQualityGate({ env, execute: fake.execute, scan: fake.scan, write: fake.write, platform }), /运行资源未确认清理/)
+    assert.equal(fake.calls.scans.length, 0)
+    await access(join(retained, 'owned-bind-marker'))
+    assert.match(fake.calls.output.join(''), /运行测试现场保留在/)
+    assert.doesNotMatch(fake.calls.output.join(''), /QUALITY_GATE_OK/)
+  } finally { if (retained) await rm(retained, { recursive: true, force: true }) }
 })

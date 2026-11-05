@@ -1,16 +1,16 @@
 # 标准组件目录与 MySQL 配置草稿（Issue #6）
 
-本切片在 [Issue #1 / #2](local-project-slice.md) 上加入标准组件目录与配置持久化。[Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的实际验收以本次检查为准；MySQL 运行、连线、业务工程方案与部署由后续任务交付，一期不接入用户账号权限。
+本切片在 [Issue #1 / #2](local-project-slice.md) 上加入标准组件目录与配置持久化。[Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的实际验收以本次检查为准；MySQL 显式运行另见 [Issue #12](mysql-runtime-slice.md)，连线、业务工程方案与部署各自交付，一期不接入用户账号权限。
 
 ## 单一目录与固定版本
 
-权威材料为 [mysql-v1.json](../../server/internal/catalog/definitions/mysql-v1.json)：`twine.mysql / 1.0.0`、JSON Schema 2020-12、`mysql` 具名提供端口、MySQL wire/10 契约、固定镜像 digest、`mysql-compose/v1` 适配身份及 replace 生效模型。`requiredCapabilities` 固定对协议、持久卷、项目私网和文件凭据的要求；实际执行器仍须核实支持。当前没有启动入口，不代表执行器已实现。协议 10 的初始握手依据 [MySQL 官方协议说明](https://dev.mysql.com/doc/dev/mysql-server/9.7.2/page_protocol_connection_phase_packets_protocol_handshake_v10.html)，本平台兼容标识不推导所有客户端特性均兼容。
+权威材料为 [mysql-v1.json](../../server/internal/catalog/definitions/mysql-v1.json)：`twine.mysql / 1.0.0`、JSON Schema 2020-12、`mysql` 具名提供端口、MySQL wire/10 契约、固定镜像 digest、`mysql-compose/v1` 适配身份及 replace 生效模型。`requiredCapabilities` 固定对协议、持久卷、项目私网和文件凭据的要求；执行器仍须逐项核实，目录存在不能单独证明可执行。协议 10 的初始握手依据 [MySQL 官方协议说明](https://dev.mysql.com/doc/dev/mysql-server/9.7.2/page_protocol_connection_phase_packets_protocol_handshake_v10.html)，本平台兼容标识不推导所有客户端特性均兼容。
 
 内容 SHA-256 按发布文件原始字节计算；实例固定 ID、版本和摘要。调整字段、缺省值、镜像、协议或生效语义须发布新版本，不能原地修改已有引用。Go 用随平台嵌入的文件校验；前端类型、独立 Ajv 校验器、缺省值与摘要由同一文件生成，`contract:check` 检测漂移。界面必须核实目录与已生成校验器匹配才开放写入。外部 `$ref` 不能联网或读宿主文件，没有任意 schema 注册入口。
 
 组件机器契约在 `server/contract/v1/components.schema.json`，原入口以相对引用关联；Go 只注册内置分片，前端生成仅在内存组合相同文件。TS 采用普通数组类型以控制生成文件规模，数组数量仍由原 JSON Schema、独立运行时校验器和后端领域校验执行，超限负例覆盖此边界；不放宽机器契约。
 
-配置只允许 `charset=utf8mb4`、`collation=utf8mb4_0900_ai_ci`、整数 `memoryMiB=256..8192`（缺省 512）及可选 `runtimeProfile=local-compose-v1`。服务端显式补缺省，不依赖 schema 的 default 注解改变输入；其注解语义见 [JSON Schema 官方说明](https://json-schema.org/understanding-json-schema/reference/annotations)。未选运行方案可保存，显示未就绪原因；已填非法值、未知字段与秘密字段均拒绝。配置完整仍显示“尚未运行”。
+配置只允许 `charset=utf8mb4`、`collation=utf8mb4_0900_ai_ci`、整数 `memoryMiB=256..8192`（缺省 512）及可选 `runtimeProfile=local-compose-v1`。服务端显式补缺省，不依赖 schema 的 default 注解改变输入；其注解语义见 [JSON Schema 官方说明](https://json-schema.org/understanding-json-schema/reference/annotations)。未选运行方案可保存，显示未就绪原因；已填非法值、未知字段与秘密字段均拒绝。配置完整只表示声明完整，运行事实由独立运行快照提供。
 
 ## 数据与恢复边界
 

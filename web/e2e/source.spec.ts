@@ -68,7 +68,7 @@ test('源码响应丢失可核实原键，仓库失联仍保留固定记录', as
   await expect(page.getByLabel('待固定完整 commit')).toHaveValue(head)
   await page.getByRole('button', { name: '核实保存结果' }).click()
   await expect(page.getByTestId('pinned-commit')).toHaveText(head)
-  await expect(page.getByRole('status')).toContainText('版本 2')
+  await expect(page.getByRole('status', { name: '画布保存状态' })).toContainText('版本 2')
   await rename(path, path+'-unavailable')
   await page.getByRole('button', { name: '刷新仓库状态' }).click()
   await expect(page.getByRole('alert')).toContainText('已有固定记录保留')

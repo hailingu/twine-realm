@@ -1,0 +1,22 @@
+/* 运行事实与配置草稿保持不同视觉层，未知或过期不沿用绿色。 */
+.runtime-panel { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border, #deded4); }
+.runtime-panel h3 { margin: 0 0 12px; }
+.runtime-fact { font-size: 12px; color: #696d68; margin: 8px 0; }
+.runtime-fact.ready { color: #276246; }
+.runtime-fact.error { color: #943f39; }
+.runtime-fact.pending { color: #8c6b20; }
+.runtime-fact.unknown { color: #757b79; }
+.runtime-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.runtime-details { font-size: 12px; line-height: 1.6; }
+.runtime-details code, .runtime-events code { overflow-wrap: anywhere; font-size: 11px; }
+.runtime-details dl { margin: 8px 0; }
+.runtime-details dt { color: #757b79; margin-top: 8px; }
+.runtime-details dd { margin: 2px 0; overflow-wrap: anywhere; }
+.runtime-steps { list-style: none; padding: 0; margin: 10px 0; }
+.runtime-steps li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px; border-bottom: 1px solid #eeeee6; padding: 5px 0; }
+.runtime-steps code { width: 100%; color: #757b79; }
+.runtime-events { margin-top: 14px; font-size: 12px; }
+.runtime-events ol { padding-left: 24px; }
+.runtime-events li { margin: 8px 0; overflow-wrap: anywhere; }
+.runtime-events small { display: block; color: #757b79; }
+.runtime-panel summary { cursor: pointer; padding: 6px 0; }

@@ -1,6 +1,6 @@
 # 组件、连线、接口与状态契约
 
-> **状态：工程原则已接受；本地项目、源码与标准组件草稿契约已发布，连线和运行仍待实现。** 用户确认参考本机 Infinity Canvas 的现有方案。本文固定适配方向、状态所有权和验证要求；已落地字段见[本地与源码切片](../development/local-project-slice.md)及[组件目录切片](../development/component-catalog-slice.md)，其余逻辑字段与操作在后续切片固定为机器契约。推荐默认值与待决事项分别标明。
+> **状态：工程原则已接受；本地项目、源码、标准组件草稿与固定 MySQL 运行契约已发布，连线、业务部署与 SSE 待后续。** 用户确认参考本机 Infinity Canvas 的现有方案。已落地字段见[本地切片](../development/local-project-slice.md)、[组件目录](../development/component-catalog-slice.md)及[运行切片](../development/mysql-runtime-slice.md)，其余逻辑字段与操作在对应切片固定为机器契约。推荐默认值与待决事项分别标明。
 
 ## 参考依据与适配结论
 

@@ -1,0 +1,622 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twine-realm.local/contract/v1/runtime.schema.json",
+  "title": "RuntimeContract",
+  "description": "本机单项目MySQL持久目标、操作与查询；声明受理不等于运行完成",
+  "$defs": {
+    "RuntimeConfiguration": {
+      "title": "RuntimeConfiguration",
+      "description": "配置值约束仅来自已登记MySQL定义；运行计划要求补齐全部必需字段",
+      "type": "object",
+      "properties": {
+        "charset": {},
+        "collation": {},
+        "memoryMiB": {},
+        "runtimeProfile": {}
+      },
+      "required": [
+        "charset",
+        "collation",
+        "memoryMiB",
+        "runtimeProfile"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "$ref": "https://twine-realm.local/catalog/mysql/1.0.0/configuration"
+        }
+      ]
+    },
+    "RuntimeCommand": {
+      "title": "RuntimeCommand",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "baseRevision": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,19})$"
+        },
+        "baseGeneration": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,19})$"
+        },
+        "desired": {
+          "enum": [
+            "running",
+            "stopped"
+          ]
+        },
+        "retryOf": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "mutationId",
+        "baseRevision",
+        "baseGeneration",
+        "desired"
+      ]
+    },
+    "RuntimeResource": {
+      "title": "RuntimeResource",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "installationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "daemonId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9:._-]{1,128}$"
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "componentId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "definition": {
+          "$ref": "./schema.json#/$defs/DefinitionRef"
+        },
+        "configuration": {
+          "$ref": "#/$defs/RuntimeConfiguration"
+        },
+        "configurationHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "image": {
+          "const": "mysql:9.7.4@sha256:df90258da46f6e7ff8574ff84f17618aba0765cac749928299c69fd4e7cb8ad8"
+        },
+        "network": {
+          "type": "string",
+          "pattern": "^tr-[0-9a-f]{32}-net$"
+        },
+        "volume": {
+          "type": "string",
+          "pattern": "^tr-[0-9a-f]{32}-data$"
+        },
+        "container": {
+          "type": "string",
+          "pattern": "^tr-[0-9a-f]{32}-mysql$"
+        },
+        "secretRef": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "id",
+        "installationId",
+        "daemonId",
+        "projectId",
+        "componentId",
+        "definition",
+        "configuration",
+        "configurationHash",
+        "image",
+        "network",
+        "volume",
+        "container",
+        "secretRef"
+      ]
+    },
+    "RuntimeTarget": {
+      "title": "RuntimeTarget",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,19})$"
+        },
+        "desired": {
+          "enum": [
+            "running",
+            "stopped"
+          ]
+        },
+        "resource": {
+          "$ref": "#/$defs/RuntimeResource"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "canvasRevision": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "generation",
+        "desired",
+        "resource",
+        "createdAt",
+        "canvasRevision"
+      ]
+    },
+    "RuntimeStep": {
+      "title": "RuntimeStep",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "enum": [
+            "preflight",
+            "credentials",
+            "network",
+            "volume",
+            "container",
+            "readiness",
+            "stop",
+            "stopped"
+          ]
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "executing",
+            "unknown",
+            "succeeded",
+            "failed",
+            "skipped"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Z0-9_]*$"
+        },
+        "externalId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9:._-]*$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "name",
+        "state",
+        "code",
+        "externalId",
+        "updatedAt"
+      ]
+    },
+    "RuntimeOperation": {
+      "title": "RuntimeOperation",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,19})$"
+        },
+        "state": {
+          "enum": [
+            "accepted",
+            "executing",
+            "waiting_retry",
+            "needs_attention",
+            "succeeded",
+            "failed",
+            "superseded"
+          ]
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,19})$"
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Z0-9_]*$"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "retryOf": {
+          "anyOf": [
+            {
+              "const": ""
+            },
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RuntimeStep"
+          },
+          "minItems": 3,
+          "maxItems": 6
+        }
+      },
+      "required": [
+        "mutationId",
+        "id",
+        "projectId",
+        "generation",
+        "state",
+        "version",
+        "attempts",
+        "code",
+        "message",
+        "retryOf",
+        "createdAt",
+        "updatedAt",
+        "steps"
+      ]
+    },
+    "RuntimeReceipt": {
+      "title": "RuntimeReceipt",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "operationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "target": {
+          "$ref": "#/$defs/RuntimeTarget"
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "mutationId",
+        "operationId",
+        "target",
+        "replayed"
+      ]
+    },
+    "RuntimeObservation": {
+      "title": "RuntimeObservation",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "not_created",
+            "running",
+            "stopped",
+            "drifted"
+          ]
+        },
+        "running": {
+          "type": "boolean"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "serverUuid": {
+          "anyOf": [
+            {
+              "const": ""
+            },
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          ]
+        },
+        "containerId": {
+          "type": "string",
+          "pattern": "^(?:|[0-9a-f]{64})$"
+        },
+        "volumeFound": {
+          "type": "boolean"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "state",
+        "running",
+        "ready",
+        "serverUuid",
+        "containerId",
+        "volumeFound",
+        "observedAt"
+      ]
+    },
+    "RuntimeSnapshot": {
+      "title": "RuntimeSnapshot",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,19})$"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,19})$"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuntimeTarget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuntimeOperation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuntimeObservation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "freshness": {
+          "enum": [
+            "fresh",
+            "stale",
+            "unknown"
+          ]
+        },
+        "observationCode": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Z0-9_]*$"
+        },
+        "lastAttemptAt": {
+          "anyOf": [
+            {
+              "const": ""
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "projectId",
+        "generation",
+        "sequence",
+        "target",
+        "operation",
+        "observation",
+        "freshness",
+        "observationCode",
+        "lastAttemptAt"
+      ]
+    },
+    "RuntimeCapability": {
+      "title": "RuntimeCapability",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "adapter": {
+          "enum": [
+            "",
+            "file-secrets-v1"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Z0-9_]*$"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "image": {
+          "const": "mysql:9.7.4@sha256:df90258da46f6e7ff8574ff84f17618aba0765cac749928299c69fd4e7cb8ad8"
+        },
+        "composeVersion": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "enabled",
+        "adapter",
+        "code",
+        "message",
+        "image",
+        "composeVersion"
+      ]
+    },
+    "RuntimeEvent": {
+      "title": "RuntimeEvent",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,19})$"
+        },
+        "operationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,19})$"
+        },
+        "kind": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[a-z_]+$"
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[A-Z0-9_]*$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "sequence",
+        "operationId",
+        "generation",
+        "kind",
+        "code",
+        "createdAt"
+      ]
+    },
+    "RuntimeEventPage": {
+      "title": "RuntimeEventPage",
+      "description": "本机持久MySQL运行v1契约，不含秘密值",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "events": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/RuntimeEvent"
+          }
+        },
+        "nextSequence": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]{0,19})$"
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "events",
+        "nextSequence",
+        "hasMore"
+      ]
+    }
+  }
+}

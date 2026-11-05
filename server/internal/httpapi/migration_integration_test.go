@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -22,40 +23,59 @@ import (
 // migrationRunner 使用与平台完全相同的版本化 SQL，连接关闭由迁移器统一负责。
 func migrationRunner(t *testing.T, dsn string) *migrate.Migrate {
 	t.Helper()
-	configuration, err := mysql.ParseDSN(dsn)
-	if err != nil {
-		t.Fatal("临时数据库配置无效")
-	}
-	configuration.MultiStatements = true
-	db, err := sql.Open("mysql", configuration.FormatDSN())
-	if err != nil {
-		t.Fatal("打开临时迁移连接失败")
-	}
-	source, err := iofs.New(os.DirFS("../store"), "migrations")
+	runner, err := newMigrationRunner(dsn, "migrations", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	driver, err := migratemysql.WithInstance(db, &migratemysql.Config{})
+	runtime, err := newMigrationRunner(dsn, "runtime-migrations", "runtime_schema_migrations")
 	if err != nil {
-		t.Fatal(err)
-	}
-	runner, err := migrate.NewWithInstance("iofs", source, "mysql", driver)
-	if err != nil {
-		t.Fatal(err)
+		sourceErr, databaseErr := runner.Close()
+		t.Fatal(errors.Join(err, sourceErr, databaseErr))
 	}
 	t.Cleanup(func() {
 		if err := runner.Up(); err != nil && err != migrate.ErrNoChange {
 			t.Error(err)
 		}
-		sourceErr, databaseErr := runner.Close()
-		if sourceErr != nil {
-			t.Error(sourceErr)
+		if err := runtime.Up(); err != nil && err != migrate.ErrNoChange {
+			t.Error(err)
 		}
-		if databaseErr != nil {
-			t.Error(databaseErr)
+		for _, owned := range []*migrate.Migrate{runtime, runner} {
+			sourceErr, databaseErr := owned.Close()
+			if err := errors.Join(sourceErr, databaseErr); err != nil {
+				t.Error(err)
+			}
 		}
 	})
+	if err := runtime.Down(); err != nil && err != migrate.ErrNoChange {
+		t.Fatal(err)
+	}
 	return runner
+}
+
+// newMigrationRunner 在本次临时库按依赖顺序构造历史；不暴露产品回退入口。
+func newMigrationRunner(dsn, path, table string) (*migrate.Migrate, error) {
+	configuration, err := mysql.ParseDSN(dsn)
+	if err != nil {
+		return nil, errors.New("临时数据库配置无效")
+	}
+	configuration.MultiStatements = true
+	db, err := sql.Open("mysql", configuration.FormatDSN())
+	if err != nil {
+		return nil, errors.New("打开临时迁移连接失败")
+	}
+	source, err := iofs.New(os.DirFS("../store"), path)
+	if err != nil {
+		return nil, errors.Join(err, db.Close())
+	}
+	driver, err := migratemysql.WithInstance(db, &migratemysql.Config{MigrationsTable: table})
+	if err != nil {
+		return nil, errors.Join(err, source.Close(), db.Close())
+	}
+	runner, err := migrate.NewWithInstance("iofs", source, "mysql", driver)
+	if err != nil {
+		return nil, errors.Join(err, source.Close(), driver.Close())
+	}
+	return runner, nil
 }
 
 // TestLegacyProjectMigration 验证旧登记、坐标、版本、原始回执和 null 固定值均能恢复。

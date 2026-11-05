@@ -39,7 +39,8 @@ test('MySQL 草稿规范化、配置修改、混合拖动布局与重启后恢�
   await page.getByLabel('MySQL 内存 MiB').fill('1024')
   await page.getByLabel('MySQL 运行方案').selectOption('local-compose-v1')
   await page.getByRole('button', { name: '保存 MySQL 配置' }).click()
-  await expect(node).toContainText('配置已完整 · 尚未运行')
+  await expect(node).toContainText('配置已完整')
+  await expect(node).toContainText('尚未登记运行目标')
   const input = page.getByRole('spinbutton', { name: /订单数据库 X/ })
   const before = await input.inputValue()
   const box = await node.boundingBox(); if (!box) throw new Error('MySQL 节点不可拖动')
@@ -48,7 +49,7 @@ test('MySQL 草稿规范化、配置修改、混合拖动布局与重启后恢�
   await page.getByRole('spinbutton', { name: /保留的服务 Y/ }).fill('420')
   const expectedX = await input.inputValue()
   await page.getByRole('button', { name: '保存布局' }).click()
-  await expect(page.getByRole('status')).toContainText('版本 4')
+  await expect(page.getByRole('status', { name: '画布保存状态' })).toContainText('版本 4')
   await page.reload(); await page.getByRole('button', { name: /标准组件持久化项目/ }).click()
   await expect(page.getByRole('spinbutton', { name: /订单数据库 X/ })).toHaveValue(expectedX)
   await platform.restart()
@@ -89,7 +90,7 @@ test('非法配置与服务器拒绝保留候选，响应丢失可核实原键�
   await expect(page.getByText('请先核实原请求', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '核实保存结果' }).click()
   await expect(page.locator('.react-flow__node-mysql')).toHaveCount(1)
-  await expect(page.getByRole('status')).toContainText('版本 1')
+  await expect(page.getByRole('status', { name: '画布保存状态' })).toContainText('版本 1')
 })
 
 test('不同窗口配置冲突显式恢复，其他窗口的组件与自己的候选均保留', async ({ page, platform, browser }) => {
@@ -108,6 +109,6 @@ test('不同窗口配置冲突显式恢复，其他窗口的组件与自己的�
     await expect(other.locator('.react-flow__node-mysql')).toHaveCount(1)
     await other.getByRole('button', { name: '确认加入 MySQL' }).click()
     await expect(other.locator('.react-flow__node-mysql')).toHaveCount(2)
-    await expect(other.getByRole('status')).toContainText('版本 2')
+    await expect(other.getByRole('status', { name: '画布保存状态' })).toContainText('版本 2')
   } finally { await context.close() }
 })
