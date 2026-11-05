@@ -35,6 +35,8 @@ issues/           # 历史、离线草稿与明确链接的证据快照
 3. 读取原 GitHub Issue 与 Project item，核对已接受范围、实际阶段及重复项；明确本次切片的用户入口、领域不变量、服务与数据边界、验证和交付条件。全新平台不代表每次任务都授权全仓搭建或部署。
 4. 可复现缺陷先有失败证据再修复；源码功能实现前先记录状态与不变量矩阵。
 
+新开发在范围、依赖和验收明确后把原 Project item 从 Backlog 推进 Ready，领取实施时推进 In progress；PR 创建并具有审阅 / 验证材料后推进 In review。Ready 与 In review 当前需显式更新，不是自动逐级流转；每步查询实际状态，历史任务不回填虚假阶段。允许的 draft 先行或 Issue 先行入口及自动化边界见[状态与验收门槛](project-tracking.md#状态与验收门槛)。
+
 ## 工作记录与看板
 
 具体工作在 GitHub Issue 维护范围、验收、阻塞与实现 / 检查证据，Project #4 管规划、排序与阶段，入口及规则见[Projects 与 Issues 协作](project-tracking.md)。创建前查重，创建后核实原 Issue 已关联目标项目；本地 `issues/` 不另建同项任务的独立状态。
@@ -90,7 +92,7 @@ issues/           # 历史、离线草稿与明确链接的证据快照
 1. **核对与隔离**：检查 `git status`、分支、已有 worktree、原 Issue 和 Project；读取最新 origin，确认本地 `develop` 与远端关系。干净且无分歧时仅快进同步，不用强推或 hard reset 覆盖差异。保留用户未提交文件；归属不明或基线冲突先报告，不自动混入任务。
 2. **创建任务工作区**：从已核对的 `develop` 用 `git worktree add -b feature/<issue>-<slug> <独立目录> develop` 建立任务分支与 worktree，其他类型可用 `fix/`、`docs/`、`chore/`。已存在本任务 worktree 时核对后复用，不能仅因命名重建或清理其他工作区。
 3. **检查与提交**：纯文档做结构化评审、链接与空白检查；源码 / 配置按范围路由验证。先用 `npm run hooks:install` 启用真实 Git hook，再执行完整 `npm run precommit`。仅暂存本任务授权内容并审阅 staged diff；Git 提交再次经 hook 检查源码 / 配置与索引一致。告警与依赖漏洞均为零，禁止绕过，详见[零告警提交门禁](warning-free-commits.md)。提交信息使用中文「类型：描述」。
-4. **推送与 PR**：推送本任务分支并建立 upstream，不直接推送 `develop`；创建目标为 `develop` 的 PR，关联原 Issue，写明最终行为、验证、已知边界和未运行项。仅完整覆盖验收的 PR 使用完成关联；部分交付只引用原 Issue。
+4. **推送与 PR**：推送本任务分支并建立 upstream，不直接推送 `develop`；创建目标为 `develop` 的 PR，关联原 Issue，写明最终行为、验证、已知边界和未运行项。读取创建结果后将原 Project item 推进 In review 并核实，防止 PR 关联自动化把它留在 In progress。仅完整覆盖验收的 PR 使用完成关联；部分交付只引用原 Issue。
 5. **合并屏障**：核对 PR 最新 head SHA 与实际提交、完整本地门禁、PR CI 的每个适用 job、仓库要求的审阅及原 Issue 验收。等待、失败、被取消或尚未运行都不能当作通过；新提交后读取新一轮检查。满足后合并到 `develop`，默认保留 merge commit 便于核实任务提交的祖先关系；仓库限制其他方式时记录实际策略及对应合并证据。不能因本地测试通过而跳过真实 PR CI。
 6. **同步集成分支**：读取合并结果并 fetch origin，在原 `develop` worktree 仅快进更新。原目录中已纳入 PR 的改动也须先逐文件核实并保留可恢复副本，不能直接清空；不相关修改保持原样。存在冲突、分歧或归属不明时停止同步并报告。确认本地 `develop`、`origin/develop` 与远端实际版本一致；这不代表已部署。
 7. **清理屏障**：先确认 PR 已 merged 且目标为 `develop`，分支 tip 未被他人推进，全部任务提交已包含于集成历史；若采用 squash / rebase，则额外核对 PR 原 head、合并提交与最终文件，不以分支名推断。检查任务 worktree 的暂存、未暂存、未跟踪及忽略文件，保留任何用户数据或未保存成果。

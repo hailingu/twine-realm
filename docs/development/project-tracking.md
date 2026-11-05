@@ -27,6 +27,8 @@ Issue 的 Open / Closed 及关闭理由是工作是否结束的事实来源；Pr
 4. 创建 Issue 后查询是否已由自动工作流加入目标 Project；没有才显式添加。只用同一个 Issue URL / item ID 接续，不因响应超时而重新建任务。核实 Issue 内容、Project 关联、Status 和真实链接后才报告创建完成。
 5. 实现前从 Issue 接受的范围确定切片与验证；设计总目标不自动扩大该任务。跨任务依赖在 Issue 中关联，Project 只呈现同一关系。
 
+创建入口有两条：需要先澄清的想法可在 Project 建 Backlog draft，再将**原 item** 转为仓库 Issue；已明确的可执行任务也可先创建 Issue，再核实自动加入 Project / Backlog。当前不把“先建 draft”规定为唯一入口。两条路径都只保留一个工作 item，不能建 Issue 后再留下同名草稿。#1、#2 实际采用 Issue 先行的路径，不编造草稿转换记录。
+
 2026-11-04 创建 [Issue #1：将已有本地服务 Git 仓库加入画布并持久化](https://github.com/hailingu/twine-realm/issues/1)，对应 [Project item](https://github.com/users/hailingu/projects/4/views/1?pane=issue&itemId=293222657)。创建时为 Open / Backlog；现已有[本地切片实现](local-project-slice.md)，具体交付状态以 Issue、PR 和 Project 的实时读取为准，不把创建时快照继续当作当前事实。本地不再建立同名 `ISSUE-0001`；后续 Todo / MySQL 部署仍在该任务范围之外。
 
 下一任务为 [Issue #2：固定已登记服务的 Git 提交并追溯源码版本](https://github.com/hailingu/twine-realm/issues/2)，已关联同一 Project，依赖 #1 合入 develop。它将明确区分登记快照、当前 Git 观察和用户固定的 commit，为后续构建提供追溯；当前仅为计划，尚未实现，不替用户选择业务技术栈，也不包含生成 / 运行 Todo。
@@ -35,13 +37,15 @@ Issue 的 Open / Closed 及关闭理由是工作是否结束的事实来源；Pr
 
 下列状态名来自当前 Project，未增加其他选项；状态显示不替代 Issue 的证据。
 
-| Project Status | Issue 状态与进入条件 |
-| --- | --- |
-| Backlog | Open；已登记，尚未开始。范围仍需澄清时在 Issue 记录待定项 |
-| Ready | Open；范围、依赖和验收足够明确，可以领取 |
-| In progress | Open；已开始实施，持续记录实际进展、阻塞和相关实现 |
-| In review | Open；已提交审阅或待验证，列出差异、实际检查、未运行项和剩余验收 |
-| Done | 必须核对 Issue 的 Closed 与关闭理由。完成类须已有验收证据；取消 / 重复 / 不做须明确理由，不能因自动变为 Done 就宣称功能已实现 |
+| Project Status | Issue 状态与进入条件 | 实际推进责任 |
+| --- | --- | --- |
+| Backlog | Open；已登记，尚未开始。范围仍需澄清时在 Issue 记录待定项 | draft 手动建立；Issue 加入后的默认自动化设为 Backlog，仍须核实 |
+| Ready | Open；范围、依赖和验收足够明确，可以领取 | 人或 agent 显式设置；当前没有启用的自动推进规则 |
+| In progress | Open；已开始实施，持续记录实际进展、阻塞和相关实现 | 领取实施时显式设置；关联 PR 也可能自动设为 In progress，不能等到建 PR 才更新实施事实 |
+| In review | Open；已提交审阅或待验证，列出差异、实际检查、未运行项和剩余验收 | PR 建立并具备审阅材料后显式设置；当前没有启用的自动推进规则 |
+| Done | 必须核对 Issue 的 Closed 与关闭理由。完成类须已有验收证据；取消 / 重复 / 不做须明确理由 | 验收与合并条件满足后关闭原 Issue，再核实自动 Done；自动化失败只补正原卡片 |
+
+这是需要人或 agent 执行并核实的状态流程，**不是 GitHub 已自动串好的逐级状态机**。当前 Project 不强制阶段顺序，也不会检查代码门禁、PR CI、本地同步或分支清理。正常新开发按 Backlog → Ready → In progress → In review → Done 推进；已开始的历史任务不倒退补造 Ready 或其他阶段记录。每次实际转换都核对原 item 与 Issue 状态，不为了展示完整链而制造假历史。
 
 阻塞、延期和等待决策先在 Issue 记录原因与接续条件，Project 保持适当的非 Done 阶段；不临时发明不存在的 Blocked 字段，也不以关闭掩盖未完成任务。
 
@@ -61,6 +65,8 @@ Issue 的 Open / Closed 及关闭理由是工作是否结束的事实来源；Pr
 
 Item reopened 页面本次只显示设置 Ready 的模板，未见 On；不依赖重开自动复位。其他未核对或后来变更的配置也不作为同步保证。新增、关闭、重开和 PR 关联后都要检查原 Issue 与 Project，必要时补正原 item；不为修正状态新建任务。
 
+2026-11-05 只读复核时仍显示 7 enabled，以上阶段设置与启用 / 未启用关系一致；未修改开关。Auto-add 的具体筛选区本次未加载出文本，表内筛选文字保留为 2026-11-04 记录，不当作本次重新核实；#2 自动加入现有 Project 的关联已实际查询确认。
+
 ## 更新、关闭与冲突修复
 
 1. **实施进展**：范围、验收、阻塞与证据更新到原 Issue；只变更计划顺序 / 阶段时更新 Project。内容和阶段同时变化，先保留 Issue 的事实，再核对 Project 字段。
@@ -69,6 +75,8 @@ Item reopened 页面本次只显示设置 Ready 的模板，未见 On；不依�
 4. **误操作或重新打开**：若误拖 Done 触发提前关闭，核实后重开原 Issue，记录原因，把原 item 恢复到 Ready / In progress / In review 中符合实际的阶段，并再次读取两处结果。只重开 Issue 而卡片仍为 Done 属于未处理完的冲突。
 5. **Open 与 Done 并存**：以 Issue 是否真的验收完成为依据检查；未完成则保持 / 恢复 Open 并将卡片移出 Done，已完成才补充验收并关闭。Closed 与非 Done 并存则先核对关闭理由，再修正同一卡片；不能仅凭看板反向编造完成证据。
 6. **版本控制与发布**：开发使用独立分支和 worktree，推送后以 PR 合入 develop，随后同步本地并安全清理本任务的已合并 origin / 本地分支与 worktree。PR 引用原 Issue；只有完整履行关闭条件的改动才使用完成关联，部分工作只引用和说明剩余范围。合并、自动关闭、工作区已改动、本地提交、已推送和已部署分别报告。当前默认分支为 main，不能依赖合入 develop 的关闭关键词自动关闭 Issue；合并后仍须读取并按验收结果处理原 Issue。
+
+本仓库的非默认分支限制已在 #3 实际观察：正文写有 `Closes #1` 的 PR 合入 develop 后，原 Issue 仍 Open / In review。PR 正文引用不等于 GitHub 的关闭关联已经生效，PR merged 工作流也不能代替原 Issue 的验收。此时应记录合并提交、当前 head 的 CI 和本地同步证据，明确关闭原 Issue，再读取 Project 是否 Done；不能直接拖 Done 抢先触发关闭，也不能为绕过这一差异更改默认分支或自动化。
 
 关闭和重开可能受远端自动化、分支和权限影响，每一步都读取实际结果；失败时报告哪个 Issue / Project item 已完成更新、哪个仍不一致及恢复入口。没有独立同步器或原子事务，不声称两处同时成功。
 
