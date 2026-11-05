@@ -1,6 +1,6 @@
 /** 测试夹具使用发布类型，不借助类型断言绕过契约。 */
 import { vi } from 'vitest'
-import type { CanvasReceipt, CanvasState, DefinitionCatalog, MiddlewareNode, Project, Receipt, SourceObservation, SourceReceipt } from '../contract/generated'
+import type { CanvasReceipt, CanvasState, DefinitionCatalog, GraphReceipt, GraphState, MiddlewareNode, Project, Receipt, SourceObservation, SourceReceipt } from '../contract/generated'
 import type { ProjectAPI } from '../project/api'
 import { parseContract } from '../project/api'
 import definition from '../../../server/internal/catalog/definitions/mysql-v1.json'
@@ -20,6 +20,8 @@ export function receipt(project: Project, kind: Receipt['kind'], mutationId: str
 
 /** 空标准组件集合对应旧项目的增量画布状态。 */
 export const EMPTY_CANVAS: CanvasState = { schemaVersion: 1, middlewares: [] }
+/** 旧项目迁移后的完整 v2 图不推测服务端口或连接。 */
+export const EMPTY_GRAPH: GraphState = { schemaVersion: 2, middlewares: [], serviceContracts: [], bindings: [] }
 const { id, version, ...definitionFields } = definition
 /** 与生产内置包相同的真实目录，测试不手写第二份配置 schema。 */
 export const INITIAL_CATALOG = parseContract<DefinitionCatalog>('DefinitionCatalog', { schemaVersion: 1, digest: CATALOG_DIGEST, definitions: [{ ...definitionFields, reference: { id, version, digest: CATALOG_DIGEST } }] })
@@ -28,6 +30,9 @@ export const MYSQL_NODE: MiddlewareNode = { id: '00000000-0000-4000-8000-0000000
 
 /** @param project 原服务集合 @param kind 画布命令类型 @param mutationId 原请求身份 @param canvas 标准组件集合 @returns 完整画布专用回执。 */
 export function canvasReceipt(project: Project, kind: CanvasReceipt['kind'], mutationId: string, canvas: CanvasState = EMPTY_CANVAS): CanvasReceipt { return { project, canvas, kind, mutationId, replayed: false } }
+
+/** @param project 原服务集合 @param mutationId 原请求 @param graph 全量声明 @returns 已通过类型边界的图回执夹具。 */
+export function graphReceipt(project: Project, mutationId: string, graph: GraphState = EMPTY_GRAPH): GraphReceipt { return { project, graph, kind: 'editGraph', mutationId, replayed: false } }
 
 /** @returns 默认成功的应用端口，具体失败由行为用例注入。 */
 export function fakeAPI() {
@@ -45,6 +50,9 @@ export function fakeAPI() {
     catalog: vi.fn<ProjectAPI['catalog']>().mockResolvedValue(INITIAL_CATALOG),
     addMiddleware: vi.fn<ProjectAPI['addMiddleware']>().mockImplementation((_id, command) => Promise.resolve(canvasReceipt({ ...INITIAL_PROJECT, revision: '2' }, 'addMiddleware', command.mutationId, { schemaVersion: 1, middlewares: [{ ...MYSQL_NODE, displayName: command.displayName, configuration: { ...MYSQL_DEFAULTS, ...command.configuration }, position: command.position }] }))),
     updateMiddleware: vi.fn<ProjectAPI['updateMiddleware']>().mockImplementation((_id, componentId, command) => Promise.resolve(canvasReceipt({ ...INITIAL_PROJECT, revision: '2' }, 'updateMiddleware', command.mutationId, { schemaVersion: 1, middlewares: [{ ...MYSQL_NODE, id: componentId, displayName: command.displayName, configuration: { ...MYSQL_DEFAULTS, ...command.configuration }, position: command.position }] }))),
-    canvasReceipt: vi.fn<ProjectAPI['canvasReceipt']>().mockRejectedValue(new Error('未提供画布回执'))
+    canvasReceipt: vi.fn<ProjectAPI['canvasReceipt']>().mockRejectedValue(new Error('未提供画布回执')),
+    graph: vi.fn<ProjectAPI['graph']>().mockResolvedValue({ project: INITIAL_PROJECT, graph: EMPTY_GRAPH }),
+    editGraph: vi.fn<ProjectAPI['editGraph']>().mockImplementation((_id, command) => Promise.resolve(graphReceipt({ ...INITIAL_PROJECT, revision: '2' }, command.mutationId))),
+    graphReceipt: vi.fn<ProjectAPI['graphReceipt']>().mockRejectedValue(new Error('未提供图回执'))
   }
 }
