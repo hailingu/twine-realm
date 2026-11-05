@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "ES2023", "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext", "moduleResolution": "Bundler", "jsx": "react-jsx",
+    "strict": true, "noUncheckedIndexedAccess": true, "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": true, "noUnusedParameters": true, "noFallthroughCasesInSwitch": true,
+    "resolveJsonModule": true, "allowImportingTsExtensions": true, "skipLibCheck": true,
+    "noEmit": true, "types": ["vite/client", "vitest/globals", "node", "@testing-library/jest-dom"]
+  },
+  "include": ["src", "tooling", "e2e", "vite.config.ts", "playwright.config.ts", "eslint.config.mjs"]
+}

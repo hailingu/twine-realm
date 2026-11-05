@@ -1,0 +1,330 @@
+/* 服务画布、节点和位置检查面板的样式。 */
+.workspace-toolbar {
+  height:100px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 30px;
+  border-bottom:1px solid var(--line);
+  background:#faf9f3
+}
+.project-title {
+  display:flex;
+  align-items:center;
+  gap:18px
+}
+.back-button {
+  border:0;
+  background:transparent;
+  font-size:20px;
+  padding:8px
+}
+.project-title .eyebrow {
+  font-size:9px;
+  letter-spacing:1.3px
+}
+.project-title h1 {
+  font-size:22px;
+  font-weight:500;
+  letter-spacing:-.6px;
+  margin:7px 0 0
+}
+.save-actions {
+  display:flex;
+  align-items:center;
+  gap:12px
+}
+.save-status {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:11px;
+  color:#536448;
+  margin-right:12px
+}
+.save-status.unsaved {
+  color:#536448
+}
+.save-status.unsaved i {
+  background:#b19756
+}
+.workspace-body {
+  height:calc(100dvh - 182px);
+  min-height:550px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 330px
+}
+.canvas {
+  position:relative;
+  min-height:450px;
+  background:#f0f1e9;
+  overflow:hidden
+}
+.canvas-caption {
+  position:absolute;
+  top:22px;
+  left:26px;
+  right:24px;
+  display:flex;
+  justify-content:space-between;
+  font-size:10px;
+  color:#536448;
+  pointer-events:none
+}
+.canvas-caption>span:first-child {
+  letter-spacing:1.6px
+}
+.canvas-empty {
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+  pointer-events:none;
+  width:90%
+}
+.canvas-empty h2 {
+  font-size:21px;
+  margin-bottom:12px;
+  color:#536448
+}
+.canvas-empty p {
+  font-size:12px;
+  color:#536448;
+  line-height:1.9
+}
+.empty-diagram {
+  position:relative;
+  width:67px;
+  height:57px;
+  border:1px solid #cfd6bd;
+  border-radius:9px;
+  background:#f8f9ef;
+  font-size:29px;
+  line-height:54px;
+  color:#536448;
+  margin:0 auto 28px
+}
+.empty-diagram span {
+  font-size:15px;
+  position:absolute;
+  right:-10px;
+  bottom:-10px;
+  width:25px;
+  height:25px;
+  border-radius:100%;
+  background:#4f6546;
+  color:white;
+  line-height:23px
+}
+.empty-step {
+  display:block;
+  font-size:9px;
+  letter-spacing:.3px;
+  color:#536448;
+  margin-top:30px
+}
+.inspector {
+  background:#fffefa;
+  border-left:1px solid var(--line);
+  padding:29px 25px 20px;
+  overflow:auto
+}
+.inspector-title .eyebrow {
+  font-size:9px;
+  margin-bottom:12px
+}
+.inspector-title h2 {
+  font-size:19px;
+  margin-bottom:10px
+}
+.inspector-title p {
+  font-size:11px;
+  color:#536448;
+  margin-bottom:30px
+}
+.repository-form label {
+  margin-top:21px;
+  font-weight:500;
+  display:flex;
+  justify-content:space-between
+}
+.repository-form label>span {
+  font-size:10px;
+  color:#536448;
+  font-weight:400
+}
+.repository-form input {
+  font-size:11px;
+  padding:11px
+}
+.field-help {
+  font-size:10px;
+  line-height:1.7;
+  color:#536448;
+  margin:8px 0 0
+}
+.full-width {
+  width:100%;
+  margin-top:24px
+}
+.boundary-note {
+  display:flex;
+  gap:10px;
+  color:#536448;
+  margin:25px 0 30px;
+  padding:15px 0;
+  border-top:1px solid #eceee2;
+  border-bottom:1px solid #eceee2
+}
+.boundary-note p {
+  font-size:10px;
+  line-height:1.8;
+  margin:0
+}
+.boundary-note>span {
+  font-size:17px
+}
+.coordinate-list .section-heading {
+  margin-bottom:17px
+}
+.coordinate-list h3 {
+  font-size:12px;
+  font-weight:500
+}
+.coordinate-item {
+  border:1px solid #e5e8dc;
+  border-radius:6px;
+  padding:12px;
+  margin-bottom:12px;
+  overflow:hidden
+}
+.coordinate-item>strong {
+  display:block;
+  font-size:12px;
+  font-weight:500
+}
+.coordinate-item>small {
+  font-size:9px;
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  margin-top:7px
+}
+.coordinate-inputs {
+  display:flex;
+  gap:10px;
+  margin-top:13px
+}
+.coordinate-inputs label {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:9px;
+  color:#536448;
+  font-weight:400
+}
+.coordinate-inputs input {
+  padding:5px;
+  font-size:11px
+}
+.coordinate-item>code {
+  display:block;
+  font-size:8px;
+  color:#536448;
+  margin-top:7px
+}
+.inspector-foot {
+  border-top:1px solid #efefe2;
+  margin-top:27px;
+  padding-top:15px;
+  color:#536448;
+  font-size:9px
+}
+.inspector-foot code {
+  display:block;
+  font-size:8px;
+  margin-top:6px
+}
+.service-card {
+  width:244px;
+  border:1px solid #d5ddc9;
+  border-radius:9px;
+  background:#fffefa;
+  box-shadow:0 5px 20px #3947350c;
+  overflow:hidden;
+  padding:17px 17px 0;
+  cursor:grab
+}
+.service-card:active {
+  cursor:grabbing
+}
+.service-card-top {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:17px
+}
+.service-symbol {
+  background:#edf1e3;
+  color:#536448;
+  padding:6px 9px;
+  font-size:20px;
+  border-radius:5px
+}
+.draft-tag {
+  font-size:9px;
+  color:#536448;
+  border:1px solid #e4e7d6;
+  border-radius:3px;
+  padding:3px 6px
+}
+.service-card>strong {
+  font-size:15px;
+  font-weight:500;
+  display:block;
+  margin-bottom:7px
+}
+.service-path {
+  display:block;
+  font-size:9px;
+  color:#536448;
+  text-overflow:ellipsis;
+  overflow:hidden;
+  white-space:nowrap;
+  margin-bottom:19px
+}
+.service-card-foot {
+  margin:0 -17px;
+  padding:10px 17px;
+  background:#f8f9f1;
+  border-top:1px solid #e9eddf;
+  font-size:9px;
+  color:#536448;
+  display:flex;
+  align-items:center;
+  gap:6px
+}
+.service-card-foot>span:last-child {
+  margin-left:auto;
+  font-family:monospace
+}
+.git-dot {
+  width:5px;
+  height:5px;
+  background:#bac4ab;
+  border-radius:50%
+}
+.react-flow__controls {
+  box-shadow:0 2px 7px #36492f12!important;
+  border:1px solid #dde2d1
+}
+.react-flow__controls button {
+  background:#fffef7;
+  border-color:#edf0e3
+}
+.react-flow__node:focus-visible .service-card {
+  outline:2px solid #6b8c58;
+  outline-offset:3px
+}

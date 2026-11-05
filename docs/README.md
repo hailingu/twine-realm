@@ -8,7 +8,7 @@
 
 | 目录 | 职责 |
 | --- | --- |
-| [platform-design/](platform-design/README.md) | 平台设计：愿景、契约、运行与恢复、服务级 Git、技术栈工程文档、agents 规范加载、工作台与设计语言（当前均未实现，已确认原则、推荐默认与待决事项分别标注） |
+| [platform-design/](platform-design/README.md) | 平台设计：愿景、契约、运行与恢复、服务级 Git、技术栈工程文档、agents 规范加载、工作台与设计语言（本地登记切片已建立，其余原则、建议与待决分别标注） |
 | [development/](development/README.md) | 开发规范：工作流、工程规范、Go / TypeScript 语言规范、工具链、质量检查与问题记录 |
 
 ## 阅读顺序
@@ -29,8 +29,14 @@
 - [工作台与页面布局](platform-design/workbench.md)：项目入口、组件目录、React Flow 画布、配置 / 运行 / AI 面板、变更审阅与事件日志。
 - [设计语言](platform-design/design-language.md)：参考来源、独立语义 token、深浅主题、组件与画布规则、无障碍策略。
 
+## 开发任务管理
+
+[GitHub Issues](https://github.com/hailingu/twine-realm/issues) 记录具体工作与验收结论，[twine-realm Project #4](https://github.com/users/hailingu/projects/4) 管规划、排序与执行阶段。创建、关联、当前自动化及状态冲突处理统一见[Projects 与 Issues 协作](development/project-tracking.md)；本地 `issues/` 只保留历史、离线草稿和明确链接的快照，不成为第二份独立任务状态。
+
 ## 文档职责与同步
 
 - 设计文档（`platform-design/`）定义目标与契约；开发规范（`development/`）定义实施要求。两者都必须区分**目标**与**已实现事实**，尚未落地的能力必须明确标注，不得把设计写成已完成。
 - 实现与设计不同步时，在同一变更中更新对应设计文档与相关索引。
 - 本仓库文档、代码注释与提交信息均使用中文。
+
+当前运行见[根 README](../README.md)和[本地切片](development/local-project-slice.md)。

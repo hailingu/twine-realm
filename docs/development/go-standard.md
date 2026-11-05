@@ -1,12 +1,12 @@
 # Go 开发规范
 
-本规范适用于平台服务（目标目录 `server/`）的全部 Go 生产与测试代码，与[软件工程规范](software-engineering-standard.md)共同使用。当前 `server/` 尚未建立，本规范约束首批及后续代码。
+本规范适用于平台服务（目标目录 `server/`）的全部 Go 生产与测试代码，与[软件工程规范](software-engineering-standard.md)共同使用。`server/` 已建立，检查见[质量门禁](quality-gates.md)。
 
 ## 工具链基线
 
 - Go 版本基线为 **1.27**（核实时最新稳定为 1.27.3），以 `go.mod` 的 `go` 指令锁定；本机当前为 1.25.6，初始化工程前先升级，见[运行时与工具链](runtime-toolchain.md)。
 - 依赖由 `go.mod` / `go.sum` 唯一定义；不引入无实际消费者的依赖，升级依赖属于明确批准的任务范围。
-- 验证命令（初始化 `go.mod` 后生效，当前尚未配置）：`go build ./... && go vet ./... && go test ./...`；`gofmt` 格式必须保持零差异。golangci-lint 接入后以其替代 `go vet` 成为 lint 门禁，见[质量检查](quality-gates.md)。
+- 验证命令（`server/` 已接入）：`go build ./... && go vet ./... && go test ./...`；`gofmt` 格式必须保持零差异。golangci-lint 接入后以其替代 `go vet` 成为 lint 门禁，见[质量检查](quality-gates.md)。
 
 ## 项目布局
 
@@ -74,7 +74,7 @@ server/
 
 - 使用标准库 `testing`，表驱动优先；断言库（如 testify）若引入则全仓统一，不混用多套。
 - 领域单测无基础设施依赖；编排与调和的集成测试经真实 docker-compose 边界验证（临时项目空间、明确就绪信号、用后清理）。
-- 测试名中文描述场景（如 `Test服务替换_未就绪不切流量`）；不写无断言的测试，不断言实现内部调用顺序。
+- 顶层 `TestXxx` 函数采用 Go / Sonar 允许的 ASCII 标识，具体场景用中文 `t.Run("未就绪不切流量", ...)` 表达；不写无断言的测试，不断言实现内部调用顺序。
 - 竞争检测：涉及并发的包以 `go test -race` 验证；每个测试文件中时序竞争类用例不超过 6 个，优先表驱动合并同族场景。
 
 ## 命名与注释
@@ -82,3 +82,5 @@ server/
 - 导出标识符 godoc 注释以标识符名开头，说明职责与契约，中文书写；包注释置于 `doc.go` 或该包主文件。
 - 命名惯例遵循社区标准：驼峰、不用下划线（测试文件与 `_test.go` 除外）、接口不加 `I` 前缀、错误变量 `ErrXxx`、构造函数 `NewXxx`。
 - 常量集中语义命名，不散落魔法数字；单位含在名称或注释中（如 `reconcileIntervalSeconds`）。
+
+提交前必须通过[零告警门禁](warning-free-commits.md)：编译、vet、测试中的标准代码告警均失败；不能把工具退出码 0 当作告警清零。

@@ -1,0 +1,429 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twine-realm.local/contract/v1/schema.json",
+  "title": "Contract",
+  "description": "一期本地项目登记的唯一机器契约；非标准服务不由本契约假定业务技术栈",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "position": {
+      "$ref": "#/$defs/Position"
+    },
+    "repository": {
+      "$ref": "#/$defs/Repository"
+    },
+    "serviceNode": {
+      "$ref": "#/$defs/ServiceNode"
+    },
+    "project": {
+      "$ref": "#/$defs/Project"
+    },
+    "summary": {
+      "$ref": "#/$defs/Summary"
+    },
+    "projectList": {
+      "$ref": "#/$defs/ProjectList"
+    },
+    "createCommand": {
+      "$ref": "#/$defs/CreateCommand"
+    },
+    "registerCommand": {
+      "$ref": "#/$defs/RegisterCommand"
+    },
+    "nodePosition": {
+      "$ref": "#/$defs/NodePosition"
+    },
+    "layoutCommand": {
+      "$ref": "#/$defs/LayoutCommand"
+    },
+    "receipt": {
+      "$ref": "#/$defs/Receipt"
+    },
+    "aPIError": {
+      "$ref": "#/$defs/APIError"
+    },
+    "errorResponse": {
+      "$ref": "#/$defs/ErrorResponse"
+    }
+  },
+  "$defs": {
+    "Position": {
+      "title": "Position",
+      "description": "版本一Position契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ]
+    },
+    "Repository": {
+      "title": "Repository",
+      "description": "版本一Repository契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "headCommit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "description": "登记时观测的源提交；空仓库为 null，不代表构建就绪"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "headCommit"
+      ]
+    },
+    "ServiceNode": {
+      "title": "ServiceNode",
+      "description": "版本一ServiceNode契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^\u0000-\u001f-]+$"
+        },
+        "repository": {
+          "$ref": "#/$defs/Repository"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "id",
+        "displayName",
+        "repository",
+        "position"
+      ]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "已提交项目快照，节点位置不是运行状态",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^\u0000-\u001f-]+$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "无符号聚合版本，以十进制字符串传递，避免浏览器精度损失"
+        },
+        "nodes": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "$ref": "#/$defs/ServiceNode"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "id",
+        "name",
+        "revision",
+        "nodes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Summary": {
+      "title": "Summary",
+      "description": "版本一Summary契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^\u0000-\u001f-]+$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "无符号聚合版本，以十进制字符串传递，避免浏览器精度损失"
+        },
+        "nodeCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "revision",
+        "nodeCount",
+        "updatedAt"
+      ]
+    },
+    "ProjectList": {
+      "title": "ProjectList",
+      "description": "版本一ProjectList契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Summary"
+          }
+        }
+      },
+      "required": [
+        "projects"
+      ]
+    },
+    "CreateCommand": {
+      "title": "CreateCommand",
+      "description": "版本一CreateCommand契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^\u0000-\u001f-]+$"
+        }
+      },
+      "required": [
+        "mutationId",
+        "name"
+      ]
+    },
+    "RegisterCommand": {
+      "title": "RegisterCommand",
+      "description": "版本一RegisterCommand契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "baseRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "无符号聚合版本，以十进制字符串传递，避免浏览器精度损失"
+        },
+        "repositoryPath": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^\u0000-\u001f-]+$"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "mutationId",
+        "baseRevision",
+        "repositoryPath",
+        "position"
+      ]
+    },
+    "NodePosition": {
+      "title": "NodePosition",
+      "description": "版本一NodePosition契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "serviceId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "serviceId",
+        "x",
+        "y"
+      ]
+    },
+    "LayoutCommand": {
+      "title": "LayoutCommand",
+      "description": "版本一LayoutCommand契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "baseRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "无符号聚合版本，以十进制字符串传递，避免浏览器精度损失"
+        },
+        "positions": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "$ref": "#/$defs/NodePosition"
+          }
+        }
+      },
+      "required": [
+        "mutationId",
+        "baseRevision",
+        "positions"
+      ]
+    },
+    "Receipt": {
+      "title": "Receipt",
+      "description": "同一事务持久化的请求结果，重放不重复执行",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "kind": {
+          "enum": [
+            "createProject",
+            "registerRepository",
+            "saveLayout"
+          ]
+        },
+        "project": {
+          "$ref": "#/$defs/Project"
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mutationId",
+        "kind",
+        "project",
+        "replayed"
+      ]
+    },
+    "APIError": {
+      "title": "APIError",
+      "description": "版本一APIError契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z_]+$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "currentRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "无符号聚合版本，以十进制字符串传递，避免浏览器精度损失"
+        },
+        "existingServiceId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "ErrorResponse": {
+      "title": "ErrorResponse",
+      "description": "版本一ErrorResponse契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "$ref": "#/$defs/APIError"
+        }
+      },
+      "required": [
+        "error"
+      ]
+    }
+  }
+}

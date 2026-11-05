@@ -2,18 +2,18 @@
 
 本仓库建设**数字孪生的软件定义平台**：用户在网页画布中以类 UML 图的方式拖入标准中间件（MySQL、RabbitMQ 等）与通用服务组件，由平台 AI 完成数据模型设计、开发、测试与部署；一个画布对应一个真实的 docker-compose / k8s 项目空间，服务以零感知方式替换升级，真实运行状态与配置实时回显到画布，构成业务系统的数字孪生。
 
-仓库目标结构：Go 平台服务（`server/`）、TypeScript 前端画布（`web/`）、部署与项目空间模板（`deploy/`）、设计文档（`docs/platform-design/`）、开发规范（`docs/development/`）、本地问题记录（`issues/`）与仓库工具脚本（`scripts/`，含根 `package.json` 与 Sonar 项目配置）。**当前仓库处于起步阶段：`server/`、`web/`、`deploy/` 源码目录均未建立，已有文档、`.gitignore` 与仓库工具链。**
+仓库目标结构：Go 平台服务（`server/`）、TypeScript 前端画布（`web/`）、部署与项目空间模板（`deploy/`）、设计文档（`docs/platform-design/`）、开发规范（`docs/development/`）、本地历史 / 离线草稿（`issues/`）与仓库工具脚本（`scripts/`，含根 `package.json` 与 Sonar 项目配置）。**已建立 Issue #1 本地项目、仓库登记与布局持久化切片：`server/`、`web/` 和平台元数据库 Compose。AI、业务中间件、部署等仍未实现。**
 
 ## 分支与历史边界
 
-- **`develop` 是平台日常开发基线**（当前所在分支），平台的一切实现在此进行。
+- **`develop` 是平台集成基线**，不直接开发或提交；每项开发使用独立任务分支和 worktree，经检查、推送与 PR 合入。
 - **`main` 受保护**，承载历史演示（能力实验室 v4.0、模拟器 v2/v3）：它们是背景参考，**不构成平台的约束、依赖或可复用代码来源**；不主动合并、不引用其实现、不删除其内容。
 - 平台按[平台设计概览](docs/platform-design/README.md)全新实现，不为历史演示的数据、接口或交互承担兼容。
 
 ## 技术栈与版本基线
 
 - 服务端 **Go**（基线 1.27.x），前端 **TypeScript + React + React Flow**（Node 26 LTS），平台元数据 **MySQL**（最新 LTS 系列），项目空间编排本机以 **docker-compose** 为一等公民、接口按 k8s 可移植设计。
-- 仓库工具与质量门禁由根 `package.json` 维护（Node ≥24.18.0，`.nvmrc` 锁定）：issue 元数据校验、Sonar 门禁（本地 SonarQube 的 `twine-realm` 项目，地址与凭据只经环境注入）与完整门禁编排；命令与边界见[质量检查与证据](docs/development/quality-gates.md)。
+- 仓库工具与质量门禁由根 `package.json` 维护（Node 26.13.0，`.nvmrc` 锁定）：issue 元数据校验、Sonar 门禁（本地 SonarQube 的 `twine-realm` 项目，地址与凭据只经环境注入）与完整门禁编排；命令与边界见[质量检查与证据](docs/development/quality-gates.md)。
 - 版本尽可能新但 LTS 优先，具体锁定位置、本机现状差距与升级政策见[运行时与工具链](docs/development/runtime-toolchain.md)。
 
 本仓库的文档、代码注释与提交信息均使用中文；本指南亦以中文书写。
@@ -25,6 +25,8 @@
 ## 不可协商的底线
 
 ### 核心规则
+
+- **提交前零告警**：前后端编译、类型、lint、构建及适用静态分析代码问题必须清零，根和 web 依赖审计不得留任何 low 及以上漏洞。执行 `npm run precommit`；安装 `.githooks/pre-commit` 的命令为 `npm run hooks:install`。禁止忽略 / 降级告警、静默禁用检查或使用 `--no-verify` 绕过。源码与配置须与待提交索引一致，具体机器检查和负例见[零告警提交门禁](docs/development/warning-free-commits.md)。
 
 - 保护用户与其他任务的改动。不得覆盖、重排格式、暂存或清理无关工作。
 - 永远不得硬编码、暴露或记录密钥、token、密码、私钥及敏感用户数据；中间件连接凭据只经配置或环境变量注入。
@@ -67,7 +69,7 @@
 
 1. 阅读本指南及适用于请求范围的全部更具体指令。
 2. 提议或实施变更前，检查相关代码、文档、构建文件与当前工作区。
-3. 对变更分类。只读工作无需任务分支；需要变更文件且无已授权任务分支时，遵循版本控制政策。
+3. 对变更分类。只读工作无需任务分支；开发变更必须使用独立任务分支和 worktree，遵循版本控制政策并保留已有工作。
 4. 检索既有内部能力，选择满足请求的最小连贯变更。
 5. 源码功能或可复现缺陷先记录状态与不变量矩阵；只实现已批准的范围，保留工作区中的无关改动。
 6. 先运行最窄相关的非交互检查，再运行「范围路由」各行要求的更广检查。任务完成前删除一次性验证产物并报告结果。
@@ -80,14 +82,17 @@
 
 | 范围 | 先读 | 工作目录 | 验证命令 | 备注 |
 | --- | --- | --- | --- | --- |
+| `server/**` | 本指南、[Go 规范](docs/development/go-standard.md)、[本地切片](docs/development/local-project-slice.md) | `server/` | `go build ./...`、`go vet -tags=integration ./...`、`go test ./...`；根 `npm run test:platform` 含真实 MySQL / Git 与 `-race` | 根 `gofmt -l server` 零输出 |
+| `web/**` | 本指南、[TS 规范](docs/development/typescript-standard.md)、[本地切片](docs/development/local-project-slice.md) | `web/` | `npm run contract:check`、`npm run typecheck`、`npm run lint`、`npm run test`、`npm run build`；根 `npm run test:platform` 含浏览器 | 不以 mock 代替持久化验收 |
+| `deploy/**` | 本指南、[运行说明](README.md) | 根 | `docker compose --env-file .env -f deploy/compose.yaml config --quiet` | 注入本机或临时配置，不回显秘密 |
 | `AGENTS.md` 与伴随 agent 入口文件 | 本指南「不可协商的底线」「执行工作流」「版本控制安全」各节 | 仓库根 | 未配置——做结构化评审并报告无自动检查 | 纯文档变更不要求红-绿-重构 |
 | `README.md`、`docs/**` | 本指南与 [docs/README.md](docs/README.md)（文档索引） | 仓库根 | 未配置——做结构化评审并报告无自动检查 | 设计只在 `docs/platform-design/` 维护；目标与已实现必须分开表述 |
-| `issues/**` | 本指南、[问题记录规范](docs/development/issue-standard.md)、[issues/README.md](issues/README.md) | 仓库根 | `npm run issue:status`；验收与证据仍做结构化评审 | 自动校验文件头字段、枚举、编号唯一与日期一致，并报告状态分布及未关闭记录（未关闭不构成失败，元数据违规才非零退出）；`--json` 输出结构化摘要。项目 issue 只在根目录 `issues/` 创建与维护，不向外部平台创建或同步 |
-| `scripts/**`、`sonar-project.properties`、根 `package.json`、`package-lock.json`、`.nvmrc` | 本指南、[通用工程规范](docs/development/software-engineering-standard.md)、[质量检查与证据](docs/development/quality-gates.md) | 仓库根 | `npm run test:quality`；实现变更后执行 `npm run quality:gate` | Node 行为测试覆盖 Sonar 门禁、完整门禁编排与 issue 状态检查；完整门禁含本次脚本覆盖率导入与真实 Sonar Quality Gate。Sonar 服务地址及凭据只从环境读取（`SONAR_HOST_URL` 与 `SONAR_TOKEN` / `TWINE_REALM_SONAR_TOKEN`），不得写入仓库 |
-| `.github/**` | 本指南与[质量检查与证据](docs/development/quality-gates.md) | 仓库根 | 未配置本地检查——做结构化评审（YAML 语法与 action 钉版核对）；真实行为证据是 GitHub 上 ci 工作流运行 | GitHub Actions CI：`ci.yml` 面向 develop / main 的 PR/push 执行 tooling 检查（`npm audit --audit-level=high`、`npm run test:quality`、`npm run issue:status`），Node 版本取自 `.nvmrc`、action 按提交 SHA 钉版；Sonar 保留在本机门禁，CI 不削弱它。`dependabot.yml` 按 npm 与 github-actions 周粒度开依赖 PR 到 develop，只开 PR 不自动合并。凭据与日志不引入密钥 |
+| `issues/**` | 本指南、[问题记录规范](docs/development/issue-standard.md)、[issues/README.md](issues/README.md) | 仓库根 | `npm run issue:status`；验收与证据仍做结构化评审 | 自动校验文件头字段、枚举、编号唯一与日期一致，并报告状态分布及未关闭记录（未关闭不构成失败，元数据违规才非零退出）；`--json` 输出结构化摘要。只校验本地历史 / 草稿，不代表 GitHub Issues 或 Project 状态；远端任务与关联遵循[协作规范](docs/development/project-tracking.md)，本命令不读取或同步远端 |
+| `scripts/**`、`sonar-project.properties`、根 `package.json`、`package-lock.json`、`.nvmrc` | 本指南、[通用工程规范](docs/development/software-engineering-standard.md)、[质量检查与证据](docs/development/quality-gates.md) | 仓库根 | `npm run test:quality`；实现变更后执行 `npm run quality:gate` | Node 行为测试覆盖 Sonar 门禁、完整门禁编排、零告警检查、Git 提交入口与 issue 状态检查；完整门禁含本次脚本覆盖率导入与真实 Sonar Quality Gate。Sonar 服务地址及凭据只从环境读取（`SONAR_HOST_URL` 与 `SONAR_TOKEN` / `TWINE_REALM_SONAR_TOKEN`），不得写入仓库 |
+| `.github/**` | 本指南与[质量检查与证据](docs/development/quality-gates.md) | 仓库根 | 未配置本地检查——做结构化评审（YAML 语法与 action 钉版核对）；真实行为证据是 GitHub 上 ci 工作流运行 | GitHub Actions CI：`ci.yml` 面向 develop / main 的 PR/push 执行 tooling 检查（`npm audit --audit-level=low`、`npm run test:quality`、`npm run issue:status`），Node 版本取自 `.nvmrc`、action 按提交 SHA 钉版；Sonar 保留在本机门禁，CI 不削弱它。另有 platform job 执行 Go / TS / 真实数据库 / Chromium 和 Compose 配置检查；CI 结果须按当前提交独立读取。`dependabot.yml` 按 npm、gomod 与 github-actions 周粒度开依赖 PR 到 develop，只开 PR 不自动合并。凭据与日志不引入密钥 |
 | `.gitignore` 及其他根配置 | 本指南与[运行时与工具链](docs/development/runtime-toolchain.md) | 仓库根 | 未配置——做结构化评审 | 不提交密钥与本地环境文件 |
 
-**`server/`、`web/`、`deploy/` 等源码路径尚未建立。** 首次建立这些路径时，必须在同一变更中：接入真实工具配置（`go.mod` / `package.json` / compose 等）、定义真实验证命令、补充本表对应路由行（含适用规范链接与工作目录），并同步更新[质量检查与证据](docs/development/quality-gates.md)与完整门禁编排步骤。在路由行与检查真实落地前，不得声称该路径受自动门禁保护。
+新受维护模块须同次接入配置、路由、完整门禁和文档；未接入前不得声称受自动保护。
 
 无路由行命中时，为每个受影响路径发现并运行最窄相关的非交互检查；不存在自动检查时，做结构化评审、报告未配置自动检查、记录实际检查了什么，不得臆造命令。
 
@@ -108,9 +113,11 @@
 ### 分支、提交与推送政策
 
 - **保护分支**：`main` 禁止直接提交与推送，其历史演示内容保持原样。
-- **日常开发基线**：`develop` 承载平台开发，直接提交即可；不主动推送，除非用户授权。
-- **任务分支**：确需新分支时，检查工作区后从当前本地 `develop` 创建，使用 `feature/`、`fix/`、`docs/`、`chore/` 前缀；保留已授权的任务分支而非仅为命名规范切换。
-- **合并请求**：目标分支遵循用户指示；向 `main` 的合并属发布动作，按运维级授权处理。
+- **集成基线**：`develop` 只通过 PR 接收开发变更；禁止直接开发、提交或推送到 `develop`。
+- **独立开发**：核对远端与本地基线后，从 `develop` 创建 `feature/`、`fix/`、`docs/` 或 `chore/` 任务分支，并在独立 worktree 中开发；一个任务复用自己的分支 / worktree，不覆盖其他任务或用户修改。
+- **交付顺序**：完整门禁与真实 pre-commit 通过 → 推送任务分支 → 创建目标为 `develop` 的 PR → 核对当前 head 的 CI、验收与审阅 → 合并 → 同步本地 `develop` → 安全清理本次 origin / 本地分支与 worktree。合并、Issue 关闭与项目状态分别读取核实，不能提前 Done。
+- **安全同步与清理**：仅快进更新本地 `develop`；未提交内容先保留并核实归属，冲突或远端分歧时停止该部分，禁止强推、hard reset、强删分支或强制移除 worktree。只有确认 PR 已合入 `develop`、本地与远端一致、任务提交均已合并且没有未保存数据，才删除本次已合并分支与 worktree；保留 `main`、`develop`、未合并分支、其他任务与用户数据。详细步骤见[开发工作流](docs/development/workflow.md#版本控制与交付)。
+- **授权与发布**：提交、推送、PR、合并和清理在用户已授权范围内接续执行，不重复索要同一许可；本规范不额外授权无关的远端写入。向 `main` 的合并属发布动作，按运维级授权处理。
 - **提交信息**：使用中文「类型：描述」（如 `功能：画布期望态存储`、`文档：补充 Go 规范`），Conventional Commits 风格（`feat:`、`fix:` 等）亦可接受。
 
 ## 验证与完成证据
@@ -125,7 +132,7 @@
 
 - 每项意见先核对可复现触发、契约依据、影响和授权范围，再记录已修复、无需变更、延期或等待决策；不得凭假想极值扩大重构范围。
 - 实质性回复包含「处置、理由与变更、验证、后续」四项；本地修改、已提交、已推送必须分清。未经授权不向外部 issue、PR 或评审线程发消息。
-- 项目 issue 必须在根 [issues/](issues/README.md) 创建与维护，遵循[问题记录规范](docs/development/issue-standard.md)；未完成或仅记录边界的工作不得描述为已修复。
+- 项目具体工作以 [GitHub Issues](https://github.com/hailingu/twine-realm/issues) 为权威记录，[twine-realm Project #4](https://github.com/users/hailingu/projects/4) 管规划、排序和阶段；先查重并关联原 Issue，按[Projects 与 Issues 协作规范](docs/development/project-tracking.md)核对状态与关闭结果，不假定自动同步。根 [issues/](issues/README.md) 仅保留历史、离线草稿及明确链接的证据快照，不为同一工作另建独立状态。记录质量遵循[问题记录规范](docs/development/issue-standard.md)；未完成或仅记录边界的工作不得描述为已修复。
 
 ## 事实来源
 
@@ -138,24 +145,16 @@
 | Go / TypeScript 语言规范 | `docs/development/go-standard.md`、`docs/development/typescript-standard.md` |
 | 版本基线、锁定位置与升级政策 | `docs/development/runtime-toolchain.md` |
 | 检查现状、计划门禁与证据口径 | `docs/development/quality-gates.md` |
-| 本地问题与处置 | `issues/`、`docs/development/issue-standard.md` |
+| 工作、规划与处置 | GitHub Issues（范围 / 验收 / 关闭事实）、Project #4（排期 / 阶段）、`docs/development/project-tracking.md`、`docs/development/issue-standard.md`；`issues/` 仅历史 / 离线草稿 |
 | 依赖与工具版本 | 根 `package.json`、`package-lock.json`、`.nvmrc`（仓库工具）；`server/go.mod`、`web/package.json`、`deploy/` compose 定义（建立后） |
 | `main` 分支历史演示（仅背景） | `main` 分支 Git 历史，不承担兼容义务 |
 | 版本化源码、配置与实现证据 | Git 提交与合并请求 |
 
 ## 本地开发环境
 
-尚无可运行的平台服务。仓库工具链已就绪，在仓库根执行：
+启动、配置和停止见[根 README](README.md)，实现边界见[本地切片](docs/development/local-project-slice.md)。一期不接入账号、登录、配对或 RBAC；只支持单可信 OS 用户的本机工具。未来身份层可在 HTTP 边界外组合。
 
-```bash
-npm install              # 安装仓库工具依赖（marked）
-npm run issue:status     # 校验 issues/ 元数据与状态
-npm run test:quality     # 工具脚本行为测试
-npm run sonar            # 单独 Sonar 扫描（需 SONAR_HOST_URL 与 SONAR_TOKEN / TWINE_REALM_SONAR_TOKEN）
-npm run quality:gate     # 完整质量门禁（脚本测试 + issue 校验 + Sonar）
-```
-
-Sonar 凭据由 `~/.zshrc` 等环境注入，不写入仓库。首批工程初始化任务将按[运行时与工具链](docs/development/runtime-toolchain.md)升级本机 Go / Node、建立 `server/` 与 `web/` 并在 `deploy/` 定义平台自用 MySQL；届时在本节补充启动命令与配置说明。
+根命令 `npm run test:quality`、`npm run issue:status`、`npm run test:platform`（Go / TS / 临时 MySQL / Chromium / 重启）、`npm run quality:gate`（完整检查与本次 Sonar）。秘密只经环境注入，测试只清理自有资源。
 
 ## 附录：开发者守则
 

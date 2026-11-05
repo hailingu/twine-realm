@@ -1,0 +1,47 @@
+# twine-realm
+
+本地服务画布。当前实现 [Issue #1](https://github.com/hailingu/twine-realm/issues/1)：创建 / 打开本机项目，将已有 Git 工作区只读登记为服务节点，拖动并显式保存布局，刷新、重新打开和平台进程重启后从 MySQL 恢复。
+
+服务节点保持待配置草稿；不选择业务技术栈。不包含账号 / 登录 / 配对 / RBAC、AI、GitHub 同步、中间件连线、业务构建部署或代码编辑器。项目与仓库关联只保存在本机，导入不修改源码、`AGENTS.md`、索引、分支或 Git 配置。
+
+## 运行
+
+需要 Go 1.27.3、Node 26.13.0（`.nvmrc`）、npm 11、Git、Docker / Compose。使用任务内或系统工具链均可，不自动升级环境。
+
+1. 根目录 `npm ci`，再执行 `npm ci --prefix web`。
+2. 复制 `.env.example` 为 `.env`，设置权限 `chmod 600 .env`。分别以 `openssl rand -hex 24` 生成管理与应用密码，填写 `TWINE_DB_ROOT_PASSWORD`、`TWINE_DB_PASSWORD`；填写仓库允许范围，例如 `TWINE_REPOSITORY_ROOTS='["/Users/you/Git"]'`。不要使用文件系统根目录。
+3. 执行 `docker compose --env-file .env -f deploy/compose.yaml up -d --wait`，只启动平台自用 MySQL；默认仅绑定 `127.0.0.1:3307`，命名卷保留元数据。
+4. 在同一终端载入自己维护的 `.env`：
+
+   ```bash
+   set -a
+   source .env
+   set +a
+   export TWINE_DATABASE_DSN="${TWINE_DB_USER}:${TWINE_DB_PASSWORD}@tcp(127.0.0.1:${TWINE_DB_PORT})/${TWINE_DB_NAME}"
+   ```
+
+5. 根目录执行 `npm run build --prefix web`、`go -C server build -o ../build/platform ./cmd/platform`、`./build/platform`。打开 `http://127.0.0.1:8080`。平台先完成数据库连接与版本化迁移，再开放 HTTP；端口被占用时明确失败。
+
+输入允许目录内的 Git 工作区绝对路径。符号链接、子目录归一到同一工作区；相同项目不重复登记。同名目录但不同规范路径仍是不同仓库。空仓库允许登记，显示「暂无源提交」。坐标是布局，不代表运行状态。
+
+修改位置后点击「保存布局」。失败时保留草稿；结果未知时点击「核实保存结果」或「重试原请求」，请求身份保持不变。版本冲突时可载入最新快照并保留自己的位置，确认后再次保存。未保存 / 未确认时刷新有浏览器离开保护；草稿未写入浏览器持久存储，强制关闭页面可能丢失未确认的本地输入，已提交数据可重新打开恢复。
+
+`Ctrl-C` 正常停止平台；重新运行同一配置即可恢复。数据库停止使用 `docker compose --env-file .env -f deploy/compose.yaml stop`，不删除卷。`down -v` 会删除项目元数据，不属于普通停止。
+
+开发前端可设置 `TWINE_DEV_ORIGIN=http://127.0.0.1:5173` 后启动后端，再 `npm run dev --prefix web`，API 走 Vite 本机代理。生产只提供构建产物，不托管业务仓库文件。
+
+## 检查
+
+执行 `npm run hooks:install` 启用本仓库提交入口；`npm run precommit` 验证完整零告警门禁而不提交。实际 Git hook 额外核对源码 / 配置与索引一致，禁止部分暂存错位和绕过检查。警告与依赖漏洞都必须先清零，见[规则与受控负例](docs/development/warning-free-commits.md)。
+
+开发必须在独立任务分支和 worktree 中进行，经检查、推送与 PR 合入 `develop`，同步本地后仅清理本任务已合并且无未保存数据的分支 / worktree；不得直接在 `develop` 开发或提交。详见[交付流程](docs/development/workflow.md#版本控制与交付)。
+
+- `npm run test:quality`：仓库脚本行为测试。
+- `go -C server test ./...`：配置、领域与真实 Git 单测；`go -C server vet ./...`、`gofmt -l server`。
+- `npm run typecheck --prefix web`、`npm run lint --prefix web`、`npm run test --prefix web`、`npm run build --prefix web`。
+- 首次浏览器检查前 `cd web` 后执行 `npx playwright install chromium`。
+- 根目录 `npm run test:platform`：创建独立、随机密码、仅回环端口的临时 MySQL，运行上述模块检查、真实 Chromium 操作 / 后端重启、MySQL 集成与 `-race`。成功或失败均清理自有测试容器、秘密文件与临时产物；不使用开发数据库或删除既有构建。运行中不需要登录或业务服务技术栈。
+- `npm run quality:gate`：上述完整平台检查加脚本覆盖率、issue 元数据和本次真实 Sonar 门禁。需要通过环境注入 `SONAR_HOST_URL` 与 `SONAR_TOKEN` / `TWINE_REALM_SONAR_TOKEN`；报告只采用本次生成的 Go / LCOV。
+- `docker compose --env-file .env -f deploy/compose.yaml config --quiet`：仅校验配置，不启动资源。
+
+详细契约、失败边界与实现范围见[首个本地切片](docs/development/local-project-slice.md)，长期设计见[平台设计概览](docs/platform-design/README.md)。工作范围以 GitHub Issue 为记录，Project #4 管规划；本地实现与测试不自动关闭 Issue 或设 Done。

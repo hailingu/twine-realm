@@ -1,0 +1,22 @@
+# 平台元数据库独立于业务项目；普通停止保留卷，不包含业务编排。
+name: twine-realm-platform
+services:
+  mysql:
+    image: mysql:9.7.4@sha256:df90258da46f6e7ff8574ff84f17618aba0765cac749928299c69fd4e7cb8ad8
+    environment:
+      MYSQL_ROOT_PASSWORD: ${TWINE_DB_ROOT_PASSWORD:?请配置平台数据库管理密码}
+      MYSQL_DATABASE: ${TWINE_DB_NAME:-twine_realm}
+      MYSQL_USER: ${TWINE_DB_USER:-twine}
+      MYSQL_PASSWORD: ${TWINE_DB_PASSWORD:?请配置平台数据库应用密码}
+    ports:
+      - "127.0.0.1:${TWINE_DB_PORT:-3307}:3306"
+    volumes:
+      - platform_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--host=127.0.0.1", "--silent"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 20s
+volumes:
+  platform_mysql:
