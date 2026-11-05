@@ -2,6 +2,8 @@
 
 本页记录实现边界；运行方式见[根 README](../../README.md)，验收事实以本次检查输出为准。[Issue #1](https://github.com/hailingu/twine-realm/issues/1) 与 [Issue #2](https://github.com/hailingu/twine-realm/issues/2) 对应现有 [Project #4](https://github.com/users/hailingu/projects/4)。不自动改变远端状态。
 
+[Issue #6 标准组件目录与配置草稿](component-catalog-slice.md) 另行记录增量完整画布、MySQL 定义、混合布局和专用回执。下文原 v1 项目 / 服务及源码契约继续保持原义；500 容量现由服务与中间件共同使用。
+
 ## 当前范围
 
 Go 标准 HTTP + `database/sql`，MySQL 9.7.4 LTS 平台元数据库，golang-migrate 版本迁移；React 19 / TypeScript / React Flow 12 投影。用户另已确认首个业务工程组合为 Go + 标准库 `net/http`；其模板待后续切片。不创建或改写导入仓库。

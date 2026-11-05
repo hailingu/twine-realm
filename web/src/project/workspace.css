@@ -339,3 +339,10 @@
 .source-panel input { width: 100%; font-family: monospace; }
 .source-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .git-observation { padding: 12px; background: #f5f5ee; border-radius: 8px; margin: 12px 0; font-size: 12px; }
+.catalog-add { width: 100%; margin-bottom: 24px; }
+.mysql-panel { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 20px; }
+.mysql-form, .mysql-form label { display: grid; gap: 8px; }
+.mysql-form { margin-top: 16px; gap: 14px; }
+.mysql-form select { width: 100%; padding: 11px; border: 1px solid var(--line); border-radius: 8px; background: white; }
+.definition-digest { display: block; overflow-wrap: anywhere; margin-top: 8px; font-size: 10px; }
+.mysql-card small { color: #62665b; font-size: 11px; margin-top: 10px; }

@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hailingu/twine-realm/server/internal/catalog"
 	"github.com/hailingu/twine-realm/server/internal/config"
 	"github.com/hailingu/twine-realm/server/internal/gitworkspace"
 	"github.com/hailingu/twine-realm/server/internal/httpapi"
@@ -46,7 +47,11 @@ func run(logger *slog.Logger) (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, database.Close()) }()
-	service := project.NewService(database, database, database, inspector)
+	definitions, err := catalog.New()
+	if err != nil {
+		return fmt.Errorf("装配离线组件目录失败")
+	}
+	service := project.NewService(database, database, database, inspector, definitions)
 	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger)
 	if err != nil {
 		return fmt.Errorf("装配 HTTP 契约失败")

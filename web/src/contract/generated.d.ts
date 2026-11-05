@@ -22,6 +22,17 @@ export interface Contract {
   sourceObservation?: SourceObservation
   pinSourceCommand?: PinSourceCommand
   sourceReceipt?: SourceReceipt
+  definitionRef?: DefinitionRef
+  portDefinition?: PortDefinition
+  nodeDefinition?: NodeDefinition
+  definitionCatalog?: DefinitionCatalog
+  middlewareNode?: MiddlewareNode
+  canvasState?: CanvasState
+  canvasSnapshot?: CanvasSnapshot
+  middlewareCommand?: MiddlewareCommand
+  canvasPosition?: CanvasPosition
+  canvasLayoutCommand?: CanvasLayoutCommand
+  canvasReceipt?: CanvasReceipt
 }
 /**
  * 版本一Position契约
@@ -210,4 +221,145 @@ export interface SourceReceipt {
   project: Project
   replayed: boolean
   sourceVersion: SourceVersion
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface DefinitionRef {
+  id: string
+  version: string
+  digest: string
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface PortDefinition {
+  id: string
+  role: 'provide' | 'consume'
+  protocol: string
+  contract: string
+  cardinality: 'one' | 'many'
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface NodeDefinition {
+  reference: DefinitionRef
+  kind: 'mysql'
+  title: string
+  configurationSchema: {}
+  /**
+   * @maxItems 20
+   */
+  ports: PortDefinition[]
+  image: string
+  adapter: string
+  effect: 'replace'
+  /**
+   * @maxItems 20
+   */
+  requiredForDeployment: string[]
+  /**
+   * @maxItems 20
+   */
+  requiredCapabilities: string[]
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface DefinitionCatalog {
+  schemaVersion: 1
+  digest: string
+  /**
+   * @maxItems 20
+   */
+  definitions: NodeDefinition[]
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface MiddlewareNode {
+  id: string
+  kind: 'mysql'
+  displayName: string
+  definition: DefinitionRef
+  /**
+   * 字段和值由固定定义版本的离线配置 schema 进一步校验；此容器不接受任意 schema 引用。
+   */
+  configuration: {
+    [k: string]: unknown
+  }
+  position: Position
+  /**
+   * @maxItems 20
+   */
+  notReadyReasons: string[]
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface CanvasState {
+  schemaVersion: 1
+  /**
+   * @maxItems 500
+   */
+  middlewares: MiddlewareNode[]
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface CanvasSnapshot {
+  project: Project
+  canvas: CanvasState
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface MiddlewareCommand {
+  mutationId: string
+  /**
+   * 无符号聚合版本，以十进制字符串传递，避免浏览器精度损失
+   */
+  baseRevision: string
+  definition: DefinitionRef
+  displayName: string
+  /**
+   * 字段和值由固定定义版本的离线配置 schema 进一步校验；此容器不接受任意 schema 引用。
+   */
+  configuration: {
+    [k: string]: unknown
+  }
+  position: Position
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface CanvasPosition {
+  componentId: string
+  x: number
+  y: number
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface CanvasLayoutCommand {
+  mutationId: string
+  /**
+   * 无符号聚合版本，以十进制字符串传递，避免浏览器精度损失
+   */
+  baseRevision: string
+  /**
+   * @maxItems 500
+   */
+  positions: CanvasPosition[]
+}
+/**
+ * 版本一增量标准组件与完整画布契约
+ */
+export interface CanvasReceipt {
+  mutationId: string
+  kind: 'addMiddleware' | 'updateMiddleware' | 'saveCanvasLayout'
+  project: Project
+  replayed: boolean
+  canvas: CanvasState
 }

@@ -44,6 +44,12 @@ func New(service *project.Service, host string, origins []string, webDirectory s
 	mux.HandleFunc("GET /api/v1/projects/{id}/services/{serviceId}/source", api.source)
 	mux.HandleFunc("PUT /api/v1/projects/{id}/services/{serviceId}/source", api.pinSource)
 	mux.HandleFunc("GET /api/v1/source-mutations/{id}", api.sourceReceipt)
+	mux.HandleFunc("GET /api/v1/catalog", api.catalog)
+	mux.HandleFunc("GET /api/v1/projects/{id}/canvas", api.canvas)
+	mux.HandleFunc("POST /api/v1/projects/{id}/canvas/middlewares", api.addMiddleware)
+	mux.HandleFunc("PUT /api/v1/projects/{id}/canvas/middlewares/{componentId}", api.updateMiddleware)
+	mux.HandleFunc("PUT /api/v1/projects/{id}/canvas/layout", api.canvasLayout)
+	mux.HandleFunc("GET /api/v1/canvas-mutations/{id}", api.canvasReceipt)
 	mux.HandleFunc("GET /api/v1/mutations/{id}", api.receipt)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		api.failure(w, project.Failure("NOT_FOUND", "接口不存在"))
@@ -118,8 +124,8 @@ func (api *API) receipt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value, err := api.service.Receipt(r.Context(), r.PathValue("id"))
-	if err == nil && value.Kind == "pinSource" {
-		api.failure(w, project.Failure("UNSUPPORTED_RECEIPT", "源码版本回执需通过源码核实入口读取"))
+	if err == nil && (value.Kind == "pinSource" || value.Canvas != nil) {
+		api.failure(w, project.Failure("UNSUPPORTED_RECEIPT", "此类型回执需通过对应的专用核实入口读取"))
 		return
 	}
 	api.result(w, value, err, http.StatusOK)
@@ -172,9 +178,9 @@ func (api *API) failure(w http.ResponseWriter, err error) {
 	if errors.As(err, &domain) {
 		failure = domain
 		switch domain.Code {
-		case "PROJECT_NOT_FOUND", "SERVICE_NOT_FOUND", "MUTATION_NOT_FOUND", "NOT_FOUND":
+		case "PROJECT_NOT_FOUND", "SERVICE_NOT_FOUND", "COMPONENT_NOT_FOUND", "MUTATION_NOT_FOUND", "NOT_FOUND":
 			status = http.StatusNotFound
-		case "DUPLICATE_REPOSITORY", "REVISION_CONFLICT", "IDEMPOTENCY_CONFLICT":
+		case "DUPLICATE_REPOSITORY", "REVISION_CONFLICT", "IDEMPOTENCY_CONFLICT", "DEFINITION_CONFLICT":
 			status = http.StatusConflict
 		case "RESULT_UNKNOWN":
 			status = http.StatusServiceUnavailable

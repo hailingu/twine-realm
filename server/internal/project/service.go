@@ -19,15 +19,16 @@ var idPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 
 // Service 是项目应用用例入口，未来身份中间件可在此边界外组合。
 type Service struct {
-	reader    Reader
-	writer    Writer
-	receipts  ReceiptReader
-	inspector Inspector
+	reader      Reader
+	writer      Writer
+	receipts    ReceiptReader
+	inspector   Inspector
+	definitions Definitions
 }
 
 // NewService 注入实际读取、原子写入、恢复与仓库观测端口。
-func NewService(reader Reader, writer Writer, receipts ReceiptReader, inspector Inspector) *Service {
-	return &Service{reader: reader, writer: writer, receipts: receipts, inspector: inspector}
+func NewService(reader Reader, writer Writer, receipts ReceiptReader, inspector Inspector, definitions Definitions) *Service {
+	return &Service{reader: reader, writer: writer, receipts: receipts, inspector: inspector, definitions: definitions}
 }
 
 // List 返回持久项目摘要，失败不伪装成空列表。

@@ -84,6 +84,7 @@ type Receipt struct {
 	Project       Project        `json:"project"`
 	Replayed      bool           `json:"replayed"`
 	SourceVersion *SourceVersion `json:"sourceVersion,omitempty"`
+	Canvas        *CanvasState   `json:"canvas,omitempty"`
 }
 
 // RepositorySource 只包含校验完成后的本机仓库观测。
@@ -97,6 +98,7 @@ type Reader interface {
 	List(context.Context) ([]Summary, error)
 	Get(context.Context, string) (Project, error)
 	Source(context.Context, string, string) (SourceVersion, error)
+	Canvas(context.Context, string) (CanvasSnapshot, error)
 }
 
 // Writer 原子提交领域修改及对应回执。
@@ -105,6 +107,8 @@ type Writer interface {
 	Register(context.Context, string, RegisterCommand, RepositorySource, [32]byte) (Receipt, error)
 	SaveLayout(context.Context, string, LayoutCommand, [32]byte) (Receipt, error)
 	PinSource(context.Context, string, string, PinSourceCommand, [32]byte) (Receipt, error)
+	PutMiddleware(context.Context, string, string, MiddlewareCommand, []string, [32]byte) (Receipt, error)
+	SaveCanvasLayout(context.Context, string, CanvasLayoutCommand, [32]byte) (Receipt, error)
 }
 
 // ReceiptReader 查询原始结果与请求摘要，用于结果未知时的恢复。

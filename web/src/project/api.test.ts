@@ -1,7 +1,7 @@
 /** 验证外部响应先通过发布契约，网络失败不被解释成成功。 */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseContract, PROJECT_API, RequestError } from './api'
-import { INITIAL_PROJECT, INITIAL_SOURCE, receipt, sourceReceipt } from '../testing/projectFixtures'
+import { EMPTY_CANVAS, INITIAL_CATALOG, INITIAL_PROJECT, INITIAL_SOURCE, MYSQL_NODE, canvasReceipt, receipt, sourceReceipt } from '../testing/projectFixtures'
 
 afterEach(() => { vi.unstubAllGlobals() })
 describe('API 信任边界', () => {
@@ -41,5 +41,31 @@ describe('API 信任边界', () => {
     expect(fetcher).toHaveBeenLastCalledWith(`/api/v1/source-mutations/${command.mutationId}`, expect.anything())
     expect(() => parseContract('Receipt', accepted)).toThrow(RequestError)
     expect(() => parseContract('SourceObservation', { ...INITIAL_SOURCE, git: { ...INITIAL_SOURCE.git, dirty: 'false' } })).toThrow(RequestError)
+  })
+  it('目录、完整画布及专用回执使用真实客户端边界，版本不一致时阻止编辑', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ project: INITIAL_PROJECT, canvas: EMPTY_CANVAS })))
+    vi.stubGlobal('fetch', fetcher)
+    await expect(PROJECT_API.canvas(INITIAL_PROJECT.id)).resolves.toMatchObject({ project: INITIAL_PROJECT, canvas: EMPTY_CANVAS })
+    fetcher.mockResolvedValue(new Response(JSON.stringify(INITIAL_CATALOG)))
+    await expect(PROJECT_API.catalog()).resolves.toEqual(INITIAL_CATALOG)
+    fetcher.mockResolvedValue(new Response(JSON.stringify({ ...INITIAL_CATALOG, digest: 'sha256:' + '0'.repeat(64) })))
+    await expect(PROJECT_API.catalog()).rejects.toThrow('版本不一致')
+    fetcher.mockResolvedValue(new Response(JSON.stringify({ ...INITIAL_CATALOG, definitions: [] })))
+    await expect(PROJECT_API.catalog()).rejects.toThrow('版本不一致')
+    const command = { mutationId: crypto.randomUUID(), baseRevision: '1', definition: MYSQL_NODE.definition, displayName: '数据库', configuration: {}, position: MYSQL_NODE.position }
+    const added = canvasReceipt(INITIAL_PROJECT, 'addMiddleware', command.mutationId, { schemaVersion: 1, middlewares: [MYSQL_NODE] })
+    fetcher.mockResolvedValue(new Response(JSON.stringify(added)))
+    await expect(PROJECT_API.addMiddleware(INITIAL_PROJECT.id, command)).resolves.toEqual(added)
+    fetcher.mockResolvedValue(new Response(JSON.stringify({ ...added, kind: 'updateMiddleware' })))
+    await PROJECT_API.updateMiddleware(INITIAL_PROJECT.id, MYSQL_NODE.id, command)
+    fetcher.mockResolvedValue(new Response(JSON.stringify(added)))
+    await expect(PROJECT_API.canvasReceipt(command.mutationId)).resolves.toEqual(added)
+    expect(() => parseContract('Receipt', added)).toThrow(RequestError)
+  })
+  it('普通数组类型保留同一运行时数量门槛，超限载荷仍拒绝', () => {
+    const definitions = Array.from({ length: 21 }, () => INITIAL_CATALOG.definitions[0])
+    expect(() => parseContract('DefinitionCatalog', { ...INITIAL_CATALOG, definitions })).toThrow(RequestError)
+    const middlewares = Array.from({ length: 501 }, () => MYSQL_NODE)
+    expect(() => parseContract('CanvasSnapshot', { project: INITIAL_PROJECT, canvas: { schemaVersion: 1, middlewares } })).toThrow(RequestError)
   })
 })

@@ -12,7 +12,7 @@ import (
 // TestInvalidCommands 用中文子场景验证输入失败不会产生待持久化的半成品。
 func TestInvalidCommands(t *testing.T) {
 	ctx := context.Background()
-	service := NewService(nil, nil, nil, nil)
+	service := NewService(nil, nil, nil, nil, nil)
 	const id = "00000000-0000-4000-8000-000000000001"
 	for _, test := range []struct {
 		name, code string

@@ -1,10 +1,10 @@
 /** 项目选择和创建拥有独立生命周期，创建结果不明时复用原请求身份。 */
 import { useEffect, useRef, useState } from 'react'
-import type { CreateCommand, Project, Summary } from '../contract/generated'
+import type { CreateCommand, CanvasSnapshot, Summary } from '../contract/generated'
 import { RequestError, type ProjectAPI } from './api'
 
 /** @param props 项目端口与打开回调 @returns 本地项目入口。 */
-export function ProjectPicker({ api, onOpen }: Readonly<{ api: ProjectAPI; onOpen: (project: Project) => void }>) {
+export function ProjectPicker({ api, onOpen }: Readonly<{ api: ProjectAPI; onOpen: (project: CanvasSnapshot) => void }>) {
   const [projects, setProjects] = useState<Summary[]>([])
   const [name, setName] = useState('')
   const [message, setMessage] = useState('正在读取本地项目…')
@@ -37,7 +37,7 @@ export function ProjectPicker({ api, onOpen }: Readonly<{ api: ProjectAPI; onOpe
     } finally { inFlight.current = false; if (!controller.signal.aborted) setBusy(false) }
   }
   return <main className="project-home">
-    <div className="intro"><p className="eyebrow">YOUR LOCAL WORKSPACE</p><h1>从一个仓库开始，<br /><span>连接你的构想。</span></h1><p className="intro-copy">把已有服务放上画布，整理它们的位置。<br />项目与仓库关联保存于本机。</p><div className="intro-art" aria-hidden="true"><span className="art-dot" /><div className="art-node">服务仓库<span>Git · 草稿</span></div><div className="art-corner" /></div><p className="scope-note">当前支持仓库登记与布局保存。服务仍是待配置草稿。</p></div>
+    <div className="intro"><p className="eyebrow">YOUR LOCAL WORKSPACE</p><h1>从一个仓库开始，<br /><span>连接你的构想。</span></h1><p className="intro-copy">把已有服务放上画布，整理它们的位置。<br />项目与仓库关联保存于本机。</p><div className="intro-art" aria-hidden="true"><span className="art-dot" /><div className="art-node">服务仓库<span>Git · 草稿</span></div><div className="art-corner" /></div><p className="scope-note">支持仓库登记、源码固定、MySQL 配置草稿与布局保存。组件尚未运行。</p></div>
     <section className="project-panel" aria-labelledby="projects-title"><div className="section-heading"><div><p className="eyebrow">PROJECTS</p><h2 id="projects-title">本地项目</h2></div><span className="count">{projects.length.toString().padStart(2, '0')}</span></div>
       <form onSubmit={event => { event.preventDefault(); if (!busy && !pending && name.trim()) void execute({ mutationId: crypto.randomUUID(), name: name.trim() }) }}><label htmlFor="project-name">新项目名称</label><div className="input-row"><input id="project-name" value={name} maxLength={80} placeholder="例如：我的服务空间" disabled={busy || !!pending} onChange={event => { setName(event.target.value) }} /><button type="submit" className="primary" disabled={busy || !!pending || !name.trim()}>{busy ? '处理中…' : '创建项目'}<span aria-hidden="true">↗</span></button></div></form>
       {message && <output className="notice">{message}</output>}
@@ -50,14 +50,14 @@ export function ProjectPicker({ api, onOpen }: Readonly<{ api: ProjectAPI; onOpe
 }
 
 /** @param api 外部端口 @param command 可恢复创建意图 @param id 已存在项目 @param verify 只核实原结果 @param signal 会话取消 @returns 已确认项目。 */
-async function loadSelectedProject(api: ProjectAPI, command: CreateCommand | null, id: string | undefined, verify: boolean, signal: AbortSignal): Promise<Project> {
+async function loadSelectedProject(api: ProjectAPI, command: CreateCommand | null, id: string | undefined, verify: boolean, signal: AbortSignal): Promise<CanvasSnapshot> {
   if (!command) {
     if (!id) throw new Error("缺少项目身份")
-    return api.get(id, signal)
+    return api.canvas(id, signal)
   }
   const receipt = verify ? await api.receipt(command.mutationId, signal) : await api.create(command, signal)
   if (receipt.mutationId !== command.mutationId || receipt.kind !== "createProject") {
     throw new RequestError({ code: "INVALID_RESPONSE", message: "创建回执不匹配，请核实原请求" }, 0)
   }
-  return receipt.project
+  return api.canvas(receipt.project.id, signal)
 }

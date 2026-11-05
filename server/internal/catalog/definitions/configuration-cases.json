@@ -1,0 +1,15 @@
+[
+  { "name": "缺省草稿", "configuration": {}, "valid": true },
+  { "name": "选择本机方案", "configuration": { "runtimeProfile": "local-compose-v1" }, "valid": true },
+  { "name": "内存下界", "configuration": { "memoryMiB": 256 }, "valid": true },
+  { "name": "内存上界", "configuration": { "memoryMiB": 8192 }, "valid": true },
+  { "name": "内存过小", "configuration": { "memoryMiB": 255 }, "valid": false },
+  { "name": "内存过大", "configuration": { "memoryMiB": 8193 }, "valid": false },
+  { "name": "非整数", "configuration": { "memoryMiB": 512.5 }, "valid": false },
+  { "name": "禁止隐式空值", "configuration": { "memoryMiB": null }, "valid": false },
+  { "name": "未知字符集", "configuration": { "charset": "latin1" }, "valid": false },
+  { "name": "未知排序规则", "configuration": { "collation": "other" }, "valid": false },
+  { "name": "拒绝秘密字段", "configuration": { "password": "dummy-only" }, "valid": false },
+  { "name": "拒绝任意引用", "configuration": { "$ref": "file:///not-a-schema" }, "valid": false },
+  { "name": "未知运行方案", "configuration": { "runtimeProfile": "other" }, "valid": false }
+]

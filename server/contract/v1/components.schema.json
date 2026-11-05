@@ -1,0 +1,398 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twine-realm.local/contract/v1/components.schema.json",
+  "title": "ComponentContract",
+  "$defs": {
+    "DefinitionRef": {
+      "title": "DefinitionRef",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "digest"
+      ]
+    },
+    "PortDefinition": {
+      "title": "PortDefinition",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "role": {
+          "enum": [
+            "provide",
+            "consume"
+          ]
+        },
+        "protocol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "contract": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "cardinality": {
+          "enum": [
+            "one",
+            "many"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "protocol",
+        "contract",
+        "cardinality"
+      ]
+    },
+    "NodeDefinition": {
+      "title": "NodeDefinition",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "kind": {
+          "const": "mysql"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "configurationSchema": {
+          "type": "object"
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortDefinition"
+          },
+          "maxItems": 20
+        },
+        "image": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "adapter": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "effect": {
+          "const": "replace"
+        },
+        "requiredForDeployment": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "maxItems": 20
+        },
+        "requiredCapabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "reference",
+        "kind",
+        "title",
+        "configurationSchema",
+        "ports",
+        "image",
+        "adapter",
+        "effect",
+        "requiredForDeployment",
+        "requiredCapabilities"
+      ]
+    },
+    "DefinitionCatalog": {
+      "title": "DefinitionCatalog",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "definitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NodeDefinition"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "digest",
+        "definitions"
+      ]
+    },
+    "MiddlewareNode": {
+      "title": "MiddlewareNode",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "kind": {
+          "const": "mysql"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "definition": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "configuration": {
+          "type": "object",
+          "maxProperties": 20,
+          "additionalProperties": true,
+          "description": "字段和值由固定定义版本的离线配置 schema 进一步校验；此容器不接受任意 schema 引用。"
+        },
+        "position": {
+          "$ref": "./schema.json#/$defs/Position"
+        },
+        "notReadyReasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "displayName",
+        "definition",
+        "configuration",
+        "position",
+        "notReadyReasons"
+      ]
+    },
+    "CanvasState": {
+      "title": "CanvasState",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "middlewares": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MiddlewareNode"
+          },
+          "maxItems": 500
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "middlewares"
+      ]
+    },
+    "CanvasSnapshot": {
+      "title": "CanvasSnapshot",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "project": {
+          "$ref": "./schema.json#/$defs/Project"
+        },
+        "canvas": {
+          "$ref": "#/$defs/CanvasState"
+        }
+      },
+      "required": [
+        "project",
+        "canvas"
+      ]
+    },
+    "MiddlewareCommand": {
+      "title": "MiddlewareCommand",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "baseRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "无符号聚合版本，以十进制字符串传递，避免浏览器精度损失"
+        },
+        "definition": {
+          "$ref": "#/$defs/DefinitionRef"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "configuration": {
+          "type": "object",
+          "maxProperties": 20,
+          "additionalProperties": true,
+          "description": "字段和值由固定定义版本的离线配置 schema 进一步校验；此容器不接受任意 schema 引用。"
+        },
+        "position": {
+          "$ref": "./schema.json#/$defs/Position"
+        }
+      },
+      "required": [
+        "mutationId",
+        "baseRevision",
+        "definition",
+        "displayName",
+        "configuration",
+        "position"
+      ]
+    },
+    "CanvasPosition": {
+      "title": "CanvasPosition",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "componentId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "componentId",
+        "x",
+        "y"
+      ]
+    },
+    "CanvasLayoutCommand": {
+      "title": "CanvasLayoutCommand",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "baseRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "无符号聚合版本，以十进制字符串传递，避免浏览器精度损失"
+        },
+        "positions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CanvasPosition"
+          },
+          "maxItems": 500
+        }
+      },
+      "required": [
+        "mutationId",
+        "baseRevision",
+        "positions"
+      ]
+    },
+    "CanvasReceipt": {
+      "title": "CanvasReceipt",
+      "description": "版本一增量标准组件与完整画布契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "kind": {
+          "enum": [
+            "addMiddleware",
+            "updateMiddleware",
+            "saveCanvasLayout"
+          ]
+        },
+        "project": {
+          "$ref": "./schema.json#/$defs/Project"
+        },
+        "replayed": {
+          "type": "boolean"
+        },
+        "canvas": {
+          "$ref": "#/$defs/CanvasState"
+        }
+      },
+      "required": [
+        "mutationId",
+        "kind",
+        "project",
+        "replayed",
+        "canvas"
+      ]
+    }
+  }
+}
