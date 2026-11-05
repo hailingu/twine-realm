@@ -25,7 +25,7 @@ Git hook 要求全部受检源码 / 配置与索引一致，防止仅把无告�
 
 ## 可执行负例
 
-- `scripts/check-command.node.mjs`：真实子进程输出 Go / TS / 链接器 / Node / npm / Vite 标准 warning，退出码为 0，检查仍拒绝。
+- `scripts/check-command.node.mjs`：真实子进程输出 Go / TS / 链接器 / Node / npm / Vite 标准 warning，以及 React 重复 key / 缺 key 告警，退出码为 0，检查仍拒绝。
 - `web/src/testing/buildWarnings.test.ts`：真实 Vite 插件 `this.warn` 让构建失败；真实 ESLint 只报 warning 时仍返回非零。
 - `scripts/precommit.node.mjs`：临时真实 Git 仓库验证部分暂存 / 检查期间索引变化拒绝、已有 hook 配置不被覆盖；真实 commit 经过 hook 和诊断检查后失败，不产生 HEAD。不会对用户仓库执行测试提交。
 - 同一测试还在自有 linked worktree 的真实 hook 中经完整门禁入口启动嵌套 Git，核对调用仓库索引、配置和父分支未被检查过程改写；正例只提交测试自有仓库。编排边界同时验证所有子工具、平台检查和扫描器得到隔离环境，调用者环境保持不变。

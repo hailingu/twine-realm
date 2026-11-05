@@ -10,7 +10,8 @@ function isWarningLine(input) {
   }
   const lower = line.toLowerCase()
   return lower.startsWith('(!) ') || lower.startsWith('npm warn ') || /^warn(?:ing)?\b/i.test(line) ||
-    /\bwarning(?: TS\d+|:)/i.test(line) || lower.includes('deprecationwarning') || lower.includes('experimentalwarning')
+    /\bwarning(?: TS\d+|:)/i.test(line) || lower.includes('deprecationwarning') || lower.includes('experimentalwarning') ||
+    lower.startsWith('encountered two children with the same key,') || lower.startsWith('each child in a list should have a unique "key" prop')
 }
 
 /** 校验退出结果及可识别的编译器 / 工具告警；普通提示不伪装成代码告警。 */

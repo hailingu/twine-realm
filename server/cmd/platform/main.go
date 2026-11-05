@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -36,13 +34,15 @@ func run(logger *slog.Logger) (err error) {
 	if err != nil {
 		return err
 	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	inspector, err := gitworkspace.New(configuration.RepositoryRoots)
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	database, err := store.Open(ctx, configuration.DSN)
-	cancel()
+	starting, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	database, err := store.Open(starting, configuration.DSN)
 	if err != nil {
 		return err
 	}
@@ -51,41 +51,16 @@ func run(logger *slog.Logger) (err error) {
 	if err != nil {
 		return fmt.Errorf("装配离线组件目录失败")
 	}
+	running, err := configureRuntime(starting, configuration, database, definitions, logger)
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, running.close()) }()
+	cancel()
 	service := project.NewService(database, database, database, inspector, definitions)
-	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger)
+	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger, running.service)
 	if err != nil {
 		return fmt.Errorf("装配 HTTP 契约失败")
 	}
-	listener, err := net.Listen("tcp", configuration.Address)
-	if err != nil {
-		return fmt.Errorf("本机监听失败，请检查端口是否占用")
-	}
-	server := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 * 1024}
-	stopped := make(chan error, 1)
-	go func() { stopped <- server.Serve(listener) }()
-	logger.Info("平台已就绪", "address", configuration.Address)
-	return serveUntilSignal(server, stopped)
-}
-
-// serveUntilSignal 等待退出信号并等待在途请求完成，进程重启不清空元数据。
-func serveUntilSignal(server *http.Server, stopped <-chan error) error {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-	select {
-	case err := <-stopped:
-		if !errors.Is(err, http.ErrServerClosed) {
-			return fmt.Errorf("本机服务异常停止")
-		}
-		return nil
-	case <-ctx.Done():
-		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := server.Shutdown(shutdown); err != nil {
-			return errors.Join(fmt.Errorf("本机服务未能正常退出"), server.Close())
-		}
-		if err := <-stopped; !errors.Is(err, http.ErrServerClosed) {
-			return fmt.Errorf("本机服务退出失败")
-		}
-		return nil
-	}
+	return listenAndServe(ctx, configuration.Address, handler, running.worker, logger)
 }

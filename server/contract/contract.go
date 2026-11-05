@@ -4,10 +4,12 @@ package contract
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
 
+	"github.com/hailingu/twine-realm/server/internal/catalog"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
@@ -19,6 +21,9 @@ func Load() (map[string]*jsonschema.Schema, error) {
 	compiler := jsonschema.NewCompiler()
 	compiler.AssertFormat = true
 	compiler.LoadURL = func(string) (io.ReadCloser, error) { return nil, fmt.Errorf("接口契约不解析外部引用") }
+	if err := registerCatalogSchemas(compiler); err != nil {
+		return nil, err
+	}
 	if err := registerResources(compiler); err != nil {
 		return nil, err
 	}
@@ -27,7 +32,7 @@ func Load() (map[string]*jsonschema.Schema, error) {
 		location string
 		names    []string
 	}{
-		{"v1/schema.json", []string{"CreateCommand", "RegisterCommand", "LayoutCommand", "Project", "ProjectList", "Receipt", "ErrorResponse", "PinSourceCommand", "SourceObservation", "SourceReceipt", "MiddlewareCommand", "CanvasLayoutCommand", "DefinitionCatalog", "CanvasSnapshot", "CanvasReceipt"}},
+		{"v1/schema.json", []string{"CreateCommand", "RegisterCommand", "LayoutCommand", "Project", "ProjectList", "Receipt", "ErrorResponse", "PinSourceCommand", "SourceObservation", "SourceReceipt", "MiddlewareCommand", "CanvasLayoutCommand", "DefinitionCatalog", "CanvasSnapshot", "CanvasReceipt", "RuntimeCommand", "RuntimeReceipt", "RuntimeSnapshot", "RuntimeOperation", "RuntimeCapability", "RuntimeEventPage"}},
 		{"v2/graph.schema.json", []string{"ServiceContractDocument", "GraphEditCommand", "GraphSnapshot", "GraphReceipt"}},
 	} {
 		for _, name := range group.names {
@@ -56,4 +61,24 @@ func registerResources(compiler *jsonschema.Compiler) error {
 		}
 		return compiler.AddResource("https://twine-realm.local/contract/"+path, bytes.NewReader(data))
 	})
+}
+
+// registerCatalogSchemas 只注册随平台发布的离线配置，运行契约不复制另一套字段约束。
+func registerCatalogSchemas(compiler *jsonschema.Compiler) error {
+	definitions, err := catalog.New()
+	if err != nil {
+		return fmt.Errorf("运行契约的固定目录不可用")
+	}
+	for _, definition := range definitions.List().Definitions {
+		var header struct {
+			ID string `json:"$id"`
+		}
+		if json.Unmarshal(definition.ConfigurationSchema, &header) != nil || header.ID == "" {
+			return fmt.Errorf("目录配置缺少固定schema身份")
+		}
+		if err := compiler.AddResource(header.ID, bytes.NewReader(definition.ConfigurationSchema)); err != nil {
+			return fmt.Errorf("目录配置无法注册到运行契约")
+		}
+	}
+	return nil
 }

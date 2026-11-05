@@ -7,12 +7,16 @@ import { Canvas } from './Canvas'
 import { useWorkspace } from './useWorkspace'
 import { SourceVersionPanel } from './SourceVersion'
 import { MySQLPanel } from './MySQLPanel'
+import type { RuntimeAPI } from '../runtime/api'
+import { useRuntime } from '../runtime/useRuntime'
+import { RuntimePanel } from '../runtime/RuntimePanel'
 import { GraphInspector } from './GraphInspector'
 import { bindingCandidate, type BindingCandidate } from './graphModel'
 
 /** @param props 初始确认项目、HTTP 端口与退出命令 @returns 服务登记和布局工作区。 */
-export function Workspace({ initial, initialCanvas, initialGraph, api, onClose }: Readonly<{ initial: Project; initialCanvas?: CanvasState; initialGraph?: GraphState; api: ProjectAPI; onClose: () => void }>) {
+export function Workspace({ initial, initialCanvas, initialGraph, api, runtimeApi, onClose }: Readonly<{ initial: Project; initialCanvas?: CanvasState; initialGraph?: GraphState; api: ProjectAPI; runtimeApi?: RuntimeAPI; onClose: () => void }>) {
   const workspace = useWorkspace(initial, api, initialCanvas, initialGraph)
+  const runtime = useRuntime(runtimeApi, initial.id)
   const [path, setPath] = useState('')
   const [name, setName] = useState('')
   const [sourceId, setSourceId] = useState<string | null>(null)
@@ -30,8 +34,8 @@ export function Workspace({ initial, initialCanvas, initialGraph, api, onClose }
     const target = connection.targetHandle ? { componentId: connection.target, portId: connection.targetHandle } : null
     setCandidate(bindingCandidate(source, target, canvas.bindings.find(binding => binding.id === bindingId)))
   }
-  return <main className="workspace"><div className="workspace-toolbar"><div className="project-title"><button type="button" className="back-button" onClick={handleClose} disabled={blocked} aria-label="返回项目列表">←</button><div><span className="eyebrow">PROJECT / LOCAL</span><h1>{snapshot.name}</h1></div></div><div className="save-actions"><output className={`save-status ${dirty || blocked ? 'unsaved' : ''}`}><i />{status}</output><button type="button" disabled={!dirty || blocked} onClick={workspace.discard}>还原布局</button><button type="button" className="primary" disabled={!dirty || blocked} onClick={workspace.save}>保存布局<span aria-hidden="true">↗</span></button></div></div>
-    <div className="workspace-body"><Canvas project={snapshot} canvas={canvas} draft={draft} blocked={blocked} connectionBlocked={blocked || dirty} onMove={workspace.move} onConnect={proposeBinding} onReconnect={(id, connection) => { proposeBinding(connection, id) }} /><aside className="inspector"><button type="button" className="catalog-add" disabled={blocked || dirty} onClick={() => { setMysqlSelection(null) }}>＋ MySQL 组件</button><div className="inspector-title"><span className="eyebrow">ADD A SERVICE</span><h2>登记本地仓库</h2><p>已有代码，一个清晰的位置。</p></div>
+  return <main className="workspace"><div className="workspace-toolbar"><div className="project-title"><button type="button" className="back-button" onClick={handleClose} disabled={blocked} aria-label="返回项目列表">←</button><div><span className="eyebrow">PROJECT / LOCAL</span><h1>{snapshot.name}</h1></div></div><div className="save-actions"><output aria-label="画布保存状态" className={`save-status ${dirty || blocked ? 'unsaved' : ''}`}><i />{status}</output><button type="button" disabled={!dirty || blocked} onClick={workspace.discard}>还原布局</button><button type="button" className="primary" disabled={!dirty || blocked} onClick={workspace.save}>保存布局<span aria-hidden="true">↗</span></button></div></div>
+    <div className="workspace-body"><Canvas project={snapshot} canvas={canvas} draft={draft} blocked={blocked} connectionBlocked={blocked || dirty} runtime={runtime.state} onMove={workspace.move} onConnect={proposeBinding} onReconnect={(id, connection) => { proposeBinding(connection, id) }} /><aside className="inspector"><button type="button" className="catalog-add" disabled={blocked || dirty} onClick={() => { setMysqlSelection(null) }}>＋ MySQL 组件</button><div className="inspector-title"><span className="eyebrow">ADD A SERVICE</span><h2>登记本地仓库</h2><p>已有代码，一个清晰的位置。</p></div>
       <form className="repository-form" onSubmit={event => { event.preventDefault(); workspace.register(path.trim(), name) }}><label htmlFor="repository-path">Git 工作区路径<span>必填</span></label><input id="repository-path" placeholder="/Users/you/projects/my-service" value={path} disabled={blocked || dirty} onChange={event => { setPath(event.target.value) }} required maxLength={4096} autoComplete="off" spellCheck={false} /><p className="field-help">使用启动时配置的允许目录内的绝对路径。</p><label htmlFor="service-name">服务显示名称<span>可选</span></label><input id="service-name" placeholder="默认使用仓库目录名" value={name} disabled={blocked || dirty} maxLength={80} onChange={event => { setName(event.target.value) }} /><button type="submit" className="primary full-width" disabled={blocked || dirty || !path.trim()}>＋ 加入画布</button>{dirty && <p className="field-help">先保存或还原布局，再加入新服务。</p>}</form>
       <div className="boundary-note"><span aria-hidden="true">◈</span><p>只读登记已有仓库。<br />节点保持待配置状态，仓库内容由你管理。</p></div>
       {save.kind === 'rejected' && <div className="notice error" role="alert"><strong>本次请求未保存</strong><p>{save.message}</p>{save.conflict && <button type="button" onClick={workspace.rebase}>载入最新版本并保留我的位置</button>}</div>}
@@ -39,6 +43,7 @@ export function Workspace({ initial, initialCanvas, initialGraph, api, onClose }
       <CoordinateList project={snapshot} draft={draft} blocked={blocked} onMove={workspace.move} onSource={setSourceId} />
       <MiddlewareList nodes={canvas.middlewares} draft={draft} blocked={blocked} onMove={workspace.move} onSelect={setMysqlSelection} />
       {mysqlSelection !== false && <MySQLPanel key={mysqlSelection ?? 'new-mysql'} api={api} node={selectedMySQL} blocked={blocked || dirty} onSave={input => { workspace.middleware(selectedMySQL?.id ?? null, input) }} />}
+      {selectedMySQL && <RuntimePanel key={`runtime-${selectedMySQL.id}`} projectId={snapshot.id} revision={snapshot.revision} node={selectedMySQL} runtime={runtime} api={runtimeApi} blocked={blocked || dirty} />}
       {selected && <SourceVersionPanel key={selected.id} projectId={snapshot.id} revision={snapshot.revision} node={selected} api={api} saved={workspace.sources[selected.id]} blocked={blocked} dirty={dirty} onPin={commit => { workspace.pin(selected.id, commit) }} />}
       <GraphInspector project={snapshot} graph={canvas} blocked={blocked || dirty} selectedId={contractId} candidate={candidate} onSelect={setContractId} onCandidate={setCandidate} onEdit={workspace.editGraph} />
       <footer className="inspector-foot">项目 ID <code>{snapshot.id}</code></footer>

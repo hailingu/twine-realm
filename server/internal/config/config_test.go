@@ -31,3 +31,29 @@ func TestLocalConfiguration(t *testing.T) {
 		}
 	})
 }
+
+// TestExplicitRuntimeConfiguration 运行能力必须由完整组合显式启用，缺省和部分配置不发生静默降级。
+func TestExplicitRuntimeConfiguration(t *testing.T) {
+	t.Setenv("TWINE_ADDRESS", "127.0.0.1:8080")
+	t.Setenv("TWINE_DATABASE_DSN", "受控注入")
+	t.Setenv("TWINE_REPOSITORY_ROOTS", `["/tmp/repos"]`)
+	t.Setenv("TWINE_DEV_ORIGIN", "")
+	for _, scenario := range []struct {
+		adapter, directory string
+		valid              bool
+	}{
+		{"", "", true}, {"file-secrets-v1", "/tmp/private-runtime", true}, {"file-secrets-v1", "", false}, {"", "/tmp/private-runtime", false}, {"unknown-adapter", "/tmp/private-runtime", false},
+	} {
+		t.Run(scenario.adapter+scenario.directory, func(t *testing.T) {
+			t.Setenv("TWINE_RUNTIME_ADAPTER", scenario.adapter)
+			t.Setenv("TWINE_RUNTIME_DIRECTORY", scenario.directory)
+			value, err := Load()
+			if (err == nil) != scenario.valid {
+				t.Fatal("显式运行组合校验不符合边界")
+			}
+			if err == nil && (value.RuntimeAdapter != scenario.adapter || value.RuntimeDirectory != scenario.directory) {
+				t.Fatal("运行配置被隐式替换")
+			}
+		})
+	}
+}

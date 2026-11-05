@@ -92,6 +92,42 @@
     },
     "canvasReceipt": {
       "$ref": "#/$defs/CanvasReceipt"
+    },
+    "runtimeConfiguration": {
+      "$ref": "#/$defs/RuntimeConfiguration"
+    },
+    "runtimeCommand": {
+      "$ref": "#/$defs/RuntimeCommand"
+    },
+    "runtimeResource": {
+      "$ref": "#/$defs/RuntimeResource"
+    },
+    "runtimeTarget": {
+      "$ref": "#/$defs/RuntimeTarget"
+    },
+    "runtimeStep": {
+      "$ref": "#/$defs/RuntimeStep"
+    },
+    "runtimeOperation": {
+      "$ref": "#/$defs/RuntimeOperation"
+    },
+    "runtimeReceipt": {
+      "$ref": "#/$defs/RuntimeReceipt"
+    },
+    "runtimeObservation": {
+      "$ref": "#/$defs/RuntimeObservation"
+    },
+    "runtimeSnapshot": {
+      "$ref": "#/$defs/RuntimeSnapshot"
+    },
+    "runtimeCapability": {
+      "$ref": "#/$defs/RuntimeCapability"
+    },
+    "runtimeEvent": {
+      "$ref": "#/$defs/RuntimeEvent"
+    },
+    "runtimeEventPage": {
+      "$ref": "#/$defs/RuntimeEventPage"
     }
   },
   "$defs": {
@@ -693,6 +729,42 @@
     },
     "CanvasReceipt": {
       "$ref": "./components.schema.json#/$defs/CanvasReceipt"
+    },
+    "RuntimeConfiguration": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeConfiguration"
+    },
+    "RuntimeCommand": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeCommand"
+    },
+    "RuntimeResource": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeResource"
+    },
+    "RuntimeTarget": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeTarget"
+    },
+    "RuntimeStep": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeStep"
+    },
+    "RuntimeOperation": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeOperation"
+    },
+    "RuntimeReceipt": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeReceipt"
+    },
+    "RuntimeObservation": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeObservation"
+    },
+    "RuntimeSnapshot": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeSnapshot"
+    },
+    "RuntimeCapability": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeCapability"
+    },
+    "RuntimeEvent": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeEvent"
+    },
+    "RuntimeEventPage": {
+      "$ref": "./runtime.schema.json#/$defs/RuntimeEventPage"
     }
   }
 }

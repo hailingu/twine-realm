@@ -86,4 +86,4 @@ MySQL DDL 不按跨步骤可整体回滚设计；迁移中断、连接丢失或�
 | 数据库断连、服务就绪失败或宿主端口冲突 | 具体原因与实际入口可查，不误报成功、不误连其他服务 |
 | schema 升级与凭据轮换 | 原版本仍可追溯；升级 / 重新注入单独记录，旧任务不能覆盖新绑定 |
 
-已发布 MySQL 1.0.0 离线配置 / 端口包及 v2 服务依赖声明，具体边界见[组件目录](../development/component-catalog-slice.md)与[服务连线](../development/service-bindings-slice.md)。真实运行、账号与注入适配仍待后续；其他标准中间件按相同发布规则增加各自的配置、端口和连接契约，不因设计中出现名称就视为已支持。
+已发布 MySQL 1.0.0 离线配置 / 端口包及 v2 服务依赖声明，边界见[组件目录](../development/component-catalog-slice.md)与[服务连线](../development/service-bindings-slice.md)。[运行切片](../development/mysql-runtime-slice.md)提供每项目一个固定实例、文件秘密、私网 / 持久卷、认证就绪和保留数据停止恢复；业务账号、绑定注入、业务迁移和服务访问仍待后续。其他标准中间件按相同规则发布各自契约，不因设计中出现名称就视为已支持。

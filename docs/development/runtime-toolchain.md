@@ -9,7 +9,7 @@
 | Go（平台服务） | **1.27.x**（验证 1.27.3） | 默认 1.25.6；本任务独立工具链 1.27.3 | `server/go.mod` 锁定 1.27，未替换全局工具 |
 | Node.js（前端与工具） | **26 LTS** | 默认 22.15.0；本任务 26.13.0 | `.nvmrc` 和根 / 前端 engines 已同步，未替换全局工具 |
 | npm | Node 26 随附 11.20.0 | 默认 10.9.2；本任务 11.20.0 | 根与 web 各自锁文件，单一包管理器 |
-| MySQL（平台元数据） | **9.7.4 LTS** | 临时 Docker 集成验证 | `deploy/compose.yaml` 和测试所有者固定 tag + digest；业务 MySQL 目录尚未实现 |
+| MySQL（平台元数据及首个项目实例） | **9.7.4 LTS** | 两类独立临时容器验证 | `deploy/compose.yaml`、内置目录和运行适配器固定相同 tag + digest；网络、卷与凭据隔离，项目库不发布宿主端口 |
 | Docker / Compose | Docker 29.x / Compose v5.x | 29.9.2 / v5.6.1 | 已满足；compose 文件锁定 `version` 语义，不依赖已弃用的顶层 version 字段 |
 | React / React Flow | React 19.3.1 / `@xyflow/react` 12.12.1 | 已建前端工程 | `web/package.json` / 锁文件固定实际依赖 |
 | SonarQube 服务（本地门禁） | 本地 docker 社区版 | 26.8.0（`localhost:9000`，项目 `twine-realm` 已建立） | 已满足；服务地址与凭据只经环境注入，不入库 |

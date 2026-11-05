@@ -62,6 +62,18 @@ export interface Contract {
   canvasPosition?: CanvasPosition
   canvasLayoutCommand?: CanvasLayoutCommand
   canvasReceipt?: CanvasReceipt
+  runtimeConfiguration?: RuntimeConfiguration
+  runtimeCommand?: RuntimeCommand
+  runtimeResource?: RuntimeResource
+  runtimeTarget?: RuntimeTarget
+  runtimeStep?: RuntimeStep
+  runtimeOperation?: RuntimeOperation
+  runtimeReceipt?: RuntimeReceipt
+  runtimeObservation?: RuntimeObservation
+  runtimeSnapshot?: RuntimeSnapshot
+  runtimeCapability?: RuntimeCapability
+  runtimeEvent?: RuntimeEvent
+  runtimeEventPage?: RuntimeEventPage
   serviceInterface?: ServiceInterface
   servicePort?: ServicePort
   serviceContractDocument?: ServiceContractDocument
@@ -403,6 +415,156 @@ export interface CanvasReceipt {
   project: Project
   replayed: boolean
   canvas: CanvasState
+}
+export interface RuntimeConfiguration {
+  charset: 'utf8mb4'
+  collation: 'utf8mb4_0900_ai_ci'
+  memoryMiB: number
+  runtimeProfile: 'local-compose-v1'
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeCommand {
+  mutationId: string
+  baseRevision: string
+  baseGeneration: string
+  desired: 'running' | 'stopped'
+  retryOf?: string
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeResource {
+  id: string
+  installationId: string
+  daemonId: string
+  projectId: string
+  componentId: string
+  definition: DefinitionRef
+  configuration: RuntimeConfiguration
+  configurationHash: string
+  image: 'mysql:9.7.4@sha256:df90258da46f6e7ff8574ff84f17618aba0765cac749928299c69fd4e7cb8ad8'
+  network: string
+  volume: string
+  container: string
+  secretRef: string
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeTarget {
+  id: string
+  projectId: string
+  generation: string
+  desired: 'running' | 'stopped'
+  resource: RuntimeResource
+  createdAt: string
+  canvasRevision: string
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeStep {
+  name: 'preflight' | 'credentials' | 'network' | 'volume' | 'container' | 'readiness' | 'stop' | 'stopped'
+  state: 'pending' | 'executing' | 'unknown' | 'succeeded' | 'failed' | 'skipped'
+  code: string
+  externalId: string
+  updatedAt: string
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeOperation {
+  mutationId: string
+  id: string
+  projectId: string
+  generation: string
+  state: 'accepted' | 'executing' | 'waiting_retry' | 'needs_attention' | 'succeeded' | 'failed' | 'superseded'
+  version: string
+  attempts: number
+  code: string
+  message: string
+  retryOf: '' | string
+  createdAt: string
+  updatedAt: string
+  /**
+   * @minItems 3
+   * @maxItems 6
+   */
+  steps: [RuntimeStep, RuntimeStep, RuntimeStep, ...RuntimeStep[]]
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeReceipt {
+  schemaVersion: 1
+  mutationId: string
+  operationId: string
+  target: RuntimeTarget
+  replayed: boolean
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeObservation {
+  state: 'not_created' | 'running' | 'stopped' | 'drifted'
+  running: boolean
+  ready: boolean
+  serverUuid: '' | string
+  containerId: string
+  volumeFound: boolean
+  observedAt: string
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeSnapshot {
+  schemaVersion: 1
+  projectId: string
+  generation: string
+  sequence: string
+  target: RuntimeTarget | null
+  operation: RuntimeOperation | null
+  observation: RuntimeObservation | null
+  freshness: 'fresh' | 'stale' | 'unknown'
+  observationCode: string
+  lastAttemptAt: '' | string
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeCapability {
+  schemaVersion: 1
+  enabled: boolean
+  adapter: '' | 'file-secrets-v1'
+  code: string
+  message: string
+  image: 'mysql:9.7.4@sha256:df90258da46f6e7ff8574ff84f17618aba0765cac749928299c69fd4e7cb8ad8'
+  composeVersion: string
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeEvent {
+  sequence: string
+  operationId: string
+  generation: string
+  kind: string
+  code: string
+  createdAt: string
+}
+/**
+ * 本机持久MySQL运行v1契约，不含秘密值
+ */
+export interface RuntimeEventPage {
+  schemaVersion: 1
+  /**
+   * @maxItems 100
+   */
+  events: RuntimeEvent[]
+  nextSequence: string
+  hasMore: boolean
 }
 /**
  * 版本二服务契约与数据库依赖声明

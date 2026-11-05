@@ -46,6 +46,9 @@ func Open(ctx context.Context, dsn string) (*Store, error) {
 	if err := migrateSchema(db); err != nil {
 		return nil, errors.Join(err, db.Close())
 	}
+	if err := migrateRuntimeSchema(ctx, db); err != nil {
+		return nil, errors.Join(err, db.Close())
+	}
 	if err := db.Close(); err != nil {
 		return nil, fmt.Errorf("关闭迁移连接失败")
 	}

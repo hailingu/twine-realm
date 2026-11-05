@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-已建立 [Issue #1 / #2 本地与源码切片](local-project-slice.md) 、[Issue #6 组件目录切片](component-catalog-slice.md)及 [Issue #8 服务连线切片](service-bindings-slice.md)：Go 服务、React / React Flow 画布、源码固定、标准 MySQL 草稿、服务自有接口 / 具名依赖和平台库 Compose。根 `test:platform` 验证真实数据库、Git、浏览器与重启；`quality:gate` 另含本次 Sonar。其余长期能力仍为目标。
+已建立 [Issue #1 / #2 本地与源码切片](local-project-slice.md) 、[Issue #6 组件目录切片](component-catalog-slice.md)、[Issue #8 服务连线切片](service-bindings-slice.md)、[Issue #10 Go 工程包](service-profile-slice.md)和[Issue #12 MySQL 运行切片](mysql-runtime-slice.md)：Go 服务、React / React Flow 画布、源码固定、标准 MySQL 草稿、服务自有接口 / 具名依赖、离线工程模板及显式 MySQL 运行 / 数据保留恢复。根 `test:platform` 验证真实数据库、Git、浏览器、项目 Compose、认证与重启；`quality:gate` 另含本次 Sonar。其余长期能力仍为目标。
 
 平台目标形态见[平台设计概览](../platform-design/README.md)。`main` 分支的能力实验室、模拟器是历史演示，不约束新实现，也不作为可复用代码来源。
 
@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | [本地项目切片](local-project-slice.md) | 运行 / 调试 Issue #1 | 契约、持久化、只读 Git、恢复和一期安全 |
 | [标准组件目录切片](component-catalog-slice.md) | Issue #6 的 MySQL 配置草稿 | 离线 schema、固定版本、统一布局与回执 |
+| [MySQL 运行切片](mysql-runtime-slice.md) | Issue #12 运行 / 恢复变更 | 显式初始化、文件秘密、不可变目标、执行围栏、真实认证及保留数据停止 |
 | [Go 工程包与模板](service-profile-slice.md) | Issue #10 首个业务组合 | 离线规范、相对引用、核实 / 安全导出、真实迁移与生命周期检查 |
 | [服务契约与依赖连线](service-bindings-slice.md) | Issue #8 的具名端口和 MySQL 依赖声明 | 自有多接口版本、最终图校验、原子编辑和恢复 |
 | [开发工作流](workflow.md) | 开始任务、规划切片时 | 技术方向、状态矩阵、独立分支 / worktree、PR 合入 develop、同步与安全清理 |

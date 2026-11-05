@@ -4,7 +4,7 @@ import test from 'node:test'
 import { assertCleanResult, checkCommand } from './check-command.mjs'
 
 test('代码诊断为告警时，即使工具返回零也拒绝', async () => {
-  for (const diagnostic of ['file.go:1:1: warning: controlled', 'warning TS1234: controlled', '[plugin:example] warning: controlled', '(node:1) DeprecationWarning: controlled', 'ld: warning: controlled', '(!) controlled build diagnostic', 'npm warn controlled']) {
+  for (const diagnostic of ['file.go:1:1: warning: controlled', 'warning TS1234: controlled', '[plugin:example] warning: controlled', '(node:1) DeprecationWarning: controlled', 'ld: warning: controlled', '(!) controlled build diagnostic', 'npm warn controlled', 'Encountered two children with the same key, controlled.', 'Each child in a list should have a unique "key" prop.']) {
     await assert.rejects(checkCommand(process.execPath, ['-e', 'process.stderr.write(process.argv[1])', diagnostic], {}, { write: () => {} }), /QUALITY_WARNING_REJECTED/)
   }
 })

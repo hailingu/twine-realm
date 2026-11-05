@@ -12,16 +12,24 @@ import (
 
 // Config 描述一期本地监听、仓库允许范围与平台自用数据库。
 type Config struct {
-	Address         string
-	DSN             string
-	RepositoryRoots []string
-	Origins         []string
-	WebDirectory    string
+	Address          string
+	DSN              string
+	RepositoryRoots  []string
+	Origins          []string
+	WebDirectory     string
+	RuntimeAdapter   string
+	RuntimeDirectory string
 }
 
 // Load 拒绝外部监听和泛化来源，不读取或建立用户账号。
 func Load() (Config, error) {
 	value := Config{Address: os.Getenv("TWINE_ADDRESS"), DSN: os.Getenv("TWINE_DATABASE_DSN"), WebDirectory: os.Getenv("TWINE_WEB_DIRECTORY")}
+	value.RuntimeAdapter, value.RuntimeDirectory = os.Getenv("TWINE_RUNTIME_ADAPTER"), os.Getenv("TWINE_RUNTIME_DIRECTORY")
+	if value.RuntimeAdapter != "" || value.RuntimeDirectory != "" {
+		if value.RuntimeAdapter != "file-secrets-v1" || value.RuntimeDirectory == "" {
+			return value, fmt.Errorf("运行能力仅接受显式file-secrets-v1与私有运行目录组合")
+		}
+	}
 	if value.Address == "" {
 		value.Address = "127.0.0.1:8080"
 	}
