@@ -2,7 +2,7 @@
 
 本地服务画布。当前实现 [Issue #1](https://github.com/hailingu/twine-realm/issues/1) 的本机项目、只读仓库登记与布局恢复，[Issue #2](https://github.com/hailingu/twine-realm/issues/2) 的明确固定 commit 与恢复，以及 [Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的版本化 MySQL 目录、配置草稿和混合节点布局，以及 [Issue #8](https://github.com/hailingu/twine-realm/issues/8) 的服务接口声明、具名端口与 MySQL 依赖连线。
 
-服务节点保持待配置草稿。用户已选择首个业务工程组合为 Go + 标准库 `net/http`；相应业务模板尚未实现。不包含账号 / 登录 / 配对 / RBAC、AI、GitHub 同步、中间件运行、业务构建部署或代码编辑器。项目与仓库关联只保存在本机，导入不修改源码、`AGENTS.md`、索引、分支或 Git 配置。
+服务节点保持待配置草稿。用户已选择首个业务工程组合为 Go + 标准库 `net/http`；[Issue #10](https://github.com/hailingu/twine-realm/issues/10) 提供离线工程包与最小服务模板，使用见[工程模板切片](docs/development/service-profile-slice.md)。不包含账号 / 登录 / 配对 / RBAC、AI、GitHub 同步、中间件运行、业务构建部署或代码编辑器。项目与仓库关联只保存在本机，导入不修改源码、`AGENTS.md`、索引、分支或 Git 配置。
 
 ## 运行
 

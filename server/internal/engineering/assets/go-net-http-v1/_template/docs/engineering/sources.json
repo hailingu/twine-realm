@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "profile": "go-net-http-mysql/1.0.0",
+  "adaptation": "本包是受控业务适用规则快照，上游仅为版本化依据，不宣称整本规范均可自动检查。",
+  "sources": [
+    {
+      "id": "platform-general",
+      "repository": "hailingu/twine-realm",
+      "commit": "c31890bcc099d7d1272640adac978f115d0413da",
+      "path": "docs/development/software-engineering-standard.md",
+      "adopted": [
+        "GEN-01",
+        "GEN-02",
+        "GEN-03",
+        "GEN-04",
+        "GEN-05",
+        "GEN-06",
+        "GEN-07",
+        "GEN-08"
+      ],
+      "excluded": [
+        "平台画布与孪生对象",
+        "React / React Flow",
+        "平台工具命令与控制面数据库",
+        "Project状态及平台分支命名"
+      ]
+    },
+    {
+      "id": "go-http",
+      "version": "go1.27.3",
+      "url": "https://pkg.go.dev/net/http@go1.27.3",
+      "adopted": [
+        "GO-04",
+        "GO-05",
+        "GO-09",
+        "GO-10"
+      ]
+    },
+    {
+      "id": "go-sql",
+      "version": "go1.27.3",
+      "url": "https://pkg.go.dev/database/sql@go1.27.3",
+      "adopted": [
+        "GO-04",
+        "GO-07",
+        "GO-11"
+      ]
+    },
+    {
+      "id": "go-modules",
+      "version": "go1.27.3",
+      "url": "https://go.dev/ref/mod",
+      "adopted": [
+        "GO-02"
+      ]
+    },
+    {
+      "id": "mysql-driver",
+      "version": "v1.10.1",
+      "url": "https://github.com/go-sql-driver/mysql/tree/v1.10.1",
+      "adopted": [
+        "GO-06",
+        "GO-07"
+      ]
+    },
+    {
+      "id": "migration-tool",
+      "version": "v4.20.1",
+      "url": "https://github.com/golang-migrate/migrate/tree/v4.20.1",
+      "adopted": [
+        "GO-08"
+      ]
+    }
+  ],
+  "manualReview": [
+    "职责、规模和领域模型",
+    "业务权限、写入幂等与契约",
+    "DDL / 旧数据兼容与人工恢复",
+    "例外、完整安全与未覆盖条款"
+  ]
+}

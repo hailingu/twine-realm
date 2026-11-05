@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "profile": {
+    "id": "go-net-http-mysql",
+    "version": "1.0.0",
+    "digest": "sha256:695ce86db92c25ff04e85613dd6042445e6340ffc09beab6243b57773bc1c329"
+  }
+}

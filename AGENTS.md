@@ -2,7 +2,7 @@
 
 本仓库建设**数字孪生的软件定义平台**：用户在网页画布中以类 UML 图的方式拖入标准中间件（MySQL、RabbitMQ 等）与通用服务组件，由平台 AI 完成数据模型设计、开发、测试与部署；一个画布对应一个真实的 docker-compose / k8s 项目空间，服务以零感知方式替换升级，真实运行状态与配置实时回显到画布，构成业务系统的数字孪生。
 
-仓库目标结构：Go 平台服务（`server/`）、TypeScript 前端画布（`web/`）、部署与项目空间模板（`deploy/`）、设计文档（`docs/platform-design/`）、开发规范（`docs/development/`）、本地历史 / 离线草稿（`issues/`）与仓库工具脚本（`scripts/`，含根 `package.json` 与 Sonar 项目配置）。**已建立 Issue #1 本地项目、仓库登记与布局持久化，以及 Issue #2 明确固定 commit、只读 Git 观察与源码回执恢复，Issue #6 版本化 MySQL 配置草稿与统一布局，以及 Issue #8 服务自有接口 / 具名端口与 MySQL 依赖声明。用户已选首个业务组合为 Go + 标准库 net/http；业务模板、AI、中间件运行与业务部署等仍未实现。**
+仓库目标结构：Go 平台服务（`server/`）、TypeScript 前端画布（`web/`）、部署与项目空间模板（`deploy/`）、设计文档（`docs/platform-design/`）、开发规范（`docs/development/`）、本地历史 / 离线草稿（`issues/`）与仓库工具脚本（`scripts/`，含根 `package.json` 与 Sonar 项目配置）。**已建立 Issue #1 本地项目、仓库登记与布局持久化，Issue #2 明确固定 commit、只读 Git 观察与源码回执恢复，Issue #6 版本化 MySQL 配置草稿与统一布局，以及 Issue #8 服务自有接口 / 具名端口与 MySQL 依赖声明。用户已选首个业务组合为 Go + 标准库 net/http，Issue #10 提供该组合的离线工程包、核实 / 导出 CLI 与最小模板；AI 自动加载、中间件运行与业务部署等仍未实现。**
 
 ## 分支与历史边界
 
