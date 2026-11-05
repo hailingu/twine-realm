@@ -1,6 +1,6 @@
 # Go + net/http 工程包与最小模板（Issue #10）
 
-本切片对应 [Issue #10](https://github.com/hailingu/twine-realm/issues/10)，依赖已完成的本地服务仓库能力，不依赖仍待审阅的 PR #9。交付首个可离线读取、核实及导出的业务工程包；agents 自动取得原文、画布方案绑定、镜像构建与业务部署仍由后续切片验收。
+本切片对应 [Issue #10](https://github.com/hailingu/twine-realm/issues/10)，依赖已完成的本地服务仓库能力，与服务端口 / MySQL 依赖声明保持独立能力边界。交付首个可离线读取、核实及导出的业务工程包；agents 自动取得原文、画布方案绑定、镜像构建与业务部署仍由后续切片验收。
 
 ## 版本、来源与文件所有权
 
