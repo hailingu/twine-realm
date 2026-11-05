@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://twine-realm.local/contract/v1/schema.json",
   "title": "Contract",
-  "description": "一期本地项目登记的唯一机器契约；非标准服务不由本契约假定业务技术栈",
+  "description": "本地项目登记与增量源码追溯的权威契约；原 Project/Repository/Receipt 保持不变",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -44,6 +44,21 @@
     },
     "errorResponse": {
       "$ref": "#/$defs/ErrorResponse"
+    },
+    "sourceVersion": {
+      "$ref": "#/$defs/SourceVersion"
+    },
+    "gitObservation": {
+      "$ref": "#/$defs/GitObservation"
+    },
+    "sourceObservation": {
+      "$ref": "#/$defs/SourceObservation"
+    },
+    "pinSourceCommand": {
+      "$ref": "#/$defs/PinSourceCommand"
+    },
+    "sourceReceipt": {
+      "$ref": "#/$defs/SourceReceipt"
     }
   },
   "$defs": {
@@ -423,6 +438,194 @@
       },
       "required": [
         "error"
+      ]
+    },
+    "SourceVersion": {
+      "title": "SourceVersion",
+      "description": "版本一新增源码追溯契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "projectRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "无符号聚合版本，以十进制字符串传递，避免浏览器精度损失"
+        },
+        "serviceId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "repositoryId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "repositoryPath": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "pinnedCommit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+        }
+      },
+      "required": [
+        "projectId",
+        "projectRevision",
+        "serviceId",
+        "repositoryId",
+        "repositoryPath",
+        "pinnedCommit"
+      ]
+    },
+    "GitObservation": {
+      "title": "GitObservation",
+      "description": "版本一新增源码追溯契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "headCommit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+        },
+        "branch": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "dirty": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "pinnedAvailable": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "warning": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500
+        },
+        "problem": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/APIError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "available",
+        "observedAt",
+        "headCommit",
+        "branch",
+        "dirty",
+        "pinnedAvailable",
+        "warning",
+        "problem"
+      ]
+    },
+    "SourceObservation": {
+      "title": "SourceObservation",
+      "description": "版本一新增源码追溯契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/SourceVersion"
+        },
+        "git": {
+          "$ref": "#/$defs/GitObservation"
+        }
+      },
+      "required": [
+        "version",
+        "git"
+      ]
+    },
+    "PinSourceCommand": {
+      "title": "PinSourceCommand",
+      "description": "版本一新增源码追溯契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "baseRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "无符号聚合版本，以十进制字符串传递，避免浏览器精度损失"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+        }
+      },
+      "required": [
+        "mutationId",
+        "baseRevision",
+        "commit"
+      ]
+    },
+    "SourceReceipt": {
+      "title": "SourceReceipt",
+      "description": "版本一新增源码追溯契约",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "kind": {
+          "const": "pinSource"
+        },
+        "project": {
+          "$ref": "#/$defs/Project"
+        },
+        "replayed": {
+          "type": "boolean"
+        },
+        "sourceVersion": {
+          "$ref": "#/$defs/SourceVersion"
+        }
+      },
+      "required": [
+        "mutationId",
+        "kind",
+        "project",
+        "replayed",
+        "sourceVersion"
       ]
     }
   }

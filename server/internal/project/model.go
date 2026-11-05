@@ -79,10 +79,11 @@ type LayoutCommand struct {
 
 // Receipt 是与画布修改同事务提交的回执。
 type Receipt struct {
-	MutationID string  `json:"mutationId"`
-	Kind       string  `json:"kind"`
-	Project    Project `json:"project"`
-	Replayed   bool    `json:"replayed"`
+	MutationID    string         `json:"mutationId"`
+	Kind          string         `json:"kind"`
+	Project       Project        `json:"project"`
+	Replayed      bool           `json:"replayed"`
+	SourceVersion *SourceVersion `json:"sourceVersion,omitempty"`
 }
 
 // RepositorySource 只包含校验完成后的本机仓库观测。
@@ -95,6 +96,7 @@ type RepositorySource struct {
 type Reader interface {
 	List(context.Context) ([]Summary, error)
 	Get(context.Context, string) (Project, error)
+	Source(context.Context, string, string) (SourceVersion, error)
 }
 
 // Writer 原子提交领域修改及对应回执。
@@ -102,6 +104,7 @@ type Writer interface {
 	Create(context.Context, CreateCommand, [32]byte) (Receipt, error)
 	Register(context.Context, string, RegisterCommand, RepositorySource, [32]byte) (Receipt, error)
 	SaveLayout(context.Context, string, LayoutCommand, [32]byte) (Receipt, error)
+	PinSource(context.Context, string, string, PinSourceCommand, [32]byte) (Receipt, error)
 }
 
 // ReceiptReader 查询原始结果与请求摘要，用于结果未知时的恢复。
@@ -112,6 +115,8 @@ type ReceiptReader interface {
 // Inspector 只读校验允许目录内的真实 Git 工作区。
 type Inspector interface {
 	Inspect(context.Context, string) (RepositorySource, error)
+	Observe(context.Context, string, *string) (GitObservation, error)
+	VerifyCommit(context.Context, string, string) error
 }
 
 // NewID 产生与名称、路径和版本无关的 UUID，不复用已删除实体的身份。

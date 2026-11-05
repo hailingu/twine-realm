@@ -14,7 +14,7 @@ const output = await compile(schema, 'Contract', {
 const validator = new Ajv2020({ strict: true, code: { source: true } })
 addFormats(validator)
 validator.addSchema(schema)
-const references = Object.fromEntries(['Project', 'ProjectList', 'Receipt', 'ErrorResponse'].map(name => [name, `${schema.$id}#/$defs/${name}`]))
+const references = Object.fromEntries(['Project', 'ProjectList', 'Receipt', 'ErrorResponse', 'SourceObservation', 'SourceReceipt'].map(name => [name, `${schema.$id}#/$defs/${name}`]))
 const validators = '/** 由共享 JSON Schema 构建生成；浏览器不执行动态代码编译。 */\n' + standaloneCode(validator, references)
 const declaration = '/** 生成校验器的边界声明；运行时执行同一 schema 生成的检查。 */\nimport type { ValidateFunction } from "ajv"\ndeclare const validators: Record<string, ValidateFunction<unknown>>\nexport = validators\n'
 const generated = [{ file: target, content: output }, { file: new URL('../src/contract/validators.cjs', import.meta.url), content: validators }, { file: new URL('../src/contract/validators.d.cts', import.meta.url), content: declaration }]

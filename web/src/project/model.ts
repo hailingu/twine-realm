@@ -5,6 +5,7 @@ import type { NodePosition, Position, Project, ServiceNode } from '../contract/g
 export type PendingRequest =
   | { kind: 'registerRepository'; projectId: string; command: import('../contract/generated').RegisterCommand }
   | { kind: 'saveLayout'; projectId: string; command: import('../contract/generated').LayoutCommand }
+  | { kind: 'pinSource'; projectId: string; serviceId: string; command: import('../contract/generated').PinSourceCommand }
 
 /** 保存状态只有一个所有者，不使用互相矛盾的布尔旗标。 */
 export type SaveState =

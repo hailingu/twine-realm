@@ -1,0 +1,1 @@
+ALTER TABLE services ADD COLUMN pinned_commit VARCHAR(64) CHARACTER SET ascii NULL;

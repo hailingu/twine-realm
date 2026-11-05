@@ -1,14 +1,14 @@
-# 首个本地项目切片（Issue #1）
+# 本地项目与源码版本切片（Issue #1 / #2）
 
-本页记录实现边界；运行方式见[根 README](../../README.md)，验收事实以本次检查输出为准。[Issue #1](https://github.com/hailingu/twine-realm/issues/1) 对应现有 [Project #4](https://github.com/users/hailingu/projects/4)。不自动改变远端状态。
+本页记录实现边界；运行方式见[根 README](../../README.md)，验收事实以本次检查输出为准。[Issue #1](https://github.com/hailingu/twine-realm/issues/1) 与 [Issue #2](https://github.com/hailingu/twine-realm/issues/2) 对应现有 [Project #4](https://github.com/users/hailingu/projects/4)。不自动改变远端状态。
 
 ## 当前范围
 
-Go 标准 HTTP + `database/sql`，MySQL 9.7.4 LTS 平台元数据库，golang-migrate 版本迁移；React 19 / TypeScript / React Flow 12 投影。没有业务服务技术栈选择，也不创建或改写导入仓库。
+Go 标准 HTTP + `database/sql`，MySQL 9.7.4 LTS 平台元数据库，golang-migrate 版本迁移；React 19 / TypeScript / React Flow 12 投影。用户另已确认首个业务工程组合为 Go + 标准库 `net/http`；其模板待后续切片。不创建或改写导入仓库。
 
 `server/internal/project` 拥有身份、输入和用例规则。它消费的 `Writer` 是**用例明确选择的原子命令端口**：每次 Create / Register / SaveLayout 明确要求聚合与回执共用一个 MySQL 事务；并非行级仓储方法隐式扩展事务。Git 检查在事务前，只读、无数据库锁；没有跨 Git / 元数据库的大事务。
 
-`gitworkspace` 解析真实目录，只接受配置的允许根内工作区及 Git 元数据（含 linked worktree 的 common dir）。固定 `rev-parse` 命令，不继承外部 `GIT_*` 或全局 / 系统 Git 配置，关闭可选锁和 fsmonitor。Git 状态仅为登记时快照，源仓库之后被人工修改或移动不会被平台自动跟踪、接管或纠正。规范路径是本机定位与去重键，不是跨环境实体身份；ID 为独立 UUID。
+`gitworkspace` 解析真实目录，只接受配置的允许根内工作区及 Git 元数据（含 linked worktree 的 common dir、对象库与 alternates）。只执行固定参数的只读 Git 命令，不继承外部 `GIT_*` 或全局 / 系统 Git 配置，关闭可选锁、fsmonitor 和替换对象。登记快照、明确固定版本与按需观察分别存储 / 返回，不自动跟踪、接管或纠正仓库。规范路径是本机定位与去重键，不是跨环境实体身份；ID 为独立 UUID。
 
 ## 机器契约
 
@@ -22,9 +22,16 @@ Go 标准 HTTP + `database/sql`，MySQL 9.7.4 LTS 平台元数据库，golang-mi
 | `POST /api/v1/projects/{id}/services` | `{mutationId,baseRevision,repositoryPath,displayName?,position}` 登记仓库 |
 | `PUT /api/v1/projects/{id}/layout` | `{mutationId,baseRevision,positions}` 保存完整布局集合 |
 | `GET /api/v1/mutations/{id}` | 查原请求已提交回执；404 表示当前尚无已提交结果，不证明在途请求永不成功 |
+| `GET /api/v1/projects/{id}/services/{serviceId}/source` | 已保存 `SourceVersion` 与独立 `GitObservation`；仓库观察失败仍返回已保存记录 |
+| `PUT /api/v1/projects/{id}/services/{serviceId}/source` | `{mutationId,baseRevision,commit}` 明确固定完整 commit，返回专用 `SourceReceipt` |
+| `GET /api/v1/source-mutations/{id}` | 核实源码固定原请求，不改变旧 `Receipt` 的发布形状 |
 | `GET /healthz` | 初始化 / 迁移成功后才开放的最小就绪信息 |
 
 项目 revision 是十进制字符串，避免 JS 精度损失；节点数最多 500，名称 1–80 字符，坐标为有限数且绝对值 ≤1,000,000，请求体 ≤128 KiB。服务节点保存服务 ID、仓库 ID、规范路径、显示名称、登记时 commit（空仓库 null）和坐标，不保存 React Flow 对象。
+
+Issue #2 以增量端点扩展 v1，不给原 `Project`、`Repository`、`Receipt` 追加字段或枚举值。`SourceVersion` 绑定项目 / 服务 / 仓库 ID、规范路径、项目 revision 和可空 `pinnedCommit`；完整 SHA 为 40 或 64 个小写十六进制字符。迁移 `000002` 为原服务增加可空列，旧项目和回执保持原形状，旧数据不会自动把登记 HEAD 当成已固定源码。Git 观察含时间、当前 HEAD、分支（游离时 null）、修改状态（无法安全核实时 null）与固定对象当前可用性。
+
+固定前验证对象类型确为 commit；tag、tree、blob、缩写、仓库外对象或缺失对象均拒绝。工作区包含过滤器或子模块时不执行脚本，修改状态明确为未知；普通仓库只读观察有 4 秒与 512 KiB 输出上限。原键回放先于 Git 访问；新意图验证后，在同一平台数据库事务保存固定值、推进项目 revision 并保存专用回执。对象随后被移除只影响可用性观察，不抹除记录，也不宣称已构建 / 部署。
 
 ## 提交与恢复
 
@@ -57,5 +64,8 @@ Go 标准 HTTP + `database/sql`，MySQL 9.7.4 LTS 平台元数据库，golang-mi
 | 重复、同名不同路径、同键异意图、同键并发 / 版本竞争、失败原子性、回执重开 | `server/internal/httpapi/integration_test.go`，真实 MySQL |
 | 提交成功响应丢失、未送达、原键核实 / 重试、冲突重放、草稿保留 | Playwright 故障注入 + Hook / 组件测试 |
 | Host / Origin / JSON / 标记 / 额外字段 | HTTP + 发布 schema 集成检查 |
+| 固定与 HEAD / 工作区互不覆盖、失联保留、源码原键恢复 | `server/internal/httpapi/source_integration_test.go`、`web/e2e/source.spec.ts` |
+| v1 数据库升级后保留实体、坐标、版本与原始回执 | `server/internal/httpapi/migration_integration_test.go`，门禁独占临时 MySQL |
+| 对象类型、完整 SHA、过滤器不执行、对象库边界、只读保证 | `server/internal/gitworkspace/source_test.go` |
 
 各检查的实际运行结果在交付报告列明；用例存在不等于本次已通过。账号、AI、业务中间件、部署、编辑器和 SSE 不在此矩阵中冒称完成。

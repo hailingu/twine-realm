@@ -1,7 +1,7 @@
 /** 由 server/contract/v1/schema.json 生成，请运行 npm run contract；禁止手工修改。 */
 
 /**
- * 一期本地项目登记的唯一机器契约；非标准服务不由本契约假定业务技术栈
+ * 本地项目登记与增量源码追溯的权威契约；原 Project/Repository/Receipt 保持不变
  */
 export interface Contract {
   position?: Position
@@ -17,6 +17,11 @@ export interface Contract {
   receipt?: Receipt
   aPIError?: APIError
   errorResponse?: ErrorResponse
+  sourceVersion?: SourceVersion
+  gitObservation?: GitObservation
+  sourceObservation?: SourceObservation
+  pinSourceCommand?: PinSourceCommand
+  sourceReceipt?: SourceReceipt
 }
 /**
  * 版本一Position契约
@@ -150,4 +155,59 @@ export interface APIError {
  */
 export interface ErrorResponse {
   error: APIError
+}
+/**
+ * 版本一新增源码追溯契约
+ */
+export interface SourceVersion {
+  projectId: string
+  /**
+   * 无符号聚合版本，以十进制字符串传递，避免浏览器精度损失
+   */
+  projectRevision: string
+  serviceId: string
+  repositoryId: string
+  repositoryPath: string
+  pinnedCommit: string | null
+}
+/**
+ * 版本一新增源码追溯契约
+ */
+export interface GitObservation {
+  available: boolean
+  observedAt: string
+  headCommit: string | null
+  branch: string | null
+  dirty: boolean | null
+  pinnedAvailable: boolean | null
+  warning: string | null
+  problem: APIError | null
+}
+/**
+ * 版本一新增源码追溯契约
+ */
+export interface SourceObservation {
+  version: SourceVersion
+  git: GitObservation
+}
+/**
+ * 版本一新增源码追溯契约
+ */
+export interface PinSourceCommand {
+  mutationId: string
+  /**
+   * 无符号聚合版本，以十进制字符串传递，避免浏览器精度损失
+   */
+  baseRevision: string
+  commit: string
+}
+/**
+ * 版本一新增源码追溯契约
+ */
+export interface SourceReceipt {
+  mutationId: string
+  kind: 'pinSource'
+  project: Project
+  replayed: boolean
+  sourceVersion: SourceVersion
 }

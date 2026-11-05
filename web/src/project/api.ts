@@ -1,6 +1,6 @@
 /** 在 HTTP 边界验证服务端响应，未验证的数据不能进入画布模型。 */
 import validators from '../contract/validators.cjs'
-import type { APIError, CreateCommand, ErrorResponse, LayoutCommand, Project, ProjectList, Receipt, RegisterCommand } from '../contract/generated'
+import type { APIError, CreateCommand, ErrorResponse, LayoutCommand, Project, ProjectList, Receipt, RegisterCommand, PinSourceCommand, SourceObservation, SourceReceipt } from '../contract/generated'
 
 /** @param name 受控的生成定义名 @param input 未知响应 @returns 按生成 schema 验证后的类型谓词。 */
 function matches<T>(name: string, input: unknown): input is T {
@@ -23,6 +23,9 @@ export interface ProjectAPI {
   register(id: string, command: RegisterCommand, signal?: AbortSignal): Promise<Receipt>
   layout(id: string, command: LayoutCommand, signal?: AbortSignal): Promise<Receipt>
   receipt(id: string, signal?: AbortSignal): Promise<Receipt>
+  source(id: string, serviceId: string, signal?: AbortSignal): Promise<SourceObservation>
+  pin(id: string, serviceId: string, command: PinSourceCommand, signal?: AbortSignal): Promise<SourceReceipt>
+  sourceReceipt(id: string, signal?: AbortSignal): Promise<SourceReceipt>
 }
 
 /** @param name 契约定义名 @param input 未信任的 JSON @returns 已验证的边界类型。 */
@@ -53,5 +56,8 @@ export const PROJECT_API: ProjectAPI = {
   create: (command, signal) => request('/projects', 'Receipt', 'POST', command, signal),
   register: (id, command, signal) => request(`/projects/${id}/services`, 'Receipt', 'POST', command, signal),
   layout: (id, command, signal) => request(`/projects/${id}/layout`, 'Receipt', 'PUT', command, signal),
-  receipt: (id, signal) => request(`/mutations/${id}`, 'Receipt', 'GET', undefined, signal)
+  receipt: (id, signal) => request(`/mutations/${id}`, 'Receipt', 'GET', undefined, signal),
+  source: (id, serviceId, signal) => request(`/projects/${id}/services/${serviceId}/source`, 'SourceObservation', 'GET', undefined, signal),
+  pin: (id, serviceId, command, signal) => request(`/projects/${id}/services/${serviceId}/source`, 'SourceReceipt', 'PUT', command, signal),
+  sourceReceipt: (id, signal) => request(`/source-mutations/${id}`, 'SourceReceipt', 'GET', undefined, signal)
 }
