@@ -2,7 +2,6 @@
 package gitworkspace
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"os"
@@ -125,15 +124,7 @@ func canonical(path string) (string, error) {
 	return filepath.Abs(resolved)
 }
 
-// run 固定命令与环境，不继承 Git 重定向、外部过滤器或用户配置。
+// run 保持登记流程只使用固定 rev-parse 命令。
 func (inspector *Inspector) run(ctx context.Context, path string, arguments ...string) (string, error) {
-	args := append([]string{"-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false", "-C", path, "rev-parse"}, arguments...)
-	command := exec.CommandContext(ctx, inspector.git, args...)
-	command.Env = []string{"PATH=" + os.Getenv("PATH"), "LANG=C", "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=" + os.DevNull, "GIT_CONFIG_SYSTEM=" + os.DevNull, "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0"}
-	var output bytes.Buffer
-	command.Stdout = &output
-	if err := command.Run(); err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(output.String()), nil
+	return inspector.command(ctx, path, "rev-parse", arguments...)
 }

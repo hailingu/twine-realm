@@ -19,6 +19,7 @@ export interface Platform {
   restart(): Promise<void>
   repository(name: string, commit?: boolean): Promise<string>
   fingerprint(path: string): Promise<string>
+  git(path: string, args: string[]): Promise<string>
 }
 
 /** @returns 可用于本机隔离平台的空闲端口。 */
@@ -77,7 +78,7 @@ async function createPlatform(root: string): Promise<Platform & { stop(): Promis
     throw new Error('测试平台未就绪')
   }
   await start()
-  return { url, root, stop, fingerprint, restart: async () => { await stop(); await start() }, repository: async (name, commit = true) => {
+  return { url, root, stop, fingerprint, git: async (path, args) => (await execute('git', ['-C', path, ...args])).stdout.trim(), restart: async () => { await stop(); await start() }, repository: async (name, commit = true) => {
     const path = join(root, name, 'service'); await mkdir(path, { recursive: true })
     await execute('git', ['-C', path, 'init', '-b', 'develop'])
     await writeFile(join(path, 'AGENTS.md'), '用户维护的服务规范\n')

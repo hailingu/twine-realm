@@ -115,6 +115,14 @@ func matchMembers(current project.Project, positions []project.NodePosition) err
 
 // atomic 把请求占位、业务写入和完整回执置于同一提交屏障。
 func (store *Store) atomic(ctx context.Context, id string, hash [32]byte, kind string, action func(*sql.Tx) (project.Project, error)) (receipt project.Receipt, err error) {
+	return store.atomicReceipt(ctx, id, hash, kind, func(tx *sql.Tx) (project.Receipt, error) {
+		value, err := action(tx)
+		return project.Receipt{Project: value}, err
+	})
+}
+
+// atomicReceipt 同时保存原有画布回执与新增源码回执，不改变各自发布形状。
+func (store *Store) atomicReceipt(ctx context.Context, id string, hash [32]byte, kind string, action func(*sql.Tx) (project.Receipt, error)) (receipt project.Receipt, err error) {
 	tx, err := store.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return receipt, err
@@ -133,11 +141,11 @@ func (store *Store) atomic(ctx context.Context, id string, hash [32]byte, kind s
 	if err != nil {
 		return receipt, err
 	}
-	value, err := action(tx)
+	receipt, err = action(tx)
 	if err != nil {
 		return receipt, err
 	}
-	receipt = project.Receipt{MutationID: id, Kind: kind, Project: value, Replayed: false}
+	receipt.MutationID, receipt.Kind, receipt.Replayed = id, kind, false
 	data, err := json.Marshal(receipt)
 	if err != nil {
 		return receipt, err

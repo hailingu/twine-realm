@@ -328,3 +328,14 @@
   outline:2px solid #6b8c58;
   outline-offset:3px
 }
+
+.source-panel { border-top: 1px solid var(--border, #deded5); padding: 20px 0; }
+.source-panel .section-heading { flex-wrap: wrap; gap: 8px; }
+.source-panel dl { margin: 16px 0; }
+.source-panel dt { font-size: 12px; color: #62665b; margin-top: 12px; }
+.source-panel dd { margin: 6px 0; font-size: 12px; }
+.source-panel code { overflow-wrap: anywhere; }
+.source-panel form { display: grid; gap: 8px; }
+.source-panel input { width: 100%; font-family: monospace; }
+.source-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.git-observation { padding: 12px; background: #f5f5ee; border-radius: 8px; margin: 12px 0; font-size: 12px; }

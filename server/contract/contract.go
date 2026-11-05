@@ -25,7 +25,7 @@ func Load() (map[string]*jsonschema.Schema, error) {
 		return nil, err
 	}
 	result := map[string]*jsonschema.Schema{}
-	for _, name := range []string{"CreateCommand", "RegisterCommand", "LayoutCommand", "Project", "ProjectList", "Receipt", "ErrorResponse"} {
+	for _, name := range []string{"CreateCommand", "RegisterCommand", "LayoutCommand", "Project", "ProjectList", "Receipt", "ErrorResponse", "PinSourceCommand", "SourceObservation", "SourceReceipt"} {
 		schema, err := compiler.Compile(location + "#/$defs/" + name)
 		if err != nil {
 			return nil, fmt.Errorf("编译请求契约失败: %w", err)

@@ -69,7 +69,7 @@ issues/           # 历史、离线草稿与明确链接的证据快照
 ## 实施新系统
 
 - **纵向切片交付**：首个功能为 [Issue #1 本地仓库加入画布并保存](local-project-slice.md)，交付可操作、可持久恢复的行为。业务编排切片再验证真实 compose 与状态回显。
-- 后续首个业务运行切片（以数据库版 Todo List 为示例项目）：单画布 + 标准 MySQL + 一个手写 Todo 服务 + 独立本地 Git 最小登记 / 固定 commit 追溯 + 真实 compose 与数据库持久化 + 状态回读。源码与提交可先手工准备，构建必须绑定已验证 commit，不能延后全部 Git 追溯；完整 Git UI、AI 生成、GitHub、零感知替换和配置热生效随后逐片接入。Todo 不成为实际用户项目的业务限制，首个业务语言 / 框架仍待选择。
+- 后续首个业务运行切片（以数据库版 Todo List 为示例项目）：单画布 + 标准 MySQL + 一个手写 Todo 服务 + 独立本地 Git 最小登记 / 固定 commit 追溯 + 真实 compose 与数据库持久化 + 状态回读。源码与提交可先手工准备，构建必须绑定已验证 commit，不能延后全部 Git 追溯；完整 Git UI、AI 生成、GitHub、零感知替换和配置热生效随后逐片接入。Todo 不成为实际用户项目的业务限制，首个业务组合已由用户确认为 Go + 标准库 `net/http`，对应支持包须独立交付并验证。
 - 领域模型（画布、组件、期望态、调和）放在 `server/internal/`，不依赖 HTTP、docker 客户端与 MySQL 驱动等基础设施细节；通过接口注入端口实现。
 - 前端 React Flow 只做画布投影，服务端持有已提交画布真相；交互预览不直接持久化为业务图。
 - 组件定义、具名端口、关系类型与首批机器契约遵循[契约设计](../platform-design/canvas-contracts.md)；标准中间件按[版本化 schema 与运行契约](../platform-design/standard-middleware.md)发布配置、端口和绑定规则，业务迁移仍由服务仓库管理。画布编辑原子性不扩展为 Git、Docker 与业务库的大事务，外部执行按[持久操作与恢复](../platform-design/operations-and-recovery.md)处理。

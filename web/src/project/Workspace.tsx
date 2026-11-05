@@ -4,13 +4,16 @@ import type { NodePosition, Position, Project } from '../contract/generated'
 import type { ProjectAPI } from './api'
 import { Canvas } from './Canvas'
 import { useWorkspace } from './useWorkspace'
+import { SourceVersionPanel } from './SourceVersion'
 
 /** @param props 初始确认项目、HTTP 端口与退出命令 @returns 服务登记和布局工作区。 */
 export function Workspace({ initial, api, onClose }: Readonly<{ initial: Project; api: ProjectAPI; onClose: () => void }>) {
   const workspace = useWorkspace(initial, api)
   const [path, setPath] = useState('')
   const [name, setName] = useState('')
+  const [sourceId, setSourceId] = useState<string | null>(null)
   const { snapshot, draft, dirty, blocked, saveState: save } = workspace
+  const selected = snapshot.nodes.find(node => node.id === sourceId)
   const status = saveMessage(save.kind, dirty, snapshot.revision)
   const handleClose = () => { if (!blocked && (!dirty || window.confirm('当前布局尚未保存，确定放弃草稿并返回项目列表？'))) onClose() }
   return <main className="workspace"><div className="workspace-toolbar"><div className="project-title"><button type="button" className="back-button" onClick={handleClose} disabled={blocked} aria-label="返回项目列表">←</button><div><span className="eyebrow">PROJECT / LOCAL</span><h1>{snapshot.name}</h1></div></div><div className="save-actions"><output className={`save-status ${dirty || blocked ? 'unsaved' : ''}`}><i />{status}</output><button type="button" disabled={!dirty || blocked} onClick={workspace.discard}>还原布局</button><button type="button" className="primary" disabled={!dirty || blocked} onClick={workspace.save}>保存布局<span aria-hidden="true">↗</span></button></div></div>
@@ -19,17 +22,18 @@ export function Workspace({ initial, api, onClose }: Readonly<{ initial: Project
       <div className="boundary-note"><span aria-hidden="true">◈</span><p>只读登记已有仓库。<br />节点保持待配置状态，仓库内容由你管理。</p></div>
       {save.kind === 'rejected' && <div className="notice error" role="alert"><strong>本次请求未保存</strong><p>{save.message}</p>{save.conflict && <button type="button" onClick={workspace.rebase}>载入最新版本并保留我的位置</button>}</div>}
       {save.kind === 'unknown' && <div className="recovery" role="alert"><strong>请先核实原请求</strong><p>{save.message}</p><button type="button" onClick={workspace.verify}>核实保存结果</button><button type="button" onClick={workspace.retry}>重试原请求</button><small>核实期间保留草稿与相同请求身份。</small></div>}
-      <CoordinateList project={snapshot} draft={draft} blocked={blocked} onMove={workspace.move} />
+      <CoordinateList project={snapshot} draft={draft} blocked={blocked} onMove={workspace.move} onSource={setSourceId} />
+      {selected && <SourceVersionPanel key={selected.id} projectId={snapshot.id} revision={snapshot.revision} node={selected} api={api} saved={workspace.sources[selected.id]} blocked={blocked} dirty={dirty} onPin={commit => { workspace.pin(selected.id, commit) }} />}
       <footer className="inspector-foot">项目 ID <code>{snapshot.id}</code></footer>
     </aside></div>
   </main>
 }
 
 /** @param props 当前节点和位置草稿 @returns 键盘可用的画布位置编辑替代入口。 */
-function CoordinateList({ project, draft, blocked, onMove }: Readonly<{ project: Project; draft: NodePosition[]; blocked: boolean; onMove: (id: string, position: Position) => void }>) {
+function CoordinateList({ project, draft, blocked, onMove, onSource }: Readonly<{ project: Project; draft: NodePosition[]; blocked: boolean; onMove: (id: string, position: Position) => void; onSource: (id: string) => void }>) {
   return <section className="coordinate-list" aria-label="服务位置"><div className="section-heading"><h3>画布上的服务</h3><span className="count">{project.nodes.length}</span></div>{project.nodes.length === 0 ? <p className="field-help">登记后可在此精确调整节点位置。</p> : project.nodes.map(node => {
     const position = draft.find(item => item.serviceId === node.id) ?? node.position
-    return <div className="coordinate-item" key={node.id}><strong>{node.displayName}</strong><small title={node.repository.path}>{node.repository.path}</small><div className="coordinate-inputs">{(['x', 'y'] as const).map(axis => <label key={axis}>{axis.toUpperCase()}<input aria-label={`${node.displayName} ${axis.toUpperCase()} ${node.id.slice(0, 8)}`} type="number" min={-1000000} max={1000000} step="any" disabled={blocked} value={position[axis]} onChange={event => { const value = event.target.valueAsNumber; if (Number.isFinite(value)) onMove(node.id, { x: position.x, y: position.y, [axis]: value }) }} /></label>)}</div><code>服务 {node.id.slice(0, 8)} · 仓库 {node.repository.id.slice(0, 8)}</code></div>
+    return <div className="coordinate-item" key={node.id}><strong>{node.displayName}</strong><small title={node.repository.path}>{node.repository.path}</small><div className="coordinate-inputs">{(['x', 'y'] as const).map(axis => <label key={axis}>{axis.toUpperCase()}<input aria-label={`${node.displayName} ${axis.toUpperCase()} ${node.id.slice(0, 8)}`} type="number" min={-1000000} max={1000000} step="any" disabled={blocked} value={position[axis]} onChange={event => { const value = event.target.valueAsNumber; if (Number.isFinite(value)) onMove(node.id, { x: position.x, y: position.y, [axis]: value }) }} /></label>)}</div><code>服务 {node.id.slice(0, 8)} · 仓库 {node.repository.id.slice(0, 8)}</code><button type="button" disabled={blocked} aria-label={`查看${node.displayName}源码版本`} onClick={() => { onSource(node.id) }}>源码版本</button></div>
   })}</section>
 }
 
