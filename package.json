@@ -12,10 +12,12 @@
     "issue:status": "node scripts/issue-status.mjs",
     "sonar": "node scripts/sonar-gate.mjs",
     "quality:gate": "node scripts/quality-gate.mjs",
-    "test:quality": "node --test scripts/sonar-gate.node.mjs scripts/quality-gate.node.mjs scripts/issue-status.node.mjs scripts/platform-check.node.mjs scripts/check-command.node.mjs scripts/precommit.node.mjs scripts/runtime-check.node.mjs",
+    "test:quality": "node --test scripts/sonar-gate.node.mjs scripts/quality-gate.node.mjs scripts/issue-status.node.mjs scripts/platform-check.node.mjs scripts/check-command.node.mjs scripts/precommit.node.mjs scripts/runtime-check.node.mjs scripts/service-profile.node.mjs",
     "test:platform": "node scripts/platform-check.mjs",
     "precommit": "node scripts/precommit.mjs",
-    "hooks:install": "node scripts/install-hooks.mjs"
+    "hooks:install": "node scripts/install-hooks.mjs",
+    "profile:refresh": "node scripts/service-profile.mjs",
+    "profile:check": "node scripts/service-profile.mjs --check"
   },
   "dependencies": {
     "marked": "^18.0.4"

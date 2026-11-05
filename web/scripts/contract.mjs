@@ -10,6 +10,7 @@ const target = new URL('../src/contract/generated.d.ts', import.meta.url)
 const schema = JSON.parse(await readFile(input, 'utf8'))
 const components = JSON.parse(await readFile(new URL('../../server/contract/v1/components.schema.json', import.meta.url), 'utf8'))
 const runtime = JSON.parse(await readFile(new URL('../../server/contract/v1/runtime.schema.json', import.meta.url), 'utf8'))
+const graph = JSON.parse(await readFile(new URL('../../server/contract/v2/graph.schema.json', import.meta.url), 'utf8'))
 // 类型生成只在内存展开已知离线分片；磁盘上的 schema 仍为唯一字段权威。
 const typeSchema = globalThis.structuredClone(schema)
 for (const [filename, fragment] of [['components.schema.json', components], ['runtime.schema.json', runtime]]) {
@@ -18,6 +19,11 @@ for (const [filename, fragment] of [['components.schema.json', components], ['ru
     typeSchema.$defs[name] = JSON.parse(JSON.stringify(value).replaceAll('./schema.json#/$defs/', '#/$defs/'))
   }
 }
+for (const [name, value] of Object.entries(graph.$defs)) {
+  if (Object.hasOwn(typeSchema.$defs, name)) throw new Error(`重复的版本化类型 ${name}`)
+  typeSchema.$defs[name] = JSON.parse(JSON.stringify(value).replaceAll('../v1/schema.json#/$defs/', '#/$defs/'))
+}
+Object.assign(typeSchema.properties, graph.properties)
 const definitionData = await readFile(new URL('../../server/internal/catalog/definitions/mysql-v1.json', import.meta.url), 'utf8')
 const definition = JSON.parse(definitionData)
 const digest = 'sha256:' + createHash('sha256').update(definitionData).digest('hex')
@@ -27,7 +33,7 @@ typeSchema.$defs.RuntimeConfiguration = { ...globalThis.structuredClone(definiti
 delete typeSchema.$defs.RuntimeConfiguration.$id
 delete typeSchema.$defs.RuntimeConfiguration.$schema
 const output = await compile(typeSchema, 'Contract', {
-  bannerComment: '/** 由 server/contract/v1/schema.json 生成，请运行 npm run contract；禁止手工修改。 */',
+  bannerComment: '/** 由 server/contract/ 的离线版本化 schema 生成，请运行 npm run contract；禁止手工修改。 */',
   // 数组数量仍由原 schema 和独立运行时校验器检查，类型不展开巨大的 tuple 并集。
   style: { singleQuote: true, semi: false }, additionalProperties: false, maxItems: -1
 })
@@ -36,15 +42,19 @@ addFormats(validator)
 validator.addSchema(schema)
 validator.addSchema(components)
 validator.addSchema(runtime)
+validator.addSchema(graph)
 validator.addSchema(definition.configurationSchema)
 const references = Object.fromEntries(['Project', 'ProjectList', 'Receipt', 'ErrorResponse', 'SourceObservation', 'SourceReceipt', 'DefinitionCatalog', 'CanvasSnapshot', 'CanvasReceipt', 'RuntimeCommand', 'RuntimeReceipt', 'RuntimeSnapshot', 'RuntimeOperation', 'RuntimeCapability', 'RuntimeEventPage'].map(name => [name, `${schema.$id}#/$defs/${name}`]))
 references.MySQLConfiguration = definition.configurationSchema.$id
+for (const name of ['ServiceContractDocument', 'GraphOperation', 'GraphEditCommand', 'GraphSnapshot', 'GraphReceipt']) references[name] = `${graph.$id}#/$defs/${name}`
 const validators = '/** 由共享 JSON Schema 构建生成；浏览器不执行动态代码编译。 */\n' + standaloneCode(validator, references)
 const declaration = '/** 生成校验器的边界声明；运行时执行同一 schema 生成的检查。 */\nimport type { ValidateFunction } from "ajv"\ndeclare const validators: Record<string, ValidateFunction<unknown>>\nexport = validators\n'
 const configuration = await compile(definition.configurationSchema, 'MySQLConfiguration', { bannerComment: '/** 由离线 MySQL 定义生成，禁止手工修改。 */', style: { singleQuote: true, semi: false } })
 const defaults = Object.fromEntries(Object.entries(definition.configurationSchema.properties).filter(([, value]) => Object.hasOwn(value, 'default')).map(([key, value]) => [key, value.default]))
 const metadata = '/** 由同一离线目录生成；定义与校验器不匹配时阻止新组件编辑。 */\n' + `export const MYSQL_REFERENCE = ${JSON.stringify(reference)} as const\nexport const CATALOG_DIGEST = ${JSON.stringify(digest)}\nexport const MYSQL_DEFAULTS = ${JSON.stringify(defaults)} as const\n`
-const generated = [{ file: target, content: output }, { file: new URL('../src/contract/validators.cjs', import.meta.url), content: validators }, { file: new URL('../src/contract/validators.d.cts', import.meta.url), content: declaration }, { file: new URL('../src/contract/mysql.generated.d.ts', import.meta.url), content: configuration }, { file: new URL('../src/contract/catalog.generated.ts', import.meta.url), content: metadata }]
+const example = JSON.parse(await readFile(new URL('../../server/contract/v2/fixtures/service-contract.json', import.meta.url), 'utf8'))
+const graphMetadata = '/** 显式服务契约示例来自共享测试材料；不表示任何服务源码已实现。 */\n' + `export const SERVICE_CONTRACT_EXAMPLE = ${JSON.stringify(example)} as const\nexport const MYSQL_PORTS = ${JSON.stringify(definition.ports)} as const\n`
+const generated = [{ file: target, content: output }, { file: new URL('../src/contract/validators.cjs', import.meta.url), content: validators }, { file: new URL('../src/contract/validators.d.cts', import.meta.url), content: declaration }, { file: new URL('../src/contract/mysql.generated.d.ts', import.meta.url), content: configuration }, { file: new URL('../src/contract/catalog.generated.ts', import.meta.url), content: metadata }, { file: new URL('../src/contract/graph.generated.ts', import.meta.url), content: graphMetadata }]
 for (const { file, content } of generated) {
   if (process.argv.includes('--check')) {
     if (await readFile(file, 'utf8') !== content) throw new Error('契约类型或校验器已过期，请运行 npm run contract')

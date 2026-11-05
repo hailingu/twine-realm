@@ -12,6 +12,7 @@
 | 本地 issue 元数据与状态 | `npm run issue:status` | 仅解析 `issues/` 的历史 / 草稿文件头，校验必填字段、枚举、编号唯一和日期，报告本地状态（`--json` 可用）；不读取 GitHub / Project，不证明远端总数、同步、验收或证据质量，未关闭记录不构成失败 |
 | 单独 Sonar 复核 | `npm run sonar` | 只扫描与核对本次分析；不自动复用本地覆盖率报告，不替代完整门禁 |
 | 平台完整检查 | `npm run test:platform` | 临时平台库、全新运行安装、gofmt / build / vet、契约、TS / lint / Vitest / Vite、真实 Chromium、Compose / 认证 / 数据见证 / 创建响应丢失 / 重启、SQL 迁移 / 回滚 / 围栏与 Go `-race`；不接入开发数据 |
+| Go 业务工程包 | `npm run profile:check`；完整 `test:platform` | 固定规范 / 模板摘要、实际导出、Go 版本 / 格式 / 模块 / vet / race / 构建、独立用途账号、真实迁移与 HTTP / SIGTERM / 重启；见[模板切片](service-profile-slice.md) |
 | 提交前门禁 | `npm run precommit`；`npm run hooks:install` | 全部代码告警和依赖漏洞清零；真实 Git hook 还核对索引前后一致，失败不提交；见[详细规则](warning-free-commits.md) |
 | 完整质量门禁 | `npm run quality:gate` | 同次脚本覆盖率、issue 校验、平台检查与真实 Sonar；失败立即停止，只清理归属已确认的临时资源，清理未知时保留绑定文件并失败 |
 
@@ -20,6 +21,8 @@
 ## Sonar 门禁
 
 项目标识为本地 SonarQube（社区版 26.8，`localhost:9000`）的 `twine-realm`，由根 `sonar-project.properties` 维护。扫描维护脚本、Go 服务和 TS 前端，单独分类测试与生成声明；Go / LCOV 只导入本次真实报告，Go 还合并浏览器平台进程的原生覆盖率，前端路径转换到仓库基准。平台无 Java，扫描器不传字节码参数；保留适配器已有能力。
+
+Issue #10 的模板保留真实 Go 源文件，位于 `server/` 扫描范围；其独立导出模块及真实子进程的覆盖率同次合并回原模板路径。模板检查不继承模型、云端或外层 Git 凭据；本次测试管理身份只供受信内置模板集成夹具创建和清理自有对象，不交常驻应用或迁移子进程。模块完整性验证不等同于 Go 漏洞数据库审计。
 
 - 本地终端从 `~/.zshrc` 加载 `SONAR_HOST_URL` 与 `TWINE_REALM_SONAR_TOKEN`，也支持专用于本次运行的 `SONAR_TOKEN`。凭据只经扫描器环境与 API 认证头使用，不放入命令行、配置文件或报告；诊断输出自动脱敏。无凭据或服务不可达时门禁失败，不得输出 shell 配置全文。
 - 扫描器等待服务端 Quality Gate（默认 Sonar way），再按本次任务的 analysisId 确认结果为 `OK` 且项目全部未解决代码问题为 0；任务、项目、报告、HTTP、状态不明或扫描失败均返回非零。不采用项目上一次绿色结果，不放宽服务端门槛。默认等待 300 秒，`SONAR_GATE_TIMEOUT_SECONDS` 可设 1–3600 秒；扫描器可通过 `SONAR_SCANNER_BIN` 指定（本机 sonar-scanner CLI 7.3.0）。

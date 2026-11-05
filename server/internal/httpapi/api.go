@@ -58,6 +58,9 @@ func New(service *project.Service, host string, origins []string, webDirectory s
 	mux.HandleFunc("PUT /api/v1/projects/{id}/canvas/middlewares/{componentId}", api.updateMiddleware)
 	mux.HandleFunc("PUT /api/v1/projects/{id}/canvas/layout", api.canvasLayout)
 	mux.HandleFunc("GET /api/v1/canvas-mutations/{id}", api.canvasReceipt)
+	mux.HandleFunc("GET /api/v2/projects/{id}/graph", api.graph)
+	mux.HandleFunc("POST /api/v2/projects/{id}/graph/edits", api.editGraph)
+	mux.HandleFunc("GET /api/v2/graph-mutations/{id}", api.graphReceipt)
 	mux.HandleFunc("GET /api/v1/mutations/{id}", api.receipt)
 	api.runtimeRoutes(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +136,7 @@ func (api *API) receipt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value, err := api.service.Receipt(r.Context(), r.PathValue("id"))
-	if err == nil && (value.Kind == "pinSource" || value.Canvas != nil) {
+	if err == nil && (value.Kind == "pinSource" || value.Canvas != nil || value.Graph != nil) {
 		api.failure(w, project.Failure("UNSUPPORTED_RECEIPT", "此类型回执需通过对应的专用核实入口读取"))
 		return
 	}
@@ -187,9 +190,9 @@ func (api *API) failure(w http.ResponseWriter, err error) {
 	if errors.As(err, &domain) {
 		failure = domain
 		switch domain.Code {
-		case "PROJECT_NOT_FOUND", "SERVICE_NOT_FOUND", "COMPONENT_NOT_FOUND", "MUTATION_NOT_FOUND", "NOT_FOUND", "RUNTIME_OPERATION_NOT_FOUND":
+		case "PROJECT_NOT_FOUND", "SERVICE_NOT_FOUND", "COMPONENT_NOT_FOUND", "BINDING_NOT_FOUND", "MUTATION_NOT_FOUND", "NOT_FOUND", "RUNTIME_OPERATION_NOT_FOUND":
 			status = http.StatusNotFound
-		case "DUPLICATE_REPOSITORY", "REVISION_CONFLICT", "IDEMPOTENCY_CONFLICT", "DEFINITION_CONFLICT", "RUNTIME_GENERATION_CONFLICT", "RUNTIME_COMPONENT_CONFLICT", "RUNTIME_CONFIGURATION_LOCKED", "RUNTIME_RETRY_CONFLICT", "RUNTIME_BUSY", "RUNTIME_INSTALLATION_CONFLICT":
+		case "DUPLICATE_REPOSITORY", "DUPLICATE_BINDING", "CONTRACT_VERSION_CONFLICT", "REVISION_CONFLICT", "IDEMPOTENCY_CONFLICT", "DEFINITION_CONFLICT", "RUNTIME_GENERATION_CONFLICT", "RUNTIME_COMPONENT_CONFLICT", "RUNTIME_CONFIGURATION_LOCKED", "RUNTIME_RETRY_CONFLICT", "RUNTIME_BUSY", "RUNTIME_INSTALLATION_CONFLICT":
 			status = http.StatusConflict
 		case "RESULT_UNKNOWN":
 			status = http.StatusServiceUnavailable

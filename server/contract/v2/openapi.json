@@ -1,0 +1,139 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "twine-realm 服务契约与依赖图",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/api/v2/projects/{id}/graph": {
+      "get": {
+        "summary": "GraphSnapshot",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已确认的版本二图声明",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./graph.schema.json#/$defs/GraphSnapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../v1/openapi.json#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "../v1/openapi.json#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "../v1/openapi.json#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "../v1/openapi.json#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/projects/{id}/graph/edits": {
+      "post": {
+        "summary": "GraphReceipt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已确认的版本二图声明",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./graph.schema.json#/$defs/GraphReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../v1/openapi.json#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "../v1/openapi.json#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "../v1/openapi.json#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "../v1/openapi.json#/components/responses/Unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./graph.schema.json#/$defs/GraphEditCommand"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/graph-mutations/{id}": {
+      "get": {
+        "summary": "GraphReceipt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "已确认的版本二图声明",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./graph.schema.json#/$defs/GraphReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../v1/openapi.json#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "../v1/openapi.json#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "../v1/openapi.json#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "../v1/openapi.json#/components/responses/Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

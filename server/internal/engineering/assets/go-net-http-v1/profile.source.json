@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "id": "go-net-http-mysql",
+  "version": "1.0.0",
+  "template": {
+    "id": "minimal-identity",
+    "version": "1.0.0"
+  },
+  "stack": {
+    "language": "go",
+    "framework": "net/http",
+    "goVersion": "1.27.3",
+    "platforms": [
+      "darwin",
+      "linux"
+    ],
+    "dependencies": [
+      {
+        "module": "github.com/go-sql-driver/mysql",
+        "version": "v1.10.1"
+      },
+      {
+        "module": "github.com/golang-migrate/migrate/v4",
+        "version": "v4.20.1"
+      }
+    ]
+  },
+  "documents": [
+    {
+      "path": "docs/engineering/general.md",
+      "role": "general"
+    },
+    {
+      "path": "docs/engineering/go-net-http.md",
+      "role": "stack"
+    },
+    {
+      "path": "docs/engineering/verification.md",
+      "role": "verification"
+    },
+    {
+      "path": "docs/engineering/sources.json",
+      "role": "sources"
+    }
+  ],
+  "runtime": {
+    "httpPort": 8080,
+    "defaultAddress": "127.0.0.1:8080",
+    "livePath": "/livez",
+    "readyPath": "/readyz",
+    "examplePath": "/api/info",
+    "passwordFileEnv": "DB_PASSWORD_FILE",
+    "migrationPasswordFileEnv": "MIGRATION_PASSWORD_FILE",
+    "commands": [
+      [
+        "service",
+        "serve"
+      ],
+      [
+        "service",
+        "migrate"
+      ],
+      [
+        "service",
+        "migration-status"
+      ]
+    ]
+  },
+  "checks": [
+    [
+      "go",
+      "mod",
+      "verify"
+    ],
+    [
+      "gofmt",
+      "-l",
+      "."
+    ],
+    [
+      "go",
+      "vet",
+      "./..."
+    ],
+    [
+      "go",
+      "test",
+      "-race",
+      "./..."
+    ],
+    [
+      "go",
+      "build",
+      "-mod=readonly",
+      "-trimpath",
+      "./cmd/service"
+    ]
+  ]
+}

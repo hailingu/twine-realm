@@ -1,6 +1,6 @@
 /** 在 HTTP 边界验证服务端响应，未验证的数据不能进入画布模型。 */
 import validators from '../contract/validators.cjs'
-import type { APIError, CreateCommand, ErrorResponse, CanvasLayoutCommand, CanvasReceipt, CanvasSnapshot, DefinitionCatalog, MiddlewareCommand, Project, ProjectList, Receipt, RegisterCommand, PinSourceCommand, SourceObservation, SourceReceipt } from '../contract/generated'
+import type { APIError, CreateCommand, ErrorResponse, CanvasLayoutCommand, CanvasReceipt, CanvasSnapshot, DefinitionCatalog, GraphEditCommand, GraphReceipt, GraphSnapshot, MiddlewareCommand, Project, ProjectList, Receipt, RegisterCommand, PinSourceCommand, SourceObservation, SourceReceipt } from '../contract/generated'
 import { CATALOG_DIGEST, MYSQL_REFERENCE } from '../contract/catalog.generated'
 
 /** @param name 受控的生成定义名 @param input 未知响应 @returns 按生成 schema 验证后的类型谓词。 */
@@ -32,6 +32,9 @@ export interface ProjectAPI {
   addMiddleware(id: string, command: MiddlewareCommand, signal?: AbortSignal): Promise<CanvasReceipt>
   updateMiddleware(id: string, componentId: string, command: MiddlewareCommand, signal?: AbortSignal): Promise<CanvasReceipt>
   canvasReceipt(id: string, signal?: AbortSignal): Promise<CanvasReceipt>
+  graph(id: string, signal?: AbortSignal): Promise<GraphSnapshot>
+  editGraph(id: string, command: GraphEditCommand, signal?: AbortSignal): Promise<GraphReceipt>
+  graphReceipt(id: string, signal?: AbortSignal): Promise<GraphReceipt>
 }
 
 /** @param name 契约定义名 @param input 未信任的 JSON @returns 已验证的边界类型。 */
@@ -41,12 +44,12 @@ export function parseContract<T>(name: string, input: unknown): T {
 }
 
 /** @param path API 路径 @param name 响应定义 @param method 方法 @param body 原请求体 @param signal 会话取消 @returns 已验证的响应。 */
-export async function request<T>(path: string, name: string, method = 'GET', body?: object, signal?: AbortSignal): Promise<T> {
+export async function request<T>(path: string, name: string, method = 'GET', body?: object, signal?: AbortSignal, version: 1 | 2 = 1): Promise<T> {
   const options: RequestInit = { method, signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12000)]) : AbortSignal.timeout(12000) }
   if (body) { options.headers = { 'Content-Type': 'application/json', 'X-Twine-Request': '1' }; options.body = JSON.stringify(body) }
   let response: Response
   let data: unknown
-  try { response = await fetch(`/api/v1${path}`, options); data = await response.json() }
+  try { response = await fetch(`/api/v${version}${path}`, options); data = await response.json() }
   catch (cause) { throw new RequestError({ code: 'TRANSPORT_FAILED', message: '未收到可确认的响应，请保留草稿并核实或重试原请求' }, 0, { cause }) }
   if (!response.ok) {
     const failure = parseContract<ErrorResponse>('ErrorResponse', data)
@@ -75,5 +78,12 @@ export const PROJECT_API: ProjectAPI = {
   },
   addMiddleware: (id, command, signal) => request(`/projects/${id}/canvas/middlewares`, 'CanvasReceipt', 'POST', command, signal),
   updateMiddleware: (id, componentId, command, signal) => request(`/projects/${id}/canvas/middlewares/${componentId}`, 'CanvasReceipt', 'PUT', command, signal),
-  canvasReceipt: (id, signal) => request(`/canvas-mutations/${id}`, 'CanvasReceipt', 'GET', undefined, signal)
+  canvasReceipt: (id, signal) => request(`/canvas-mutations/${id}`, 'CanvasReceipt', 'GET', undefined, signal),
+  graph: async (id, signal) => {
+    const value = await request<GraphSnapshot>(`/projects/${id}/graph`, 'GraphSnapshot', 'GET', undefined, signal, 2)
+    if (value.project.id !== id) throw new RequestError({ code: 'INVALID_RESPONSE', message: '图快照与当前项目身份不一致' }, 0)
+    return value
+  },
+  editGraph: (id, command, signal) => request(`/projects/${id}/graph/edits`, 'GraphReceipt', 'POST', command, signal, 2),
+  graphReceipt: (id, signal) => request(`/graph-mutations/${id}`, 'GraphReceipt', 'GET', undefined, signal, 2)
 }

@@ -253,7 +253,7 @@
   border-radius:9px;
   background:#fffefa;
   box-shadow:0 5px 20px #3947350c;
-  overflow:hidden;
+  overflow:visible;
   padding:17px 17px 0;
   cursor:grab
 }
@@ -346,3 +346,19 @@
 .mysql-form select { width: 100%; padding: 11px; border: 1px solid var(--line); border-radius: 8px; background: white; }
 .definition-digest { display: block; overflow-wrap: anywhere; margin-top: 8px; font-size: 10px; }
 .mysql-card small { color: #62665b; font-size: 11px; margin-top: 10px; }
+.semantic-ports { padding: 5px 0 8px; }
+.semantic-port { min-height: 28px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 10px; }
+.semantic-port small { margin: 0; font-size: 8px; color: #536448; }
+.react-flow__handle { width: 10px; height: 10px; background: #536448; border: 2px solid #fffefa; }
+.missing-ports { display: block; padding-bottom: 8px; color: #78592d; font-size: 9px; }
+.graph-inspector, .contract-panel, .binding-panel { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px; }
+.graph-inspector h3 { font-size: 13px; }
+.contract-actions { display: grid; gap: 6px; margin: 12px 0; }
+.contract-panel form, .binding-panel form, .contract-panel label, .binding-panel label { display: grid; gap: 8px; margin: 12px 0; font-size: 11px; }
+.contract-panel textarea { width: 100%; min-height: 240px; resize: vertical; font-family: monospace; font-size: 10px; }
+.contract-panel select, .binding-panel select { width: 100%; padding: 8px; border: 1px solid var(--line); background: white; border-radius: 6px; }
+.contract-panel .confirm-bindings { display: flex; align-items: center; }
+.confirm-bindings input { width: auto; }
+.binding-item { border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin: 12px 0; }
+.binding-item strong, .binding-item span, .binding-item small, .binding-item code { display: block; margin-bottom: 6px; font-size: 10px; overflow-wrap: anywhere; }
+.binding-item button { margin: 4px 4px 0 0; font-size: 10px; }

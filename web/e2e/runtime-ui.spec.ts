@@ -3,23 +3,24 @@ import { expect, type Page } from '@playwright/test'
 import type { RuntimeCommand, RuntimeReceipt, RuntimeSnapshot } from '../src/contract/generated'
 import { parseContract } from '../src/project/api'
 import { test } from './platformFixture'
+import { declarePorts, prepareBinding, prepareBindingProject } from './bindingFixture'
 
 /** @param page 当前页面 @param label 明确动作 @returns 对本次确认框接受后完成点击。 */
 async function confirmAction(page: Page, label: string): Promise<void> {
   await Promise.all([page.waitForEvent('dialog').then(dialog => dialog.accept()), page.getByRole('button', { name: label, exact: true }).click()])
 }
 
-test('界面原键重试后关闭浏览器不取消后台，重开可查询同操作并明确停止', async ({ page, platform, browser, request }) => {
+test('具名连线与运行事实共存，原键重试和重开保留声明，轮询不覆盖位置草稿', async ({ page, platform, browser, request }) => {
   test.setTimeout(180000)
-  await page.goto(platform.url)
-  await page.getByLabel('新项目名称').fill('界面运行恢复项目')
-  await page.getByRole('button', { name: '创建项目' }).click()
-  await page.getByRole('button', { name: '＋ MySQL 组件' }).click()
-  await expect(page.getByRole('button', { name: '确认加入 MySQL' })).toBeEnabled()
-  await page.getByLabel('MySQL 组件名称').fill('界面数据库')
+  const project = await prepareBindingProject(page, platform, '界面运行恢复项目')
+  await declarePorts(page)
+  await prepareBinding(page, await project.graph(), 'app_runtime')
+  await page.getByRole('button', { name: '确认保存依赖' }).click()
+  await expect(page.locator('.react-flow__edge')).toHaveCount(1)
+  const declared = (await project.graph()).graph
+  await page.getByRole('button', { name: '配置声明数据库' }).click()
   await page.getByLabel('MySQL 运行方案').selectOption('local-compose-v1')
-  await page.getByRole('button', { name: '确认加入 MySQL' }).click()
-  await page.getByRole('button', { name: '配置界面数据库' }).click()
+  await page.getByRole('button', { name: '保存 MySQL 配置' }).click()
   await expect(page.getByRole('button', { name: '确认运行 MySQL' })).toBeEnabled()
   const commands: RuntimeCommand[] = []
   let accepted: RuntimeReceipt | undefined
@@ -45,8 +46,21 @@ test('界面原键重试后关闭浏览器不取消后台，重开可查询同�
   try {
     await reopened.goto(platform.url)
     await reopened.getByRole('button', { name: /界面运行恢复项目/ }).click()
-    await reopened.getByRole('button', { name: '配置界面数据库' }).click()
+    await reopened.getByRole('button', { name: '配置声明数据库' }).click()
     await expect(reopened.getByRole('status', { name: 'MySQL运行事实' })).toHaveText('实际运行 · 认证就绪', { timeout: 140000 })
+    await expect(reopened.locator('.react-flow__edge')).toHaveCount(1)
+    await expect(reopened.locator('.react-flow__node-mysql .target[data-handleid="mysql"]')).toHaveCount(1)
+    await expect(reopened.locator('.react-flow__node-mysql .runtime-fact')).toHaveText('实际运行 · 认证就绪')
+    const graph = (await project.graph()).graph
+    expect(graph.bindings).toEqual(declared.bindings)
+    expect(graph.serviceContracts).toEqual(declared.serviceContracts)
+    const coordinate = reopened.getByRole('spinbutton', { name: /显式服务 X/ })
+    await coordinate.fill('710')
+    await expect(reopened.getByRole('status', { name: '画布保存状态' })).toContainText('布局有未保存的修改')
+    await reopened.waitForTimeout(2500)
+    await expect(coordinate).toHaveValue('710')
+    await expect(reopened.getByRole('status', { name: '画布保存状态' })).toContainText('布局有未保存的修改')
+    await reopened.getByRole('button', { name: '还原布局' }).click()
     const response = await request.get(`${platform.url}/api/v1/projects/${original.target.projectId}/runtime`)
     const value = parseContract<RuntimeSnapshot>('RuntimeSnapshot', await response.json())
     expect(value.operation?.id).toBe(original.operationId)
@@ -59,7 +73,9 @@ test('界面原键重试后关闭浏览器不取消后台，重开可查询同�
     await platform.restart()
     await reopened.reload()
     await reopened.getByRole('button', { name: /界面运行恢复项目/ }).click()
-    await reopened.getByRole('button', { name: '配置界面数据库' }).click()
+    await reopened.getByRole('button', { name: '配置声明数据库' }).click()
     await expect(reopened.getByRole('status', { name: 'MySQL运行事实' })).toHaveText('实际已停止')
+    await expect(reopened.locator('.react-flow__edge')).toHaveCount(1)
+    expect(await platform.fingerprint(project.path)).toEqual(project.fingerprint)
   } finally { await context.close() }
 })

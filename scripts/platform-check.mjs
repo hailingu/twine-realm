@@ -8,6 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { runCommand } from './sonar-gate.mjs'
 import { checkCommand } from './check-command.mjs'
 import { cleanupRuntimeResources, parseRuntimeInstallation, requiresPreservation } from './runtime-check.mjs'
+import { runServiceProfileChecks } from './service-profile-check.mjs'
 
 const MYSQL_IMAGE = 'mysql:9.7.4@sha256:df90258da46f6e7ff8574ff84f17618aba0765cac749928299c69fd4e7cb8ad8'
 
@@ -31,7 +32,7 @@ async function mergeGoCoverage(reports, target) {
     const previous = merged.get(location)
     merged.set(location, { statements, count: Number(count) + (previous?.count || 0) })
   }
-  const lines = [...merged].map(([location, value]) => [location.replace('github.com/hailingu/twine-realm/server/', 'server/'), value.statements, value.count].join(' '))
+  const lines = [...merged].map(([location, value]) => [location.replace('github.com/hailingu/twine-realm/server/', 'server/').replace('example.invalid/service/', 'server/internal/engineering/assets/go-net-http-v1/_template/'), value.statements, value.count].join(' '))
   await writeFile(target, 'mode: atomic\n' + lines.join('\n') + '\n')
 }
 
@@ -52,6 +53,7 @@ async function cleanupDatabase(started, name, envFile, execute, env) {
 export async function runPlatformChecks({ root, temporary, env = process.env, execute = runCommand, write = message => process.stdout.write(message) }) {
   const name = `twine-check-${randomUUID()}`
   const password = randomBytes(24).toString('hex')
+  const adminPassword = randomBytes(24).toString('hex')
   const envFile = join(temporary, 'mysql.env')
   const binary = join(temporary, 'platform')
   const runtimeInit = join(temporary, 'runtime-init')
@@ -67,7 +69,7 @@ export async function runPlatformChecks({ root, temporary, env = process.env, ex
     write(`[PLATFORM_STEP] ${command} ${args.join(' ')}\n`)
     return checkCommand(command, args, { cwd, env: childEnv, timeoutMs: 600000 }, { execute, write })
   }
-  await writeFile(envFile, `MYSQL_ROOT_PASSWORD=${randomBytes(24).toString('hex')}\nMYSQL_DATABASE=twine_test\nMYSQL_USER=twine\nMYSQL_PASSWORD=${password}\n`, { mode: 0o600 })
+  await writeFile(envFile, `MYSQL_ROOT_PASSWORD=${adminPassword}\nMYSQL_ROOT_HOST=%\nMYSQL_DATABASE=twine_test\nMYSQL_USER=twine\nMYSQL_PASSWORD=${password}\n`, { mode: 0o600 })
   let started = false
   let runtimeInstallation
   let reports
@@ -82,6 +84,7 @@ export async function runPlatformChecks({ root, temporary, env = process.env, ex
     Object.assign(childEnv, { TWINE_TEST_DATABASE_DSN: `twine:${password}@tcp(127.0.0.1:${port})/twine_test`, TWINE_DATABASE_DSN: `twine:${password}@tcp(127.0.0.1:${port})/twine_test`, TWINE_TEST_BINARY: binary, TWINE_TEST_ARTIFACTS: join(temporary, 'browser'), TWINE_TEST_WEB_DIRECTORY: webBuild })
     if ((await checked('gofmt', ['-l', 'server'])).trim()) throw new Error('Go 格式检查未通过')
     childEnv.GOCOVERDIR = browserGoCoverage
+    const templateReports = await runServiceProfileChecks({ root, temporary, env: childEnv, execute, write, adminDSN: `root:${adminPassword}@tcp(127.0.0.1:${port})/twine_test` })
     await checked('go', ['build', '-cover', '-coverpkg=./...', '-o', binary, './cmd/platform'], join(root, 'server'))
     await checked('go', ['build', '-cover', '-coverpkg=./...', '-o', runtimeInit, './cmd/runtime-init'], join(root, 'server'))
     childEnv.TWINE_REPOSITORY_ROOTS = JSON.stringify([root])
@@ -98,7 +101,7 @@ export async function runPlatformChecks({ root, temporary, env = process.env, ex
     const browserProfile = join(temporary, 'browser-go.out')
     await checked('go', ['tool', 'covdata', 'textfmt', `-i=${browserGoCoverage}`, `-o=${browserProfile}`], join(root, 'server'))
     // Sonar 以仓库为基准解析 Go 模块覆盖率路径，显式转换本次报告。
-    await mergeGoCoverage([goCoverage, browserProfile], goCoverage)
+    await mergeGoCoverage([goCoverage, browserProfile, ...templateReports.goCoverageReportPaths], goCoverage)
     const lcov = join(webCoverage, 'lcov.info')
     await writeFile(lcov, (await readFile(lcov, 'utf8')).replace(/^SF:src\//gm, 'SF:web/src/'))
     reports = { goCoverageReportPaths: [goCoverage], lcovReportPaths: [join(webCoverage, 'lcov.info')] }

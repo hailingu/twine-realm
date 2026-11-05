@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { CanvasReceipt } from '../contract/generated'
 import { RequestError } from './api'
-import { fakeAPI, INITIAL_PROJECT, EMPTY_CANVAS, canvasReceipt } from '../testing/projectFixtures'
+import { fakeAPI, INITIAL_PROJECT, EMPTY_GRAPH, canvasReceipt } from '../testing/projectFixtures'
 import { useWorkspace } from './useWorkspace'
 
 const serviceId = INITIAL_PROJECT.nodes[0]?.id ?? ''
@@ -36,7 +36,7 @@ describe('工作区保存状态机', () => {
     act(() => { result.current.verify() }); await waitFor(() => { expect(result.current.dirty).toBe(false) })
   })
   it('确定拒绝与版本冲突保留位置，用户可重放到最新版本或还原', async () => {
-    const api = fakeAPI(); api.layout.mockRejectedValue(new RequestError({ code: 'REVISION_CONFLICT', message: '其他窗口已更新' }, 409)); api.canvas.mockResolvedValue({ project: { ...INITIAL_PROJECT, revision: '3' }, canvas: EMPTY_CANVAS })
+    const api = fakeAPI(); api.layout.mockRejectedValue(new RequestError({ code: 'REVISION_CONFLICT', message: '其他窗口已更新' }, 409)); api.graph.mockResolvedValue({ project: { ...INITIAL_PROJECT, revision: '3' }, graph: EMPTY_GRAPH })
     const { result } = renderHook(() => useWorkspace(INITIAL_PROJECT, api))
     act(() => { result.current.move(serviceId, { x: 900, y: 800 }) }); act(() => { result.current.save() })
     await waitFor(() => { expect(result.current.saveState).toMatchObject({ kind: 'rejected', conflict: true }) })

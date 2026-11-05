@@ -8,6 +8,7 @@ export type PendingRequest =
   | { kind: 'pinSource'; projectId: string; serviceId: string; command: import('../contract/generated').PinSourceCommand }
   | { kind: 'addMiddleware'; projectId: string; command: import('../contract/generated').MiddlewareCommand }
   | { kind: 'updateMiddleware'; projectId: string; componentId: string; command: import('../contract/generated').MiddlewareCommand }
+  | { kind: 'editGraph'; projectId: string; command: import('../contract/generated').GraphEditCommand }
 
 /** 保存状态只有一个所有者，不使用互相矛盾的布尔旗标。 */
 export type SaveState =
@@ -17,7 +18,7 @@ export type SaveState =
   | { kind: 'rejected'; message: string; conflict: boolean }
 
 /** @param project 已确认快照 @returns 可编辑的位置草稿。 */
-export function positionsOf(project: Project, canvas?: CanvasState): CanvasPosition[] {
+export function positionsOf(project: Project, canvas?: Pick<CanvasState, 'middlewares'>): CanvasPosition[] {
   return [...project.nodes, ...(canvas?.middlewares ?? [])].map(node => ({ componentId: node.id, ...node.position }))
 }
 
@@ -28,7 +29,7 @@ export function movePosition(positions: CanvasPosition[], id: string, position: 
 }
 
 /** @param project 确认快照 @param draft 本地草稿 @returns 是否存在尚未持久化的变化。 */
-export function isDirty(project: Project, draft: CanvasPosition[], canvas?: CanvasState): boolean {
+export function isDirty(project: Project, draft: CanvasPosition[], canvas?: Pick<CanvasState, 'middlewares'>): boolean {
   return [...project.nodes, ...(canvas?.middlewares ?? [])].some(node => { const item = draft.find(value => value.componentId === node.id); return item?.x !== node.position.x || item?.y !== node.position.y })
 }
 

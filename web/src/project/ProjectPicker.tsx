@@ -1,10 +1,10 @@
 /** 项目选择和创建拥有独立生命周期，创建结果不明时复用原请求身份。 */
 import { useEffect, useRef, useState } from 'react'
-import type { CreateCommand, CanvasSnapshot, Summary } from '../contract/generated'
+import type { CreateCommand, GraphSnapshot, Summary } from '../contract/generated'
 import { RequestError, type ProjectAPI } from './api'
 
 /** @param props 项目端口与打开回调 @returns 本地项目入口。 */
-export function ProjectPicker({ api, onOpen }: Readonly<{ api: ProjectAPI; onOpen: (project: CanvasSnapshot) => void }>) {
+export function ProjectPicker({ api, onOpen }: Readonly<{ api: ProjectAPI; onOpen: (project: GraphSnapshot) => void }>) {
   const [projects, setProjects] = useState<Summary[]>([])
   const [name, setName] = useState('')
   const [message, setMessage] = useState('正在读取本地项目…')
@@ -50,14 +50,14 @@ export function ProjectPicker({ api, onOpen }: Readonly<{ api: ProjectAPI; onOpe
 }
 
 /** @param api 外部端口 @param command 可恢复创建意图 @param id 已存在项目 @param verify 只核实原结果 @param signal 会话取消 @returns 已确认项目。 */
-async function loadSelectedProject(api: ProjectAPI, command: CreateCommand | null, id: string | undefined, verify: boolean, signal: AbortSignal): Promise<CanvasSnapshot> {
+async function loadSelectedProject(api: ProjectAPI, command: CreateCommand | null, id: string | undefined, verify: boolean, signal: AbortSignal): Promise<GraphSnapshot> {
   if (!command) {
     if (!id) throw new Error("缺少项目身份")
-    return api.canvas(id, signal)
+    return api.graph(id, signal)
   }
   const receipt = verify ? await api.receipt(command.mutationId, signal) : await api.create(command, signal)
   if (receipt.mutationId !== command.mutationId || receipt.kind !== "createProject") {
     throw new RequestError({ code: "INVALID_RESPONSE", message: "创建回执不匹配，请核实原请求" }, 0)
   }
-  return api.canvas(receipt.project.id, signal)
+  return api.graph(receipt.project.id, signal)
 }

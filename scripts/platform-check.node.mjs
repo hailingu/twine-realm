@@ -23,10 +23,12 @@ async function fixture(options, action) {
     if (command === 'docker' && args.includes('--format={{.State.Health.Status}}')) return { code: 0, output: options.unhealthy ? 'unhealthy' : 'healthy' }
     if (command === 'docker' && args[0] === 'inspect') return { code: 0, output: '13307\n' }
     if (command === 'gofmt' && options.formatFailure) return { code: 0, output: 'server/unformatted.go\n' }
+    if (command === 'go' && args[0] === 'env') return { code: 0, output: 'go1.27.3\n' }
     if (command === 'npm' && args.includes('lint') && options.lintFailure) return { code: 1, output: '类型规则拒绝\n' }
     if (command === 'go' && args[0] === 'test') {
       const flag = args.find(value => value.startsWith('-coverprofile='))
-      await writeFile(flag.slice('-coverprofile='.length), 'mode: atomic\ngithub.com/hailingu/twine-realm/server/internal/project/service.go:1.1,2.1 1 1\n')
+      const module = settings.cwd.endsWith('service-template') ? 'example.invalid/service/internal/app/handler.go' : 'github.com/hailingu/twine-realm/server/internal/project/service.go'
+      await writeFile(flag.slice('-coverprofile='.length), `mode: atomic\n${module}:1.1,2.1 1 1\n`)
     }
     if (command === 'npm' && args.includes('--coverage.reportsDirectory')) {
       const report = args[args.indexOf('--coverage.reportsDirectory') + 1]
@@ -34,7 +36,8 @@ async function fixture(options, action) {
     }
     if (command === 'go' && args[0] === 'tool') {
       const flag = args.find(value => value.startsWith('-o='))
-      await writeFile(flag.slice(3), 'mode: set\ngithub.com/hailingu/twine-realm/server/cmd/platform/main.go:1.1,2.1 1 1\n')
+      const module = settings.cwd.endsWith('service-template') ? 'example.invalid/service/cmd/service/main.go' : 'github.com/hailingu/twine-realm/server/cmd/platform/main.go'
+      await writeFile(flag.slice(3), `mode: set\n${module}:1.1,2.1 1 1\n`)
     }
     return { code: 0, output: '' }
   }
@@ -46,6 +49,7 @@ test('完整检查使用独立数据库与临时构建，传递新报告并清�
   await fixture({}, async fake => {
     const result = await runPlatformChecks({ root: process.cwd(), temporary: fake.temporary, env: { NO_COLOR: '1', FORCE_COLOR: '1' }, execute: fake.execute, write: value => fake.output.push(value) })
     assert.match(await readFile(result.goCoverageReportPaths[0], 'utf8'), /server\/internal\/project/)
+    assert.match(await readFile(result.goCoverageReportPaths[0], 'utf8'), /server\/internal\/engineering\/assets\/go-net-http-v1\/_template\/internal\/app/)
     assert.match(await readFile(result.lcovReportPaths[0], 'utf8'), /SF:web\/src/)
     await assert.rejects(access(fake.envFile()), { code: 'ENOENT' })
     const cleanup = fake.calls.filter(call => call.command === 'docker' && call.args[0] === 'rm')

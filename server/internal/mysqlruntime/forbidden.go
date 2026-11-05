@@ -38,3 +38,24 @@ func LocalForbidden(repositories []string, webDirectory string) ([]string, error
 	}
 	return values, nil
 }
+
+// forbiddenDirectory 规范化尚未创建的禁止范围的既有父路径，不从缺失路径保留链接别名。
+func forbiddenDirectory(absolute string) (string, error) {
+	suffix := ""
+	for current := absolute; ; current = filepath.Dir(current) {
+		canonical, err := filepath.EvalSymlinks(current)
+		if err == nil {
+			return filepath.Join(canonical, suffix), nil
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			return "", err
+		}
+		if _, statErr := os.Lstat(current); !errors.Is(statErr, fs.ErrNotExist) {
+			return "", err
+		}
+		if filepath.Dir(current) == current {
+			return "", err
+		}
+		suffix = filepath.Join(filepath.Base(current), suffix)
+	}
+}

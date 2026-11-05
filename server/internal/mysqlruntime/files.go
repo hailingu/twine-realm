@@ -178,10 +178,8 @@ func outsideRepositories(path string, forbidden []string) error {
 		if err != nil {
 			return failure("RUNTIME_DIRECTORY_INVALID", "禁止范围配置无效", false, false)
 		}
-		canonical, err := filepath.EvalSymlinks(absolute)
-		if errors.Is(err, fs.ErrNotExist) {
-			canonical = absolute
-		} else if err != nil {
+		canonical, err := forbiddenDirectory(absolute)
+		if err != nil {
 			return failure("RUNTIME_DIRECTORY_INVALID", "无法核实禁止范围", false, false)
 		}
 		if within(path, canonical) || within(canonical, path) {
