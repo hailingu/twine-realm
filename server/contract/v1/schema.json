@@ -59,6 +59,39 @@
     },
     "sourceReceipt": {
       "$ref": "#/$defs/SourceReceipt"
+    },
+    "definitionRef": {
+      "$ref": "#/$defs/DefinitionRef"
+    },
+    "portDefinition": {
+      "$ref": "#/$defs/PortDefinition"
+    },
+    "nodeDefinition": {
+      "$ref": "#/$defs/NodeDefinition"
+    },
+    "definitionCatalog": {
+      "$ref": "#/$defs/DefinitionCatalog"
+    },
+    "middlewareNode": {
+      "$ref": "#/$defs/MiddlewareNode"
+    },
+    "canvasState": {
+      "$ref": "#/$defs/CanvasState"
+    },
+    "canvasSnapshot": {
+      "$ref": "#/$defs/CanvasSnapshot"
+    },
+    "middlewareCommand": {
+      "$ref": "#/$defs/MiddlewareCommand"
+    },
+    "canvasPosition": {
+      "$ref": "#/$defs/CanvasPosition"
+    },
+    "canvasLayoutCommand": {
+      "$ref": "#/$defs/CanvasLayoutCommand"
+    },
+    "canvasReceipt": {
+      "$ref": "#/$defs/CanvasReceipt"
     }
   },
   "$defs": {
@@ -627,6 +660,39 @@
         "replayed",
         "sourceVersion"
       ]
+    },
+    "DefinitionRef": {
+      "$ref": "./components.schema.json#/$defs/DefinitionRef"
+    },
+    "PortDefinition": {
+      "$ref": "./components.schema.json#/$defs/PortDefinition"
+    },
+    "NodeDefinition": {
+      "$ref": "./components.schema.json#/$defs/NodeDefinition"
+    },
+    "DefinitionCatalog": {
+      "$ref": "./components.schema.json#/$defs/DefinitionCatalog"
+    },
+    "MiddlewareNode": {
+      "$ref": "./components.schema.json#/$defs/MiddlewareNode"
+    },
+    "CanvasState": {
+      "$ref": "./components.schema.json#/$defs/CanvasState"
+    },
+    "CanvasSnapshot": {
+      "$ref": "./components.schema.json#/$defs/CanvasSnapshot"
+    },
+    "MiddlewareCommand": {
+      "$ref": "./components.schema.json#/$defs/MiddlewareCommand"
+    },
+    "CanvasPosition": {
+      "$ref": "./components.schema.json#/$defs/CanvasPosition"
+    },
+    "CanvasLayoutCommand": {
+      "$ref": "./components.schema.json#/$defs/CanvasLayoutCommand"
+    },
+    "CanvasReceipt": {
+      "$ref": "./components.schema.json#/$defs/CanvasReceipt"
     }
   }
 }

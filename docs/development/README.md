@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-已建立 [Issue #1 本地切片](local-project-slice.md)：Go 服务、React / React Flow 画布和平台库 Compose。根 `test:platform` 验证真实数据库、Git、浏览器与重启；`quality:gate` 另含本次 Sonar。其余长期能力仍为目标。
+已建立 [Issue #1 / #2 本地与源码切片](local-project-slice.md) 和 [Issue #6 组件目录切片](component-catalog-slice.md)：Go 服务、React / React Flow 画布、源码固定、标准 MySQL 草稿和平台库 Compose。根 `test:platform` 验证真实数据库、Git、浏览器与重启；`quality:gate` 另含本次 Sonar。其余长期能力仍为目标。
 
 平台目标形态见[平台设计概览](../platform-design/README.md)。`main` 分支的能力实验室、模拟器是历史演示，不约束新实现，也不作为可复用代码来源。
 
@@ -13,6 +13,7 @@
 | 文档 | 何时阅读 | 主要内容 |
 | --- | --- | --- |
 | [本地项目切片](local-project-slice.md) | 运行 / 调试 Issue #1 | 契约、持久化、只读 Git、恢复和一期安全 |
+| [标准组件目录切片](component-catalog-slice.md) | Issue #6 的 MySQL 配置草稿 | 离线 schema、固定版本、统一布局与回执 |
 | [开发工作流](workflow.md) | 开始任务、规划切片时 | 技术方向、状态矩阵、独立分支 / worktree、PR 合入 develop、同步与安全清理 |
 | [运行时与工具链](runtime-toolchain.md) | 初始化工程、安装或升级依赖时 | Go / Node / MySQL / Docker 版本基线、本机现状差距、锁定位置 |
 | [软件工程规范](software-engineering-standard.md) | 修改生产或测试代码前 | 职责、依赖、规模、抽象、状态与错误边界 |

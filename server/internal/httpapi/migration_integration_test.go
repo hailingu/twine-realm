@@ -1,11 +1,14 @@
 //go:build integration
 
-// 本文件只在门禁独占的临时 MySQL 中验证实际 v1 到 v2 迁移，不操作用户数据库。
+// 本文件只在门禁独占的临时 MySQL 中验证旧版本升级，不操作用户数据库。
 package httpapi_test
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/json"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -59,10 +62,10 @@ func migrationRunner(t *testing.T, dsn string) *migrate.Migrate {
 func TestLegacyProjectMigration(t *testing.T) {
 	f := openFixture(t)
 	runner := migrationRunner(t, f.dsn)
-	if err := runner.Steps(-1); err != nil {
+	if err := runner.Migrate(1); err != nil {
 		t.Fatal(err)
 	}
-	registered, _ := registerSource(t, f, true)
+	registered := legacyRegistration(t, f)
 	if err := runner.Up(); err != nil {
 		t.Fatal(err)
 	}
@@ -81,5 +84,82 @@ func TestLegacyProjectMigration(t *testing.T) {
 	value := decode[project.SourceObservation](t, call(t, f.handler, "GET", sourceURL(opened), nil), 200, "SourceObservation")
 	if value.Version.PinnedCommit != nil || value.Version.RepositoryID != opened.Nodes[0].Repository.ID || value.Version.ProjectRevision != opened.Revision {
 		t.Fatal("迁移伪造固定值或丢失稳定关联")
+	}
+	canvas := decode[project.CanvasSnapshot](t, call(t, f.handler, "GET", canvasURL(opened), nil), 200, "CanvasSnapshot")
+	if len(canvas.Canvas.Middlewares) != 0 || !reflect.DeepEqual(canvas.Project, opened) {
+		t.Fatal("旧项目升级后出现伪造组件或服务丢失")
+	}
+}
+
+// legacyRegistration 直接生成 v1 真实行和回执，避免用新代码假装历史版本行为。
+func legacyRegistration(t *testing.T, f *fixture) project.Receipt {
+	t.Helper()
+	current := create(t, f)
+	path, err := filepath.EvalSymlinks(repository(t, f.root, "legacy"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sourceGit(t, path, "-c", "user.name=测试", "-c", "user.email=test@example.invalid", "commit", "--allow-empty", "-m", "旧源码")
+	commit := sourceGit(t, path, "rev-parse", "HEAD")
+	repositoryID, serviceID := id(t), id(t)
+	current.Revision = "1"
+	current.Nodes = []project.Node{{ID: serviceID, DisplayName: "旧版本服务", Repository: project.Repository{ID: repositoryID, Path: path, HeadCommit: &commit}, Position: project.Position{X: 20, Y: 30}}}
+	value := project.Receipt{MutationID: id(t), Kind: "registerRepository", Project: current}
+	data, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db, err := sql.Open("mysql", f.dsn)
+	if err != nil {
+		t.Fatal("打开临时旧版本夹具失败")
+	}
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	pathHash := sha256.Sum256([]byte(path))
+	hash := sha256.Sum256(data)
+	statements := []struct {
+		query     string
+		arguments []any
+	}{
+		{"UPDATE projects SET revision=1 WHERE id=?", []any{current.ID}},
+		{"INSERT INTO repositories(id,path,path_hash) VALUES(?,?,?)", []any{repositoryID, path, pathHash[:]}},
+		{"INSERT INTO services(id,project_id,repository_id,display_name,head_commit,position_x,position_y) VALUES(?,?,?,?,?,?,?)", []any{serviceID, current.ID, repositoryID, "旧版本服务", commit, 20, 30}},
+		{"INSERT INTO mutation_receipts(id,intent_hash,response,created_at) VALUES(?,?,?,UTC_TIMESTAMP(6))", []any{value.MutationID, hash[:], data}},
+	}
+	for _, statement := range statements {
+		if _, err := db.Exec(statement.query, statement.arguments...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return value
+}
+
+// TestPinnedSourceMigration 验证中间件迁移不会抹除 Issue #2 的固定 commit 与专用回执。
+func TestPinnedSourceMigration(t *testing.T) {
+	f := openFixture(t)
+	runner := migrationRunner(t, f.dsn)
+	if err := runner.Migrate(2); err != nil {
+		t.Fatal(err)
+	}
+	registered := legacyRegistration(t, f)
+	command := project.PinSourceCommand{MutationID: id(t), BaseRevision: "1", Commit: *registered.Project.Nodes[0].Repository.HeadCommit}
+	saved := decode[project.Receipt](t, call(t, f.handler, "PUT", sourceURL(registered.Project), command), 200, "SourceReceipt")
+	if err := runner.Up(); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.database.Close(); err != nil {
+		t.Fatal(err)
+	}
+	f.reopen(t)
+	value := decode[project.SourceObservation](t, call(t, f.handler, "GET", sourceURL(registered.Project), nil), 200, "SourceObservation")
+	if !reflect.DeepEqual(&value.Version, saved.SourceVersion) {
+		t.Fatal("升级丢失固定源码")
+	}
+	replay := decode[project.Receipt](t, call(t, f.handler, "GET", "/api/v1/source-mutations/"+command.MutationID, nil), 200, "SourceReceipt")
+	if !replay.Replayed || !reflect.DeepEqual(replay.SourceVersion, saved.SourceVersion) {
+		t.Fatal("升级改变了原源码回执")
 	}
 }

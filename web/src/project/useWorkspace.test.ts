@@ -1,9 +1,9 @@
 /** 会话行为测试覆盖失败保留、原键重试、冲突恢复与旧结果隔离。 */
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { Receipt } from '../contract/generated'
+import type { CanvasReceipt } from '../contract/generated'
 import { RequestError } from './api'
-import { fakeAPI, INITIAL_PROJECT, receipt } from '../testing/projectFixtures'
+import { fakeAPI, INITIAL_PROJECT, EMPTY_CANVAS, canvasReceipt } from '../testing/projectFixtures'
 import { useWorkspace } from './useWorkspace'
 
 const serviceId = INITIAL_PROJECT.nodes[0]?.id ?? ''
@@ -25,18 +25,18 @@ describe('工作区保存状态机', () => {
   })
   it('核实未受理仍保留原请求，找到回执才确认保存', async () => {
     const api = fakeAPI(); api.layout.mockRejectedValue(new RequestError({ code: 'STORAGE_UNAVAILABLE', message: '暂不可用' }, 503))
-    api.receipt.mockRejectedValueOnce(new RequestError({ code: 'MUTATION_NOT_FOUND', message: '未找到回执' }, 404))
+    api.canvasReceipt.mockRejectedValueOnce(new RequestError({ code: 'MUTATION_NOT_FOUND', message: '未找到回执' }, 404))
     const { result } = renderHook(() => useWorkspace(INITIAL_PROJECT, api))
     act(() => { result.current.move(serviceId, { x: 500, y: 200 }) }); act(() => { result.current.save() })
     await waitFor(() => { expect(result.current.saveState.kind).toBe('unknown') })
     act(() => { result.current.verify() })
     await waitFor(() => { expect(result.current.saveState).toMatchObject({ kind: 'unknown', message: '未找到回执' }) })
     const command = api.layout.mock.calls[0]?.[1]; if (!command) throw new Error('缺少请求')
-    api.receipt.mockResolvedValue(receipt({ ...INITIAL_PROJECT, revision: '2', nodes: INITIAL_PROJECT.nodes.map(node => ({ ...node, position: { x: 500, y: 200 } })) }, 'saveLayout', command.mutationId))
+    api.canvasReceipt.mockResolvedValue(canvasReceipt({ ...INITIAL_PROJECT, revision: '2', nodes: INITIAL_PROJECT.nodes.map(node => ({ ...node, position: { x: 500, y: 200 } })) }, 'saveCanvasLayout', command.mutationId))
     act(() => { result.current.verify() }); await waitFor(() => { expect(result.current.dirty).toBe(false) })
   })
   it('确定拒绝与版本冲突保留位置，用户可重放到最新版本或还原', async () => {
-    const api = fakeAPI(); api.layout.mockRejectedValue(new RequestError({ code: 'REVISION_CONFLICT', message: '其他窗口已更新' }, 409)); api.get.mockResolvedValue({ ...INITIAL_PROJECT, revision: '3' })
+    const api = fakeAPI(); api.layout.mockRejectedValue(new RequestError({ code: 'REVISION_CONFLICT', message: '其他窗口已更新' }, 409)); api.canvas.mockResolvedValue({ project: { ...INITIAL_PROJECT, revision: '3' }, canvas: EMPTY_CANVAS })
     const { result } = renderHook(() => useWorkspace(INITIAL_PROJECT, api))
     act(() => { result.current.move(serviceId, { x: 900, y: 800 }) }); act(() => { result.current.save() })
     await waitFor(() => { expect(result.current.saveState).toMatchObject({ kind: 'rejected', conflict: true }) })
@@ -47,7 +47,7 @@ describe('工作区保存状态机', () => {
     act(() => { result.current.register('/allowed/plain', '') }); await waitFor(() => { expect(result.current.saveState).toMatchObject({ kind: 'rejected', conflict: false }) })
   })
   it('旧项目的迟到响应不能写入新工作区，发送中不能改动草稿', async () => {
-    const api = fakeAPI(); let finish: ((value: Receipt) => void) | undefined
+    const api = fakeAPI(); let finish: ((value: CanvasReceipt) => void) | undefined
     api.layout.mockImplementation(() => new Promise(resolve => { finish = resolve }))
     const first = renderHook(() => useWorkspace(INITIAL_PROJECT, api))
     act(() => { first.result.current.move(serviceId, { x: 300, y: 300 }) }); act(() => { first.result.current.save() })
@@ -55,7 +55,7 @@ describe('工作区保存状态机', () => {
     first.unmount()
     const second = renderHook(() => useWorkspace({ ...INITIAL_PROJECT, id: '00000000-0000-4000-8000-000000000099', name: '另一个项目' }, api))
     const command = api.layout.mock.calls[0]?.[1]; if (!command || !finish) throw new Error('未创建请求')
-    await act(async () => { finish?.(receipt(INITIAL_PROJECT, 'saveLayout', command.mutationId)); await Promise.resolve() })
+    await act(async () => { finish?.(canvasReceipt(INITIAL_PROJECT, 'saveCanvasLayout', command.mutationId)); await Promise.resolve() })
     expect(second.result.current.snapshot.name).toBe('另一个项目')
   })
 })

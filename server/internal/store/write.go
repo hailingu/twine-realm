@@ -86,12 +86,12 @@ func canRegister(ctx context.Context, tx *sql.Tx, id, repositoryID string) error
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	var count int
-	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM services WHERE project_id=?", id).Scan(&count); err != nil {
+	count, err := componentCount(ctx, tx, id)
+	if err != nil {
 		return err
 	}
 	if count >= 500 {
-		return project.Failure("PROJECT_FULL", "当前项目最多支持 500 个服务")
+		return project.Failure("PROJECT_FULL", "当前项目最多支持 500 个组件")
 	}
 	return nil
 }

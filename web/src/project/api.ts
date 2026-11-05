@@ -1,6 +1,7 @@
 /** 在 HTTP 边界验证服务端响应，未验证的数据不能进入画布模型。 */
 import validators from '../contract/validators.cjs'
-import type { APIError, CreateCommand, ErrorResponse, LayoutCommand, Project, ProjectList, Receipt, RegisterCommand, PinSourceCommand, SourceObservation, SourceReceipt } from '../contract/generated'
+import type { APIError, CreateCommand, ErrorResponse, CanvasLayoutCommand, CanvasReceipt, CanvasSnapshot, DefinitionCatalog, MiddlewareCommand, Project, ProjectList, Receipt, RegisterCommand, PinSourceCommand, SourceObservation, SourceReceipt } from '../contract/generated'
+import { CATALOG_DIGEST, MYSQL_REFERENCE } from '../contract/catalog.generated'
 
 /** @param name 受控的生成定义名 @param input 未知响应 @returns 按生成 schema 验证后的类型谓词。 */
 function matches<T>(name: string, input: unknown): input is T {
@@ -21,11 +22,16 @@ export interface ProjectAPI {
   get(id: string, signal?: AbortSignal): Promise<Project>
   create(command: CreateCommand, signal?: AbortSignal): Promise<Receipt>
   register(id: string, command: RegisterCommand, signal?: AbortSignal): Promise<Receipt>
-  layout(id: string, command: LayoutCommand, signal?: AbortSignal): Promise<Receipt>
+  layout(id: string, command: CanvasLayoutCommand, signal?: AbortSignal): Promise<CanvasReceipt>
   receipt(id: string, signal?: AbortSignal): Promise<Receipt>
   source(id: string, serviceId: string, signal?: AbortSignal): Promise<SourceObservation>
   pin(id: string, serviceId: string, command: PinSourceCommand, signal?: AbortSignal): Promise<SourceReceipt>
   sourceReceipt(id: string, signal?: AbortSignal): Promise<SourceReceipt>
+  canvas(id: string, signal?: AbortSignal): Promise<CanvasSnapshot>
+  catalog(signal?: AbortSignal): Promise<DefinitionCatalog>
+  addMiddleware(id: string, command: MiddlewareCommand, signal?: AbortSignal): Promise<CanvasReceipt>
+  updateMiddleware(id: string, componentId: string, command: MiddlewareCommand, signal?: AbortSignal): Promise<CanvasReceipt>
+  canvasReceipt(id: string, signal?: AbortSignal): Promise<CanvasReceipt>
 }
 
 /** @param name 契约定义名 @param input 未信任的 JSON @returns 已验证的边界类型。 */
@@ -55,9 +61,19 @@ export const PROJECT_API: ProjectAPI = {
   get: (id, signal) => request(`/projects/${id}`, 'Project', 'GET', undefined, signal),
   create: (command, signal) => request('/projects', 'Receipt', 'POST', command, signal),
   register: (id, command, signal) => request(`/projects/${id}/services`, 'Receipt', 'POST', command, signal),
-  layout: (id, command, signal) => request(`/projects/${id}/layout`, 'Receipt', 'PUT', command, signal),
+  layout: (id, command, signal) => request(`/projects/${id}/canvas/layout`, 'CanvasReceipt', 'PUT', command, signal),
   receipt: (id, signal) => request(`/mutations/${id}`, 'Receipt', 'GET', undefined, signal),
   source: (id, serviceId, signal) => request(`/projects/${id}/services/${serviceId}/source`, 'SourceObservation', 'GET', undefined, signal),
   pin: (id, serviceId, command, signal) => request(`/projects/${id}/services/${serviceId}/source`, 'SourceReceipt', 'PUT', command, signal),
-  sourceReceipt: (id, signal) => request(`/source-mutations/${id}`, 'SourceReceipt', 'GET', undefined, signal)
+  sourceReceipt: (id, signal) => request(`/source-mutations/${id}`, 'SourceReceipt', 'GET', undefined, signal),
+  canvas: (id, signal) => request(`/projects/${id}/canvas`, 'CanvasSnapshot', 'GET', undefined, signal),
+  catalog: async signal => {
+    const value = await request<DefinitionCatalog>('/catalog', 'DefinitionCatalog', 'GET', undefined, signal)
+    const reference = value.definitions[0]?.reference
+    if (value.digest !== CATALOG_DIGEST || value.definitions.length !== 1 || reference?.id !== MYSQL_REFERENCE.id || reference.version !== MYSQL_REFERENCE.version || reference.digest !== MYSQL_REFERENCE.digest) throw new RequestError({ code: 'CATALOG_MISMATCH', message: '目录与当前页面校验器版本不一致，请刷新页面后重试' }, 0)
+    return value
+  },
+  addMiddleware: (id, command, signal) => request(`/projects/${id}/canvas/middlewares`, 'CanvasReceipt', 'POST', command, signal),
+  updateMiddleware: (id, componentId, command, signal) => request(`/projects/${id}/canvas/middlewares/${componentId}`, 'CanvasReceipt', 'PUT', command, signal),
+  canvasReceipt: (id, signal) => request(`/canvas-mutations/${id}`, 'CanvasReceipt', 'GET', undefined, signal)
 }

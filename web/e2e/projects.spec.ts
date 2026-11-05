@@ -88,7 +88,7 @@ test('保存响应丢失时保留草稿并核实原回执，不重复提交', as
   const input = page.getByRole('spinbutton', { name: /恢复服务 X/ })
   await input.fill('540')
   let intercepted = false
-  await page.route('**/api/v1/projects/*/layout', async route => {
+  await page.route('**/api/v1/projects/*/canvas/layout', async route => {
     if (intercepted) { await route.continue(); return }
     intercepted = true
     await route.fetch(); await route.abort('failed')
@@ -108,13 +108,13 @@ test('未送达保存用原请求重试；版本冲突显式重放草稿', async
   await createProject(page, platform, '重试与冲突项目'); await register(page, path, '并发服务')
   const input = page.getByRole('spinbutton', { name: /并发服务 X/ })
   await input.fill('610')
-  await page.route('**/api/v1/projects/*/layout', route => route.abort('failed'))
+  await page.route('**/api/v1/projects/*/canvas/layout', route => route.abort('failed'))
   await page.getByRole('button', { name: '保存布局' }).click()
   await expect(page.getByRole('alert')).toContainText('请先核实原请求')
   await page.getByRole('button', { name: '核实保存结果' }).click()
   await expect(page.getByRole('alert')).toContainText('尚未找到该请求')
   await expect(input).toHaveValue('610')
-  await page.unroute('**/api/v1/projects/*/layout')
+  await page.unroute('**/api/v1/projects/*/canvas/layout')
   await page.getByRole('button', { name: '重试原请求' }).click()
   await expect(page.getByRole('status')).toContainText('已保存到本机 · 版本 2')
   const context = await browser.newContext(); const other = await context.newPage()
