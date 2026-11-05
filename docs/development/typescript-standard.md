@@ -1,12 +1,12 @@
 # TypeScript 与 React 开发规范
 
-本规范适用于前端画布（目标目录 `web/`）与 TS 工具脚本，与[软件工程规范](software-engineering-standard.md)共同使用。当前 `web/` 尚未建立，本规范约束首批及后续代码。
+本规范适用于前端画布（目标目录 `web/`）与 TS 工具脚本，与[软件工程规范](software-engineering-standard.md)共同使用。`web/` 已建立，检查见[质量门禁](quality-gates.md)。
 
 ## 工具链基线
 
 - 构建工具 Vite，测试 Vitest，包管理器 npm（单一包管理器，`package-lock.json` 拥有依赖真相）；Node 版本基线见[运行时与工具链](runtime-toolchain.md)。
 - 依赖最简：UI 层 React + React Flow（`@xyflow/react`）为既定选择，其余组件库与状态库按真实消费者引入，不预设。
-- 验证命令（初始化 `package.json` 后配置，当前尚未接入）：`typecheck && lint && test && build` 四件套；具体脚本在工程初始化任务中定义并登记到根指南范围路由。
+- 验证命令（`web/` 已接入）：`typecheck && lint && test && build` 四件套；具体脚本在工程初始化任务中定义并登记到根指南范围路由。
 
 ## 类型系统
 
@@ -54,3 +54,5 @@
 ## 验证与完成
 
 前端改动运行 `typecheck && lint && test && build`（接入后）；新增源码路径或工具配置时，同步修改真实脚本与根指南范围路由，并在完成报告说明新增检查覆盖的路径。当前无自动检查时如实报告，不把构建成功解释为类型检查或交互验收通过。
+
+提交前遵循[零告警门禁](warning-free-commits.md)：ESLint `--max-warnings 0`、类型检查无错误，Vite / 打包器告警转失败；不能提升警告阈值、关闭规则或静默过滤告警。

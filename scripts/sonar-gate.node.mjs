@@ -48,6 +48,7 @@ function harness(options = {}) {
       const address = new URL(url)
       calls.requests.push({ address, configuration })
       if (options.httpError) return { ok: false, status: 503 }
+      if (address.pathname.endsWith('/issues/search')) return { ok: true, json: async () => ({ total: options.openIssues ?? 0 }) }
       const data = address.pathname.endsWith('/ce/task')
         ? { task: { status: options.taskStatus ?? 'SUCCESS', analysisId: 'analysis-owned', componentKey: 'twine-realm' } }
         : { projectStatus: { status: options.gateStatus ?? 'OK', conditions: [] } }
@@ -83,7 +84,8 @@ for (const parentExitsEarly of [false, true]) {
     assert.notEqual(result.code, 0)
     assert.ok(Date.now() - started < 2000, '不能等后代的自然退出才返回')
     const descendantPid = Number(result.output.trim().split('\n')[0])
-    assert.ok(Number.isInteger(descendantPid) && descendantPid > 0, '必须实际启动后代')
+    assert.ok(Number.isInteger(descendantPid), '后代标识必须为整数')
+    assert.ok(descendantPid > 0, '必须实际启动后代')
     assert.ok(await processHasExited(descendantPid), '超时返回后后代不得继续运行')
   })
 }
@@ -93,6 +95,13 @@ test('正常命令保留输出与退出结果，启动失败返回非零', async
   assert.deepEqual(success, { code: 0, output: '完成' })
   const failure = await runCommand('twine-test-command-does-not-exist', [], { timeoutMs: 3000 })
   assert.notEqual(failure.code, 0)
+})
+
+test('Sonar 新代码门槛通过但仍有历史代码问题时拒绝提交', async () => {
+  await withFixture(async root => {
+    const fake = harness({ openIssues: 1 })
+    await assert.rejects(runSonarGate({ root, env: environment(), ...fake }), /SONAR_OPEN_ISSUES/)
+  })
 })
 
 test('非法命令超时配置在启动子进程前拒绝', async () => {
@@ -192,6 +201,18 @@ test('Java 覆盖率必须来自本次构建的 JaCoCo 报告并正式传递', a
     const missing = harness()
     await assert.rejects(runSonarGate({ root, javaCoverageReportPaths: [jacocoReportPath], env: environment(), ...missing }), /SONAR_COVERAGE_MISSING/)
     assert.equal(missing.calls.commands.length, 0, '覆盖率缺失时不得启动扫描')
+  })
+})
+
+test('Go 覆盖率只采用本次存在的报告并以正式参数传递', async () => {
+  await withFixture(async root => {
+    const report = join(root, 'go.out')
+    await writeFile(report, 'mode: atomic\n')
+    const fake = harness()
+    await runSonarGate({ root, goCoverageReportPaths: [report], env: environment(), ...fake })
+    assert.ok(fake.calls.commands[0].args.includes(`-Dsonar.go.coverage.reportPaths=${report}`))
+    await rm(report)
+    await assert.rejects(runSonarGate({ root, goCoverageReportPaths: [report], env: environment(), ...harness() }), /SONAR_COVERAGE_MISSING/)
   })
 })
 

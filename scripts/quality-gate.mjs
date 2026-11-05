@@ -4,23 +4,27 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadSonarSettings, redactOutput, runCommand, runSonarGate } from './sonar-gate.mjs'
+import { runPlatformChecks } from './platform-check.mjs'
+import { assertCleanResult } from './check-command.mjs'
+import { isolatedGitEnvironment } from './git-environment.mjs'
 
 /** 执行一个真实检查步骤，失败时停止后续扫描。 */
 async function checked(command, args, cwd, token, execute, env, write) {
   write(`[QUALITY_STEP] ${command} ${args.join(' ')}\n`)
   const result = await execute(command, args, { cwd, env })
   write(redactOutput(result.output || '', token))
-  if (result.code !== 0) throw new Error(`[QUALITY_CHECK_FAILED] ${command} ${args.join(' ')} 未通过。`)
+  assertCleanResult(result, command)
 }
 
-/** 在本次专属目录测试和扫描，结束后清理验证产物；typecheck、lint、构建等模块检查在对应工程初始化后接入。 */
+/** 同一次门禁覆盖工具、平台真实边界与 Sonar，结束后清理验证产物。 */
 export async function runQualityGate({
   root = process.cwd(), env = process.env, execute = runCommand, scan = runSonarGate,
-  write = message => process.stdout.write(message)
+  write = message => process.stdout.write(message), platform = runPlatformChecks
 } = {}) {
-  const settings = loadSonarSettings(env)
+  const checkEnv = isolatedGitEnvironment(env)
+  const settings = loadSonarSettings(checkEnv)
   const temporary = await mkdtemp(join(tmpdir(), 'twine-quality-'))
-  const check = (command, args, cwd = root) => checked(command, args, cwd, settings.token, execute, env, write)
+  const check = (command, args, cwd = root) => checked(command, args, cwd, settings.token, execute, checkEnv, write)
   try {
     const scriptCoverage = join(temporary, 'scripts-lcov.info')
     // 原生 Node 测试只执行一次，同时输出可读结果及真实脚本覆盖率。
@@ -28,11 +32,14 @@ export async function runQualityGate({
       '--test', '--experimental-test-coverage', '--test-coverage-include=scripts/**/*.mjs',
       '--test-coverage-exclude=**/*.node.mjs', '--test-reporter=spec', '--test-reporter-destination=stdout',
       '--test-reporter=lcov', `--test-reporter-destination=${scriptCoverage}`,
-      'scripts/sonar-gate.node.mjs', 'scripts/quality-gate.node.mjs', 'scripts/issue-status.node.mjs'
+      'scripts/sonar-gate.node.mjs', 'scripts/quality-gate.node.mjs', 'scripts/issue-status.node.mjs', 'scripts/platform-check.node.mjs', 'scripts/check-command.node.mjs', 'scripts/precommit.node.mjs'
     ])
     await check(process.execPath, ['scripts/issue-status.mjs'])
-    const lcovReportPaths = [scriptCoverage]
-    const { output, ...result } = await scan({ root, lcovReportPaths, env })
+    await check('npm', ['audit', '--audit-level=low'])
+    await check('npm', ['audit', '--audit-level=low'], join(root, 'web'))
+    const reports = await platform({ root, temporary, env: checkEnv, execute, write })
+    const lcovReportPaths = [scriptCoverage, ...reports.lcovReportPaths]
+    const { output, ...result } = await scan({ root, lcovReportPaths, goCoverageReportPaths: reports.goCoverageReportPaths, env: checkEnv })
     write(`${output}\n[QUALITY_GATE_OK] ${JSON.stringify(result)}\n`)
   } finally { await rm(temporary, { recursive: true, force: true }) }
 }

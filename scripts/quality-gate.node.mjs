@@ -28,7 +28,8 @@ function harness({ failTests = false, failIssues = false } = {}) {
     for (const report of configuration.lcovReportPaths) await access(report)
     return { output: '', status: 'OK' }
   }
-  return { calls, execute, scan, write }
+  const platform = async ({ temporary, env }) => { calls.platformEnv = env; const report = join(temporary, 'web-lcov.info'); const go = join(temporary, 'go.out'); await writeFile(report, 'TN:\nSF:web/src/project/model.ts\nDA:1,1\nend_of_record\n'); await writeFile(go, 'mode: atomic\n'); return { lcovReportPaths: [report], goCoverageReportPaths: [go] } }
+  return { calls, execute, scan, write, platform }
 }
 
 const env = { SONAR_HOST_URL: 'http://sonar.invalid', SONAR_TOKEN: 'synthetic-quality-token' }
@@ -37,13 +38,13 @@ test('门禁执行一次脚本测试与 issue 校验并传递本次脚本覆盖�
   const fake = harness()
   const stdout = context.mock.method(process.stdout, 'write', () => true)
   try {
-    await runQualityGate({ env, execute: fake.execute, scan: fake.scan, write: fake.write })
+    await runQualityGate({ env, execute: fake.execute, scan: fake.scan, write: fake.write, platform: fake.platform })
   } finally { stdout.mock.restore() }
   // 原生测试 runner 也写入 stdout；只约束门禁自身的正式诊断标记。
   const emitted = stdout.mock.calls.map(call => String(call.arguments[0])).join('')
   assert.doesNotMatch(emitted, /\[QUALITY_(?:STEP|GATE_OK)\]/)
   const commands = fake.calls.commands
-  assert.equal(commands.length, 2)
+  assert.equal(commands.length, 4)
   const [native] = commands
   assert.equal(native.command, process.execPath)
   assert.ok(native.args.includes('--experimental-test-coverage'))
@@ -54,7 +55,8 @@ test('门禁执行一次脚本测试与 issue 校验并传递本次脚本覆盖�
   assert.deepEqual(issueCheck.args, ['scripts/issue-status.mjs'])
   assert.equal(fake.calls.scans.length, 1)
   const [scan] = fake.calls.scans
-  assert.equal(scan.lcovReportPaths.length, 1)
+  assert.equal(scan.lcovReportPaths.length, 2)
+  assert.equal(commands.filter(call => call.args.includes('audit')).length, 2)
   assert.ok(scan.lcovReportPaths[0].startsWith(fake.calls.temporary))
   assert.match(fake.calls.output.join(''), /QUALITY_STEP/)
   assert.match(fake.calls.output.join(''), /QUALITY_GATE_OK/)
@@ -63,7 +65,7 @@ test('门禁执行一次脚本测试与 issue 校验并传递本次脚本覆盖�
 
 test('脚本测试失败会停止 issue 校验与扫描且清理本次已有报告', async () => {
   const fake = harness({ failTests: true })
-  await assert.rejects(runQualityGate({ env, execute: fake.execute, scan: fake.scan, write: fake.write }), /QUALITY_CHECK_FAILED/)
+  await assert.rejects(runQualityGate({ env, execute: fake.execute, scan: fake.scan, write: fake.write, platform: fake.platform }), /QUALITY_CHECK_FAILED/)
   assert.equal(fake.calls.commands.length, 1, '测试失败后不得继续执行 issue 校验')
   assert.equal(fake.calls.scans.length, 0)
   assert.match(fake.calls.output.join(''), /本次脚本测试失败/)
@@ -71,9 +73,20 @@ test('脚本测试失败会停止 issue 校验与扫描且清理本次已有报�
   await assert.rejects(access(fake.calls.temporary), { code: 'ENOENT' })
 })
 
+test('子工具、平台夹具与扫描不继承 hook 的 Git 定位，调用者环境保持不变', async () => {
+  const fake = harness()
+  const caller = { ...env, PATH: '/controlled/bin', GIT_DIR: '/caller/git', GIT_INDEX_FILE: '/caller/index', GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'core.bare', GIT_CONFIG_VALUE_0: 'true' }
+  const before = { ...caller }
+  await runQualityGate({ env: caller, execute: fake.execute, scan: fake.scan, write: fake.write, platform: fake.platform })
+  for (const child of [...fake.calls.commands.map(call => call.configuration.env), fake.calls.platformEnv, fake.calls.scans[0].env]) {
+    assert.deepEqual(child, { ...env, PATH: '/controlled/bin' })
+  }
+  assert.deepEqual(caller, before)
+})
+
 test('issue 校验失败会停止扫描且不宣告整体通过', async () => {
   const fake = harness({ failIssues: true })
-  await assert.rejects(runQualityGate({ env, execute: fake.execute, scan: fake.scan, write: fake.write }), /QUALITY_CHECK_FAILED/)
+  await assert.rejects(runQualityGate({ env, execute: fake.execute, scan: fake.scan, write: fake.write, platform: fake.platform }), /QUALITY_CHECK_FAILED/)
   assert.equal(fake.calls.commands.length, 2, 'issue 校验是测试之后的第二步')
   assert.equal(fake.calls.scans.length, 0)
   assert.match(fake.calls.output.join(''), /本次 issue 元数据校验失败/)

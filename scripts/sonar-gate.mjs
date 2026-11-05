@@ -113,7 +113,9 @@ async function verifyAnalysis(settings, projectKey, taskId, fetchImpl) {
   }
   const { projectStatus } = await requestJson(settings, `api/qualitygates/project_status?analysisId=${encodeURIComponent(task.analysisId)}`, fetchImpl)
   if (projectStatus?.status !== 'OK') throw new Error(`[SONAR_GATE_REJECTED] 本次 Quality Gate 未通过：${projectStatus?.status || 'UNKNOWN'}。`)
-  return { projectKey, taskId, analysisId: task.analysisId, status: projectStatus.status, conditions: projectStatus.conditions || [] }
+  const issues = await requestJson(settings, `api/issues/search?componentKeys=${encodeURIComponent(projectKey)}&resolved=false&ps=1`, fetchImpl)
+  if (issues.total !== 0) throw new Error(`[SONAR_OPEN_ISSUES] 存在 ${issues.total ?? '未知数量'} 项未解决代码问题，必须清零后才能提交。`)
+  return { projectKey, taskId, analysisId: task.analysisId, status: projectStatus.status, conditions: projectStatus.conditions || [], openIssues: 0 }
 }
 
 /** 只传递调用方本次提供且实际存在的覆盖率报告，不猜测或回退历史报告。 */
@@ -144,7 +146,7 @@ async function javaParameters(javaBuildDirectories) {
 export async function runSonarGate({
   root = process.cwd(),
   javaBuildDirectories = [],
-  javaCoverageReportPaths, lcovReportPaths,
+  javaCoverageReportPaths, lcovReportPaths, goCoverageReportPaths,
   env = process.env, runCommand: execute = runCommand, fetchImpl = fetch
 } = {}) {
   const settings = loadSonarSettings(env)
@@ -153,7 +155,8 @@ export async function runSonarGate({
   if (!projectKey) throw new Error('[SONAR_CONFIG] 项目配置缺少 projectKey。')
   const coverage = [
     ...await coverageParameters(root, 'sonar.javascript.lcov.reportPaths', lcovReportPaths, 'LCOV'),
-    ...await coverageParameters(root, 'sonar.coverage.jacoco.xmlReportPaths', javaCoverageReportPaths, 'JaCoCo')
+    ...await coverageParameters(root, 'sonar.coverage.jacoco.xmlReportPaths', javaCoverageReportPaths, 'JaCoCo'),
+    ...await coverageParameters(root, 'sonar.go.coverage.reportPaths', goCoverageReportPaths, 'Go')
   ]
   const temporary = await mkdtemp(join(tmpdir(), 'twine-sonar-'))
   try {

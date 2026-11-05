@@ -1,17 +1,17 @@
 # 运行时与工具链
 
-本文定义平台各运行时与工具的版本基线、锁定位置与升级政策。版本原则：**采用官方当前最新稳定线**，LTS 优先于创新版；具体补丁版本在对应清单中锁定。本文于 2026-11-03 核对官方发布，后续升级须重新核对。
+本文定义平台各运行时与工具的版本基线、锁定位置与升级政策。版本原则：**采用官方当前最新稳定线**，LTS 优先于创新版；具体补丁版本在对应清单中锁定。本文于 2026-11-04 核对官方发布，后续升级须重新核对。
 
 ## 版本基线
 
-| 组件 | 基线 | 本机现状（2026-11-03） | 差距与动作 |
+| 组件 | 基线 | 本机默认 / 本次验证（2026-11-04） | 差距与动作 |
 | --- | --- | --- | --- |
-| Go（平台服务） | **1.27.x**（最新稳定 1.27.3） | 1.25.6 | 初始化 `server/` 前升级本机 Go 到 1.27.x，`go.mod` 锁定 `go 1.27` |
-| Node.js（前端与工具） | **26 LTS**（Active LTS，26.13+） | 24.18.0（Maintenance LTS） | 仓库工具链当前按本机版本锁定：根 `.nvmrc` 为 24.18.0、`engines` 为 `>=24.18.0`；初始化 `web/` 前升级到 26 LTS 并同步 `.nvmrc` |
-| npm | 随 Node 26 附带版本 | 11.16.0 | 升级 Node 后核对；仓库工具依赖由根 `package-lock.json` 锁定 |
-| MySQL（平台元数据） | 最新 LTS 系列 | 未安装（本机经 docker 使用） | 平台自用元数据库经 deploy compose 定义并锁定镜像 tag；画布内业务 MySQL 属于中间件目录，版本由目录定义 |
+| Go（平台服务） | **1.27.x**（验证 1.27.3） | 默认 1.25.6；本任务独立工具链 1.27.3 | `server/go.mod` 锁定 1.27，未替换全局工具 |
+| Node.js（前端与工具） | **26 LTS** | 默认 22.15.0；本任务 26.13.0 | `.nvmrc` 和根 / 前端 engines 已同步，未替换全局工具 |
+| npm | Node 26 随附 11.20.0 | 默认 10.9.2；本任务 11.20.0 | 根与 web 各自锁文件，单一包管理器 |
+| MySQL（平台元数据） | **9.7.4 LTS** | 临时 Docker 集成验证 | `deploy/compose.yaml` 和测试所有者固定 tag + digest；业务 MySQL 目录尚未实现 |
 | Docker / Compose | Docker 29.x / Compose v5.x | 29.9.2 / v5.6.1 | 已满足；compose 文件锁定 `version` 语义，不依赖已弃用的顶层 version 字段 |
-| React / React Flow | React 19.x / `@xyflow/react` 12.x | 未安装 | `web/package.json` 安装时锁定最新稳定补丁 |
+| React / React Flow | React 19.3.1 / `@xyflow/react` 12.12.1 | 已建前端工程 | `web/package.json` / 锁文件固定实际依赖 |
 | SonarQube 服务（本地门禁） | 本地 docker 社区版 | 26.8.0（`localhost:9000`，项目 `twine-realm` 已建立） | 已满足；服务地址与凭据只经环境注入，不入库 |
 | sonar-scanner CLI | 7.x | 7.3.0 | 已满足；可用 `SONAR_SCANNER_BIN` 覆盖路径 |
 
@@ -39,3 +39,5 @@
 - 本机项目空间编排以 docker-compose 为一等公民；`docker compose` 子命令可用。
 - 平台服务本地运行所需的 MySQL 也经 docker 提供，不在本机裸装数据库服务。
 - Go 与 Node 的升级动作（安装工具链）属本机环境变更，执行前与仓库所有者确认方式。
+
+Issue #1 使用任务目录内独立工具链完成验证，不自动升级本机全局环境。MySQL 版本依据 [官方 9.7.4 发布说明](https://dev.mysql.com/doc/relnotes/mysql/9.7/en/news-9-7-4.html)，其他固定补丁以清单为准。

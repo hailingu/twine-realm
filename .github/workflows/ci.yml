@@ -30,11 +30,11 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      # 依赖审计：high/critical 漏洞或审计执行错误均阻断。与 PlotWeave 的
+      # 依赖审计：任意 low 及以上漏洞或审计执行错误均阻断。与 PlotWeave 的
       # ci-npm-audit.sh 口径一致但不做网络重试：审计端点瞬时故障时任务
       # 失败（fail-closed），如实重跑即可。
-      - name: npm audit --audit-level=high
-        run: npm audit --audit-level=high
+      - name: npm audit --audit-level=low
+        run: npm audit --audit-level=low
       - run: npm ci
       # scripts 行为测试（含 Sonar 门禁适配器、完整门禁编排与 issue 状态
       # 检查的失败传播、报告隔离与凭据脱敏契约）。
@@ -43,3 +43,32 @@ jobs:
       # issues 元数据与状态：未关闭记录不构成失败，元数据违规才非零退出。
       - name: issue:status（issues 行）
         run: npm run issue:status
+
+  platform:
+    name: platform（Go、前端与真实本机闭环）
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - run: npm ci
+      - run: npm ci --prefix web
+      - run: npm audit --prefix web --audit-level=low
+      - name: 安装 Chromium 与运行依赖
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: 平台完整验证（独立临时 MySQL）
+        run: npm run test:platform
+      - name: 只读校验平台库 Compose
+        env:
+          TWINE_DB_ROOT_PASSWORD: synthetic-config-validation-only
+          TWINE_DB_PASSWORD: synthetic-config-validation-only
+        run: docker compose -f deploy/compose.yaml config --quiet
