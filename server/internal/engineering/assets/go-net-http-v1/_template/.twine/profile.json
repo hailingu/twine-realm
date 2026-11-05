@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "id": "go-net-http-mysql",
+  "version": "1.0.0",
+  "template": {
+    "id": "minimal-identity",
+    "version": "1.0.0",
+    "digest": "sha256:aa0f6af07d9a52fab1e7521d723a56feb7115db750d89fcc280d272e50c89ab0"
+  },
+  "stack": {
+    "language": "go",
+    "framework": "net/http",
+    "goVersion": "1.27.3",
+    "platforms": [
+      "darwin",
+      "linux"
+    ],
+    "dependencies": [
+      {
+        "module": "github.com/go-sql-driver/mysql",
+        "version": "v1.10.1"
+      },
+      {
+        "module": "github.com/golang-migrate/migrate/v4",
+        "version": "v4.20.1"
+      }
+    ]
+  },
+  "documents": [
+    {
+      "path": "docs/engineering/general.md",
+      "role": "general",
+      "digest": "sha256:c361eb718f10e74b249120548b70e8ed0705f8b3e23357fc1b520ae2db963175"
+    },
+    {
+      "path": "docs/engineering/go-net-http.md",
+      "role": "stack",
+      "digest": "sha256:8d3623bea850a6d003b5679ab5c4794eddf625f8a9c7e30c47cfa227c23bcbd3"
+    },
+    {
+      "path": "docs/engineering/verification.md",
+      "role": "verification",
+      "digest": "sha256:22af362cf49ab72561b0daec587698622196646c8c67a84fa19216ff84f6c3a9"
+    },
+    {
+      "path": "docs/engineering/sources.json",
+      "role": "sources",
+      "digest": "sha256:5f73d16cba2349928e85848666fbc23a9c427c3499223abcc1fb795fb0312f6e"
+    }
+  ],
+  "runtime": {
+    "httpPort": 8080,
+    "defaultAddress": "127.0.0.1:8080",
+    "livePath": "/livez",
+    "readyPath": "/readyz",
+    "examplePath": "/api/info",
+    "passwordFileEnv": "DB_PASSWORD_FILE",
+    "migrationPasswordFileEnv": "MIGRATION_PASSWORD_FILE",
+    "commands": [
+      [
+        "service",
+        "serve"
+      ],
+      [
+        "service",
+        "migrate"
+      ],
+      [
+        "service",
+        "migration-status"
+      ]
+    ]
+  },
+  "checks": [
+    [
+      "go",
+      "mod",
+      "verify"
+    ],
+    [
+      "gofmt",
+      "-l",
+      "."
+    ],
+    [
+      "go",
+      "vet",
+      "./..."
+    ],
+    [
+      "go",
+      "test",
+      "-race",
+      "./..."
+    ],
+    [
+      "go",
+      "build",
+      "-mod=readonly",
+      "-trimpath",
+      "./cmd/service"
+    ]
+  ]
+}

@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | [本地项目切片](local-project-slice.md) | 运行 / 调试 Issue #1 | 契约、持久化、只读 Git、恢复和一期安全 |
 | [标准组件目录切片](component-catalog-slice.md) | Issue #6 的 MySQL 配置草稿 | 离线 schema、固定版本、统一布局与回执 |
+| [Go 工程包与模板](service-profile-slice.md) | Issue #10 首个业务组合 | 离线规范、相对引用、核实 / 安全导出、真实迁移与生命周期检查 |
 | [开发工作流](workflow.md) | 开始任务、规划切片时 | 技术方向、状态矩阵、独立分支 / worktree、PR 合入 develop、同步与安全清理 |
 | [运行时与工具链](runtime-toolchain.md) | 初始化工程、安装或升级依赖时 | Go / Node / MySQL / Docker 版本基线、本机现状差距、锁定位置 |
 | [软件工程规范](software-engineering-standard.md) | 修改生产或测试代码前 | 职责、依赖、规模、抽象、状态与错误边界 |
@@ -26,7 +27,7 @@
 
 所有代码先读通用工程规范，再读对应语言规范。
 
-本目录约束平台自身开发；用户业务服务按所选技术栈采用[对应的工程最佳实践文档包](../platform-design/service-engineering.md#每种受支持技术栈的工程最佳实践文档)，每服务仓库 `AGENTS.md` 引用适用规范，agents 开发前加载固定版本并记录。业务通用条款须经范围映射后发布，平台专属 Go / React、目录与工具命令不自动套用；当前尚未发布业务技术栈文档包或实现自动加载。
+本目录约束平台自身开发；用户业务服务按所选技术栈采用[对应的工程最佳实践文档包](../platform-design/service-engineering.md#每种受支持技术栈的工程最佳实践文档)，每服务仓库 `AGENTS.md` 引用适用规范，agents 开发前加载固定版本并记录。业务通用条款须经范围映射后发布，平台专属 Go / React、目录与工具命令不自动套用；已提供首个 [Go + net/http 文档包 / 最小模板](service-profile-slice.md)，自动加载仍未实现。
 
 ## 文档职责
 

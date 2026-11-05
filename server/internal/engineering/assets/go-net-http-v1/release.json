@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "id": "go-net-http-mysql",
+  "version": "1.0.0",
+  "profileDigest": "sha256:695ce86db92c25ff04e85613dd6042445e6340ffc09beab6243b57773bc1c329",
+  "files": [
+    {
+      "path": ".gitignore",
+      "source": ".gitignore",
+      "digest": "sha256:8dd3c5dd739626d458f50b36732bfce0acd8afff9f89a34e08416d26d77be04c",
+      "size": 55
+    },
+    {
+      "path": ".twine/engineering.lock.json",
+      "source": ".twine/engineering.lock.json",
+      "digest": "sha256:fc89a690970d2f677c88951a87534b0332f9bdef3d699233035c03ac72e4d98b",
+      "size": 188
+    },
+    {
+      "path": ".twine/profile.json",
+      "source": ".twine/profile.json",
+      "digest": "sha256:695ce86db92c25ff04e85613dd6042445e6340ffc09beab6243b57773bc1c329",
+      "size": 2154
+    },
+    {
+      "path": "AGENTS.md",
+      "source": "AGENTS.md",
+      "digest": "sha256:73a3603afc036ace292270b27cd65ea4db5db69806bc5b0536c0386d23872a36",
+      "size": 1712
+    },
+    {
+      "path": "README.md",
+      "source": "README.md",
+      "digest": "sha256:9c8eee58260be57700f2be3d312adfd3eaba95d348ef4d6b8bc4c5cafa9b1926",
+      "size": 1855
+    },
+    {
+      "path": "cmd/service/main.go",
+      "source": "cmd/service/main.go",
+      "digest": "sha256:5553742cb85290341d610f1445843b84fa265a38006cb72b7c9d046ffa40ef71",
+      "size": 2187
+    },
+    {
+      "path": "cmd/service/main_test.go",
+      "source": "cmd/service/main_test.go",
+      "digest": "sha256:c1558378df56595ff0f5bef85ffc825df3508fd14cbc0712c01ab4e49882dae1",
+      "size": 568
+    },
+    {
+      "path": "docs/engineering/general.md",
+      "source": "docs/engineering/general.md",
+      "digest": "sha256:c361eb718f10e74b249120548b70e8ed0705f8b3e23357fc1b520ae2db963175",
+      "size": 2502
+    },
+    {
+      "path": "docs/engineering/go-net-http.md",
+      "source": "docs/engineering/go-net-http.md",
+      "digest": "sha256:8d3623bea850a6d003b5679ab5c4794eddf625f8a9c7e30c47cfa227c23bcbd3",
+      "size": 3610
+    },
+    {
+      "path": "docs/engineering/sources.json",
+      "source": "docs/engineering/sources.json",
+      "digest": "sha256:5f73d16cba2349928e85848666fbc23a9c427c3499223abcc1fb795fb0312f6e",
+      "size": 1937
+    },
+    {
+      "path": "docs/engineering/verification.md",
+      "source": "docs/engineering/verification.md",
+      "digest": "sha256:22af362cf49ab72561b0daec587698622196646c8c67a84fa19216ff84f6c3a9",
+      "size": 3239
+    },
+    {
+      "path": "go.mod",
+      "source": "go.mod.template",
+      "digest": "sha256:f2a542b0a5a5c79834b1098e77e588a0bba9e85aeca74da30dd7cd93a2d0e89b",
+      "size": 193
+    },
+    {
+      "path": "go.sum",
+      "source": "go.sum",
+      "digest": "sha256:38bf45a97fb0bbd2f296a7ce393a1413863286bc633e9204751bf91594cb36bc",
+      "size": 6331
+    },
+    {
+      "path": "integration/database_fixture_test.go",
+      "source": "integration/database_fixture_test.go",
+      "digest": "sha256:45912ee4b2cc8c7e99b6785db4376bee686e4aebe3bf30e2cc5eadf40492f21e",
+      "size": 5049
+    },
+    {
+      "path": "integration/lifecycle_test.go",
+      "source": "integration/lifecycle_test.go",
+      "digest": "sha256:35c1328a4a490be297e9429e0a306adcb3206aa7eaeef6751343bdba8c381da3",
+      "size": 5095
+    },
+    {
+      "path": "integration/process_fixture_test.go",
+      "source": "integration/process_fixture_test.go",
+      "digest": "sha256:ee6d410f7bd1bb81b9077f0781675c7420db5002cf534117b70a5808860c98d0",
+      "size": 4856
+    },
+    {
+      "path": "internal/app/handler.go",
+      "source": "internal/app/handler.go",
+      "digest": "sha256:aca50d8617845035c545182a76d19cb2cefdc882a8774714acf341235c40b5d8",
+      "size": 3768
+    },
+    {
+      "path": "internal/app/handler_test.go",
+      "source": "internal/app/handler_test.go",
+      "digest": "sha256:59be29215cdcf540f1f78da9f5bd2260d9e4e1334f948627413a8c10318709f3",
+      "size": 4244
+    },
+    {
+      "path": "internal/app/server.go",
+      "source": "internal/app/server.go",
+      "digest": "sha256:07b0ad5c055a926041c506a6001fc04760725a6afb805d3515d0ac657d06a422",
+      "size": 1175
+    },
+    {
+      "path": "internal/config/config.go",
+      "source": "internal/config/config.go",
+      "digest": "sha256:9ddae646fe67c63e4ac726b757167da4a78b38f5d84a0fc23d036d407d5209db",
+      "size": 2625
+    },
+    {
+      "path": "internal/config/config_test.go",
+      "source": "internal/config/config_test.go",
+      "digest": "sha256:5f62103a4a5e856a8e62cc93b81309524bc2d0d39eafffe99947bb0f73e0970a",
+      "size": 3367
+    },
+    {
+      "path": "internal/config/password.go",
+      "source": "internal/config/password.go",
+      "digest": "sha256:4215bc2b9783a406bd8da297981d9ce007a2b5eb4279cd66443b5705675e631c",
+      "size": 1263
+    },
+    {
+      "path": "internal/database/database.go",
+      "source": "internal/database/database.go",
+      "digest": "sha256:4815fdb78b361911f42ca5fc259d0c3cb8c469b5c2b84cc1a05bcedfcb8141e3",
+      "size": 1181
+    },
+    {
+      "path": "internal/database/identity.go",
+      "source": "internal/database/identity.go",
+      "digest": "sha256:dfa3cfc0bfbea7b41b7c32cce5c297b9c950a5c09548ea489296e781ecf0e2b1",
+      "size": 1328
+    },
+    {
+      "path": "internal/migrations/lock.go",
+      "source": "internal/migrations/lock.go",
+      "digest": "sha256:1b6507e5df76b187b39d2584288fade835809e65ea3e09b2831e10cabbfd06e2",
+      "size": 1318
+    },
+    {
+      "path": "internal/migrations/migrate.go",
+      "source": "internal/migrations/migrate.go",
+      "digest": "sha256:d3e3e24d6353a42da52deb3c397a86179e3eb7a11cb50aaa0a0726aba7c31583",
+      "size": 3489
+    },
+    {
+      "path": "internal/schema/history.go",
+      "source": "internal/schema/history.go",
+      "digest": "sha256:31d8b249d338e40444fee4888046e73e7241777ba88f04a12d2a59edc44c11e1",
+      "size": 3558
+    },
+    {
+      "path": "internal/schema/migrations/000001_identity.down.sql",
+      "source": "internal/schema/migrations/000001_identity.down.sql",
+      "digest": "sha256:9b84e338e24a3ef4ee191c6d8b7b0d4ae07c6fdf49ef9694973da589f733003f",
+      "size": 67
+    },
+    {
+      "path": "internal/schema/migrations/000001_identity.up.sql",
+      "source": "internal/schema/migrations/000001_identity.up.sql",
+      "digest": "sha256:d7664420c0281731be2a77a3c166fbc8fe06d2edc88f2b627237592dae31e437",
+      "size": 345
+    },
+    {
+      "path": "internal/schema/source.go",
+      "source": "internal/schema/source.go",
+      "digest": "sha256:beb82bfda86bedfd4ebf79285b5d4adc9ee067d1560b8ba5c96f6e8b6dd2427e",
+      "size": 1592
+    }
+  ]
+}

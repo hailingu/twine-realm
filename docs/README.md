@@ -39,4 +39,4 @@
 - 实现与设计不同步时，在同一变更中更新对应设计文档与相关索引。
 - 本仓库文档、代码注释与提交信息均使用中文。
 
-当前运行见[根 README](../README.md)和[本地切片](development/local-project-slice.md)。
+当前运行见[根 README](../README.md)、[本地切片](development/local-project-slice.md)和[Go 工程包 / 最小模板](development/service-profile-slice.md)。
