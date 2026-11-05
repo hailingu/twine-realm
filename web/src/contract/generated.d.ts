@@ -1,4 +1,33 @@
-/** 由 server/contract/v1/schema.json 生成，请运行 npm run contract；禁止手工修改。 */
+/** 由 server/contract/ 的离线版本化 schema 生成，请运行 npm run contract；禁止手工修改。 */
+
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export type GraphOperation =
+  | {
+      type: 'service.setContract'
+      serviceId: string
+      document: ServiceContractDocument
+    }
+  | {
+      type: 'binding.create'
+      source: PortEndpoint
+      target: PortEndpoint
+      databaseName: string
+      purpose: 'readWrite' | 'readOnly'
+    }
+  | {
+      type: 'binding.reconnect'
+      bindingId: string
+      source: PortEndpoint
+      target: PortEndpoint
+      databaseName: string
+      purpose: 'readWrite' | 'readOnly'
+    }
+  | {
+      type: 'binding.remove'
+      bindingId: string
+    }
 
 /**
  * 本地项目登记与增量源码追溯的权威契约；原 Project/Repository/Receipt 保持不变
@@ -33,6 +62,18 @@ export interface Contract {
   canvasPosition?: CanvasPosition
   canvasLayoutCommand?: CanvasLayoutCommand
   canvasReceipt?: CanvasReceipt
+  serviceInterface?: ServiceInterface
+  servicePort?: ServicePort
+  serviceContractDocument?: ServiceContractDocument
+  serviceContract?: ServiceContract
+  portEndpoint?: PortEndpoint
+  credentialReference?: CredentialReference
+  databaseBinding?: DatabaseBinding
+  graphState?: GraphState
+  graphSnapshot?: GraphSnapshot
+  graphOperation?: GraphOperation
+  graphEditCommand?: GraphEditCommand
+  graphReceipt?: GraphReceipt
 }
 /**
  * 版本一Position契约
@@ -362,4 +403,139 @@ export interface CanvasReceipt {
   project: Project
   replayed: boolean
   canvas: CanvasState
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface ServiceInterface {
+  id: string
+  version: string
+  protocol: string
+  /**
+   * 有界 JSON Schema 2020-12；引用、编译与包大小由服务端进一步校验，不在浏览器动态编译。
+   */
+  schema: {
+    [k: string]: unknown
+  }
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface ServicePort {
+  id: string
+  role: 'consume' | 'provide'
+  protocol: string
+  contract: string
+  cardinality: 'one' | 'many'
+  required: boolean
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface ServiceContractDocument {
+  id: string
+  version: string
+  /**
+   * 有界 JSON Schema 2020-12；引用、编译与包大小由服务端进一步校验，不在浏览器动态编译。
+   */
+  configurationSchema: {
+    [k: string]: unknown
+  }
+  /**
+   * @maxItems 20
+   */
+  interfaces: ServiceInterface[]
+  /**
+   * @maxItems 20
+   */
+  ports: ServicePort[]
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface ServiceContract {
+  serviceId: string
+  reference: DefinitionRef
+  document: ServiceContractDocument
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface PortEndpoint {
+  componentId: string
+  portId: string
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface CredentialReference {
+  id: string
+  version: string
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface DatabaseBinding {
+  id: string
+  kind: 'databaseDependency'
+  source: PortEndpoint
+  target: PortEndpoint
+  sourceDefinition: DefinitionRef
+  targetDefinition: DefinitionRef
+  protocol: 'mysql'
+  contract: 'mysql-wire/10'
+  databaseId: string
+  databaseName: string
+  purpose: 'readWrite' | 'readOnly'
+  credential: CredentialReference
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface GraphState {
+  schemaVersion: 2
+  /**
+   * @maxItems 500
+   */
+  middlewares: MiddlewareNode[]
+  /**
+   * @maxItems 500
+   */
+  serviceContracts: ServiceContract[]
+  /**
+   * @maxItems 1000
+   */
+  bindings: DatabaseBinding[]
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface GraphSnapshot {
+  project: Project
+  graph: GraphState
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface GraphEditCommand {
+  mutationId: string
+  /**
+   * 无符号聚合版本，以十进制字符串传递，避免浏览器精度损失
+   */
+  baseRevision: string
+  /**
+   * @minItems 1
+   * @maxItems 50
+   */
+  operations: [GraphOperation, ...GraphOperation[]]
+}
+/**
+ * 版本二服务契约与数据库依赖声明
+ */
+export interface GraphReceipt {
+  mutationId: string
+  kind: 'editGraph'
+  project: Project
+  replayed: boolean
+  graph: GraphState
 }

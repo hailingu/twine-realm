@@ -95,6 +95,7 @@ type CanvasLayoutCommand struct {
 type Definitions interface {
 	List() DefinitionCatalog
 	Normalize(DefinitionRef, map[string]any) (map[string]any, []string, error)
+	ValidateServiceDocument(ServiceContractDocument) (ServiceContractDocument, DefinitionRef, error)
 }
 
 // Catalog 返回当前发布的离线目录，供界面核对版本和实际支持边界。

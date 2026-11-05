@@ -1,0 +1,521 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twine-realm.local/contract/v2/graph.schema.json",
+  "title": "GraphContract",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "serviceInterface": {
+      "$ref": "#/$defs/ServiceInterface"
+    },
+    "servicePort": {
+      "$ref": "#/$defs/ServicePort"
+    },
+    "serviceContractDocument": {
+      "$ref": "#/$defs/ServiceContractDocument"
+    },
+    "serviceContract": {
+      "$ref": "#/$defs/ServiceContract"
+    },
+    "portEndpoint": {
+      "$ref": "#/$defs/PortEndpoint"
+    },
+    "credentialReference": {
+      "$ref": "#/$defs/CredentialReference"
+    },
+    "databaseBinding": {
+      "$ref": "#/$defs/DatabaseBinding"
+    },
+    "graphState": {
+      "$ref": "#/$defs/GraphState"
+    },
+    "graphSnapshot": {
+      "$ref": "#/$defs/GraphSnapshot"
+    },
+    "graphOperation": {
+      "$ref": "#/$defs/GraphOperation"
+    },
+    "graphEditCommand": {
+      "$ref": "#/$defs/GraphEditCommand"
+    },
+    "graphReceipt": {
+      "$ref": "#/$defs/GraphReceipt"
+    }
+  },
+  "$defs": {
+    "ServiceInterface": {
+      "title": "ServiceInterface",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,79}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]{1,6}\\.[0-9]{1,6}\\.[0-9]{1,6}$"
+        },
+        "protocol": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,31}$"
+        },
+        "schema": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "有界 JSON Schema 2020-12；引用、编译与包大小由服务端进一步校验，不在浏览器动态编译。"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "protocol",
+        "schema"
+      ]
+    },
+    "ServicePort": {
+      "title": "ServicePort",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,79}$"
+        },
+        "role": {
+          "enum": [
+            "consume",
+            "provide"
+          ]
+        },
+        "protocol": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,31}$"
+        },
+        "contract": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "cardinality": {
+          "enum": [
+            "one",
+            "many"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "protocol",
+        "contract",
+        "cardinality",
+        "required"
+      ]
+    },
+    "ServiceContractDocument": {
+      "title": "ServiceContractDocument",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,79}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]{1,6}\\.[0-9]{1,6}\\.[0-9]{1,6}$"
+        },
+        "configurationSchema": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "有界 JSON Schema 2020-12；引用、编译与包大小由服务端进一步校验，不在浏览器动态编译。"
+        },
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ServiceInterface"
+          },
+          "maxItems": 20
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ServicePort"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "configurationSchema",
+        "interfaces",
+        "ports"
+      ]
+    },
+    "ServiceContract": {
+      "title": "ServiceContract",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "serviceId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "reference": {
+          "$ref": "../v1/schema.json#/$defs/DefinitionRef"
+        },
+        "document": {
+          "$ref": "#/$defs/ServiceContractDocument"
+        }
+      },
+      "required": [
+        "serviceId",
+        "reference",
+        "document"
+      ]
+    },
+    "PortEndpoint": {
+      "title": "PortEndpoint",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "componentId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "portId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,79}$"
+        }
+      },
+      "required": [
+        "componentId",
+        "portId"
+      ]
+    },
+    "CredentialReference": {
+      "title": "CredentialReference",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ]
+    },
+    "DatabaseBinding": {
+      "title": "DatabaseBinding",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "kind": {
+          "const": "databaseDependency"
+        },
+        "source": {
+          "$ref": "#/$defs/PortEndpoint"
+        },
+        "target": {
+          "$ref": "#/$defs/PortEndpoint"
+        },
+        "sourceDefinition": {
+          "$ref": "../v1/schema.json#/$defs/DefinitionRef"
+        },
+        "targetDefinition": {
+          "$ref": "../v1/schema.json#/$defs/DefinitionRef"
+        },
+        "protocol": {
+          "const": "mysql"
+        },
+        "contract": {
+          "const": "mysql-wire/10"
+        },
+        "databaseId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "databaseName": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,47}$"
+        },
+        "purpose": {
+          "enum": [
+            "readWrite",
+            "readOnly"
+          ]
+        },
+        "credential": {
+          "$ref": "#/$defs/CredentialReference"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "source",
+        "target",
+        "sourceDefinition",
+        "targetDefinition",
+        "protocol",
+        "contract",
+        "databaseId",
+        "databaseName",
+        "purpose",
+        "credential"
+      ]
+    },
+    "GraphState": {
+      "title": "GraphState",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 2
+        },
+        "middlewares": {
+          "type": "array",
+          "items": {
+            "$ref": "../v1/schema.json#/$defs/MiddlewareNode"
+          },
+          "maxItems": 500
+        },
+        "serviceContracts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ServiceContract"
+          },
+          "maxItems": 500
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DatabaseBinding"
+          },
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "middlewares",
+        "serviceContracts",
+        "bindings"
+      ]
+    },
+    "GraphSnapshot": {
+      "title": "GraphSnapshot",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "project": {
+          "$ref": "../v1/schema.json#/$defs/Project"
+        },
+        "graph": {
+          "$ref": "#/$defs/GraphState"
+        }
+      },
+      "required": [
+        "project",
+        "graph"
+      ]
+    },
+    "GraphOperation": {
+      "title": "GraphOperation",
+      "description": "版本二服务契约与数据库依赖声明",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "service.setContract"
+            },
+            "serviceId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "document": {
+              "$ref": "#/$defs/ServiceContractDocument"
+            }
+          },
+          "required": [
+            "type",
+            "serviceId",
+            "document"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "binding.create"
+            },
+            "source": {
+              "$ref": "#/$defs/PortEndpoint"
+            },
+            "target": {
+              "$ref": "#/$defs/PortEndpoint"
+            },
+            "databaseName": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,47}$"
+            },
+            "purpose": {
+              "enum": [
+                "readWrite",
+                "readOnly"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "source",
+            "target",
+            "databaseName",
+            "purpose"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "binding.reconnect"
+            },
+            "bindingId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            "source": {
+              "$ref": "#/$defs/PortEndpoint"
+            },
+            "target": {
+              "$ref": "#/$defs/PortEndpoint"
+            },
+            "databaseName": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,47}$"
+            },
+            "purpose": {
+              "enum": [
+                "readWrite",
+                "readOnly"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "bindingId",
+            "source",
+            "target",
+            "databaseName",
+            "purpose"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "binding.remove"
+            },
+            "bindingId": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          },
+          "required": [
+            "type",
+            "bindingId"
+          ]
+        }
+      ]
+    },
+    "GraphEditCommand": {
+      "title": "GraphEditCommand",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "baseRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "无符号聚合版本，以十进制字符串传递，避免浏览器精度损失"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphOperation"
+          },
+          "maxItems": 50,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "mutationId",
+        "baseRevision",
+        "operations"
+      ]
+    },
+    "GraphReceipt": {
+      "title": "GraphReceipt",
+      "description": "版本二服务契约与数据库依赖声明",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "kind": {
+          "const": "editGraph"
+        },
+        "project": {
+          "$ref": "../v1/schema.json#/$defs/Project"
+        },
+        "replayed": {
+          "type": "boolean"
+        },
+        "graph": {
+          "$ref": "#/$defs/GraphState"
+        }
+      },
+      "required": [
+        "mutationId",
+        "kind",
+        "project",
+        "replayed",
+        "graph"
+      ]
+    }
+  }
+}

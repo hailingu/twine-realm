@@ -1,8 +1,8 @@
 # twine-realm
 
-本地服务画布。当前实现 [Issue #1](https://github.com/hailingu/twine-realm/issues/1) 的本机项目、只读仓库登记与布局恢复，[Issue #2](https://github.com/hailingu/twine-realm/issues/2) 的明确固定 commit 与恢复，以及 [Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的版本化 MySQL 目录、配置草稿和混合节点布局。
+本地服务画布。当前实现 [Issue #1](https://github.com/hailingu/twine-realm/issues/1) 的本机项目、只读仓库登记与布局恢复，[Issue #2](https://github.com/hailingu/twine-realm/issues/2) 的明确固定 commit 与恢复，以及 [Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的版本化 MySQL 目录、配置草稿和混合节点布局，以及 [Issue #8](https://github.com/hailingu/twine-realm/issues/8) 的服务接口声明、具名端口与 MySQL 依赖连线。
 
-服务节点保持待配置草稿。用户已选择首个业务工程组合为 Go + 标准库 `net/http`；[Issue #10](https://github.com/hailingu/twine-realm/issues/10) 提供离线工程包与最小服务模板，使用见[工程模板切片](docs/development/service-profile-slice.md)。不包含账号 / 登录 / 配对 / RBAC、AI、GitHub 同步、中间件连线、业务构建部署或代码编辑器。项目与仓库关联只保存在本机，导入不修改源码、`AGENTS.md`、索引、分支或 Git 配置。
+服务节点保持待配置草稿。用户已选择首个业务工程组合为 Go + 标准库 `net/http`；[Issue #10](https://github.com/hailingu/twine-realm/issues/10) 提供离线工程包与最小服务模板，使用见[工程模板切片](docs/development/service-profile-slice.md)。不包含账号 / 登录 / 配对 / RBAC、AI、GitHub 同步、中间件运行、业务构建部署或代码编辑器。项目与仓库关联只保存在本机，导入不修改源码、`AGENTS.md`、索引、分支或 Git 配置。
 
 ## 运行
 
@@ -48,4 +48,6 @@
 - `npm run quality:gate`：上述完整平台检查加脚本覆盖率、issue 元数据和本次真实 Sonar 门禁。需要通过环境注入 `SONAR_HOST_URL` 与 `SONAR_TOKEN` / `TWINE_REALM_SONAR_TOKEN`；报告只采用本次生成的 Go / LCOV。
 - `docker compose --env-file .env -f deploy/compose.yaml config --quiet`：仅校验配置，不启动资源。
 
-详细契约、失败边界与实现范围见[本地与源码切片](docs/development/local-project-slice.md)及[组件目录切片](docs/development/component-catalog-slice.md)，长期设计见[平台设计概览](docs/platform-design/README.md)。工作范围以 GitHub Issue 为记录，Project #4 管规划；本地实现与测试不自动关闭 Issue 或设 Done。
+在“接口与依赖声明”选择服务，显式填写自己的版本化契约或载入端口示例，再保存。具名消费端口可拖线到 MySQL 提供端口，也可用表单建立关系；检查库名和用途后确认才保存。当前连线仅为声明，尚不建库或运行服务。重连、移除与契约升级均需明确确认，失败保留候选和原关系。
+
+详细契约、失败边界与实现范围见[本地与源码切片](docs/development/local-project-slice.md)、[组件目录切片](docs/development/component-catalog-slice.md)及[服务连线切片](docs/development/service-bindings-slice.md)，长期设计见[平台设计概览](docs/platform-design/README.md)。工作范围以 GitHub Issue 为记录，Project #4 管规划；本地实现与测试不自动关闭 Issue 或设 Done。

@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { INITIAL_PROJECT, INITIAL_SOURCE, EMPTY_CANVAS, fakeAPI, sourceReceipt } from '../testing/projectFixtures'
+import { INITIAL_PROJECT, INITIAL_SOURCE, EMPTY_GRAPH, fakeAPI, sourceReceipt } from '../testing/projectFixtures'
 import { Workspace } from './Workspace'
 import { RequestError } from './api'
 import { SourceVersionPanel } from './SourceVersion'
@@ -90,7 +90,7 @@ it('冲突后载入新项目版本时重新读取固定源码，保留自己的�
   const api = fakeAPI(); const user = userEvent.setup()
   api.source.mockResolvedValue({ ...INITIAL_SOURCE, version: { ...INITIAL_SOURCE.version, pinnedCommit: 'a'.repeat(40) } })
   api.pin.mockRejectedValue(new RequestError({ code: 'REVISION_CONFLICT', message: '其他窗口已固定新版本' }, 409))
-  api.canvas.mockResolvedValue({ project: { ...INITIAL_PROJECT, revision: '3' }, canvas: EMPTY_CANVAS })
+  api.graph.mockResolvedValue({ project: { ...INITIAL_PROJECT, revision: '3' }, graph: EMPTY_GRAPH })
   render(<Workspace initial={INITIAL_PROJECT} api={api} onClose={vi.fn()} />)
   await user.click(screen.getByRole('button', { name: '查看本地服务源码版本' }))
   await waitFor(() => { expect(screen.getByTestId('pinned-commit')).toHaveTextContent('a'.repeat(40)) })

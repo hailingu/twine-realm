@@ -7,7 +7,7 @@ import { App } from './App'
 import { ProjectPicker } from './ProjectPicker'
 import { Workspace } from './Workspace'
 import { RequestError } from './api'
-import { INITIAL_PROJECT, EMPTY_CANVAS, fakeAPI, receipt } from '../testing/projectFixtures'
+import { INITIAL_PROJECT, EMPTY_GRAPH, fakeAPI, receipt } from '../testing/projectFixtures'
 
 vi.mock('./Canvas', () => ({ Canvas: () => <div aria-label="服务画布" /> }))
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
@@ -43,7 +43,7 @@ it('无项目时创建，响应丢失保留相同创建请求并核实', async (
   const command = api.create.mock.calls[0]?.[0]; if (!command) throw new Error('创建请求缺失')
   api.receipt.mockResolvedValue(receipt(INITIAL_PROJECT, 'createProject', command.mutationId))
   await user.click(screen.getByRole('button', { name: '核实创建结果' }))
-  await waitFor(() => { expect(onOpen).toHaveBeenCalledWith({ project: INITIAL_PROJECT, canvas: EMPTY_CANVAS }) })
+  await waitFor(() => { expect(onOpen).toHaveBeenCalledWith({ project: INITIAL_PROJECT, graph: EMPTY_GRAPH }) })
 })
 
 it('布局失败显示恢复入口，用户核实后原草稿才结清', async () => {

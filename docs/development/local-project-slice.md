@@ -2,7 +2,7 @@
 
 本页记录实现边界；运行方式见[根 README](../../README.md)，验收事实以本次检查输出为准。[Issue #1](https://github.com/hailingu/twine-realm/issues/1) 与 [Issue #2](https://github.com/hailingu/twine-realm/issues/2) 对应现有 [Project #4](https://github.com/users/hailingu/projects/4)。不自动改变远端状态。
 
-[Issue #6 标准组件目录与配置草稿](component-catalog-slice.md) 另行记录增量完整画布、MySQL 定义、混合布局和专用回执。下文原 v1 项目 / 服务及源码契约继续保持原义；500 容量现由服务与中间件共同使用。
+[Issue #6 标准组件目录与配置草稿](component-catalog-slice.md) 另行记录增量完整画布、MySQL 定义、混合布局和专用回执。[Issue #8 服务连线切片](service-bindings-slice.md) 以独立 v2 图扩展自有接口与依赖声明。下文原 v1 项目 / 服务及源码契约继续保持原义；500 容量现由服务与中间件共同使用。
 
 ## 当前范围
 
