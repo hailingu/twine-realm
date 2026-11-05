@@ -2,6 +2,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseContract, PROJECT_API, RequestError } from './api'
 import { EMPTY_CANVAS, INITIAL_CATALOG, INITIAL_PROJECT, INITIAL_SOURCE, MYSQL_NODE, canvasReceipt, receipt, sourceReceipt } from '../testing/projectFixtures'
+import { graphReceipt } from '../testing/projectFixtures'
+import type { GraphEditCommand } from '../contract/generated'
+import { BOUND_GRAPH, DB_BINDING } from '../testing/graphFixtures'
 
 afterEach(() => { vi.unstubAllGlobals() })
 describe('API 信任边界', () => {
@@ -67,5 +70,23 @@ describe('API 信任边界', () => {
     expect(() => parseContract('DefinitionCatalog', { ...INITIAL_CATALOG, definitions })).toThrow(RequestError)
     const middlewares = Array.from({ length: 501 }, () => MYSQL_NODE)
     expect(() => parseContract('CanvasSnapshot', { project: INITIAL_PROJECT, canvas: { schemaVersion: 1, middlewares } })).toThrow(RequestError)
+  })
+  it('版本二图客户端使用独立读取、原子编辑和核实入口，旧回执不能混用', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ project: INITIAL_PROJECT, graph: BOUND_GRAPH })))
+    vi.stubGlobal('fetch', fetcher)
+    await expect(PROJECT_API.graph(INITIAL_PROJECT.id)).resolves.toEqual({ project: INITIAL_PROJECT, graph: BOUND_GRAPH })
+    expect(fetcher).toHaveBeenLastCalledWith(`/api/v2/projects/${INITIAL_PROJECT.id}/graph`, expect.anything())
+    const command: GraphEditCommand = { mutationId: crypto.randomUUID(), baseRevision: '1', operations: [{ type: 'binding.remove', bindingId: DB_BINDING.id }] }
+    const accepted = graphReceipt(INITIAL_PROJECT, command.mutationId, BOUND_GRAPH)
+    fetcher.mockResolvedValue(new Response(JSON.stringify(accepted)))
+    await expect(PROJECT_API.editGraph(INITIAL_PROJECT.id, command)).resolves.toEqual(accepted)
+    expect(fetcher).toHaveBeenLastCalledWith(`/api/v2/projects/${INITIAL_PROJECT.id}/graph/edits`, expect.objectContaining({ method: 'POST', body: JSON.stringify(command) }))
+    fetcher.mockResolvedValue(new Response(JSON.stringify(accepted)))
+    await expect(PROJECT_API.graphReceipt(command.mutationId)).resolves.toEqual(accepted)
+    expect(fetcher).toHaveBeenLastCalledWith(`/api/v2/graph-mutations/${command.mutationId}`, expect.anything())
+    for (const name of ['Receipt', 'CanvasReceipt', 'SourceReceipt']) expect(() => parseContract(name, accepted)).toThrow(RequestError)
+    for (const graph of [{ ...BOUND_GRAPH, schemaVersion: 1 }, { ...BOUND_GRAPH, bindings: [{ ...DB_BINDING, password: 'dummy' }] }, { ...BOUND_GRAPH, bindings: Array.from({ length: 1001 }, () => DB_BINDING) }]) expect(() => parseContract('GraphSnapshot', { project: INITIAL_PROJECT, graph })).toThrow(RequestError)
+    fetcher.mockResolvedValue(new Response(JSON.stringify({ project: { ...INITIAL_PROJECT, id: crypto.randomUUID() }, graph: BOUND_GRAPH })))
+    await expect(PROJECT_API.graph(INITIAL_PROJECT.id)).rejects.toMatchObject({ status: 0, failure: { code: 'INVALID_RESPONSE' } })
   })
 })

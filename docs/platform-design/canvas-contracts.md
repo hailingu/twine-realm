@@ -1,6 +1,6 @@
 # 组件、连线、接口与状态契约
 
-> **状态：工程原则已接受；本地项目、源码与标准组件草稿契约已发布，连线和运行仍待实现。** 用户确认参考本机 Infinity Canvas 的现有方案。本文固定适配方向、状态所有权和验证要求；已落地字段见[本地与源码切片](../development/local-project-slice.md)及[组件目录切片](../development/component-catalog-slice.md)，其余逻辑字段与操作在后续切片固定为机器契约。推荐默认值与待决事项分别标明。
+> **状态：工程原则已接受；本地项目、源码、标准组件草稿和 v2 服务契约 / 数据库依赖声明已发布，运行仍待实现。** 用户确认参考本机 Infinity Canvas 的现有方案。本文固定适配方向、状态所有权和验证要求；已落地字段见[本地与源码切片](../development/local-project-slice.md)、[组件目录切片](../development/component-catalog-slice.md)及[服务连线切片](../development/service-bindings-slice.md)，其余逻辑字段与操作在后续切片固定为机器契约。推荐默认值与待决事项分别标明。
 
 ## 参考依据与适配结论
 
@@ -72,7 +72,7 @@
 
 ## 首批机器契约与交付屏障
 
-已采用 schema 先行：`server/contract/v1/` 发布本地项目、源码与标准组件草稿的 JSON Schema / OpenAPI；MySQL 定义包在 `server/internal/catalog/definitions/`，生成 TS / 独立 Ajv 校验器，Go 使用同一材料。独立事件、连线、构建与运行契约仍在对应后续切片固定，不把下表全部视为已实现。
+已采用 schema 先行：`server/contract/v1/` 发布本地项目、源码与标准组件草稿的 JSON Schema / OpenAPI；MySQL 定义包在 `server/internal/catalog/definitions/`，生成 TS / 独立 Ajv 校验器，Go 使用同一材料。`server/contract/v2/` 已发布自有服务契约与数据库依赖的完整图 / 原子编辑；独立事件、其他关系、构建与运行契约仍在对应后续切片固定，不把下表全部视为已实现。
 
 | 首批契约 | 必须固定的最小内容 |
 | --- | --- |

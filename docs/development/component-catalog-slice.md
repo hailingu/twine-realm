@@ -1,6 +1,6 @@
 # 标准组件目录与 MySQL 配置草稿（Issue #6）
 
-本切片在 [Issue #1 / #2](local-project-slice.md) 上加入标准组件目录与配置持久化。[Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的实际验收以本次检查为准；MySQL 运行、连线、业务工程方案与部署由后续任务交付，一期不接入用户账号权限。
+本切片在 [Issue #1 / #2](local-project-slice.md) 上加入标准组件目录与配置持久化。[Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的实际验收以本次检查为准；MySQL 运行、业务工程方案与部署由后续任务交付；[Issue #8](service-bindings-slice.md) 已扩展服务自有契约与依赖声明，一期不接入用户账号权限。
 
 ## 单一目录与固定版本
 
@@ -29,10 +29,10 @@
 | `PUT /api/v1/projects/{id}/canvas/layout` | `{mutationId,baseRevision,positions:[{componentId,x,y}]}` |
 | `GET /api/v1/canvas-mutations/{id}` | 核实创建 / 更新 / 布局原请求 |
 
-界面从同一确认快照投影两个类别。保存失败与冲突保留配置候选，布局未保存时先保存 / 还原再写配置。冲突时显式读取完整最新画布，原位置和表单候选保留，不静默覆盖其他窗口的组件。未确认表单仅保留在当前页面，强制刷新可能丢失候选；已提交数据可重开及重启恢复。
+界面从同一确认快照投影两个类别；后续 Issue #8 改用互补的 v2 完整图读取，本文 v1 契约保持原义。保存失败与冲突保留配置候选，布局未保存时先保存 / 还原再写配置。冲突时显式读取完整最新画布，原位置和表单候选保留，不静默覆盖其他窗口的组件。未确认表单仅保留在当前页面，强制刷新可能丢失候选；已提交数据可重开及重启恢复。
 
 ## 验证与未实现范围
 
 共享合法 / 非法配置样本在 `server/internal/catalog/definitions/configuration-cases.json`，Go 和前端实际执行同一份样本。真实 HTTP/MySQL 用例覆盖缺省、未就绪、配置更新、混合布局后序失败回滚、并发、原键与存储恢复；真实迁移分别覆盖原 v1 项目和 v2 固定源码 / 回执。Chromium 覆盖加入、修改、实际拖动、失败候选、响应丢失、并发和平台进程重启；源仓库指纹保持。
 
-本切片不启动业务 MySQL、不建立连接或数据库账号、不执行迁移 / 构建 / 部署，不将固定镜像或目录条目当作运行事实。其他中间件和自定义服务的多个契约 / 端口按各自后续版本发布，不从此 MySQL 定义推导全局唯一业务 schema。
+本切片不启动业务 MySQL、不建立连接或数据库账号、不执行迁移 / 构建 / 部署，不将固定镜像或目录条目当作运行事实。其他中间件按各自后续版本发布；自定义服务的多接口 / 端口声明已由 [Issue #8](service-bindings-slice.md) 提供，不从此 MySQL 定义推导全局唯一业务 schema。
