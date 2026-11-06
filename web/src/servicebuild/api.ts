@@ -1,5 +1,5 @@
 /** 构建客户端只使用同源机器契约，不允许用户命令或业务秘密进入控制面请求。 */
-import type { BuildCapability, BuildCancelCommand, BuildCommand, BuildOperation, BuildReceipt, BuildSnapshot } from '../contract/generated'
+import type { BuildCapability, BuildCancelCommand, BuildCommand, BuildImage, BuildOperation, BuildReceipt, BuildSnapshot } from '../contract/generated'
 import { RequestError, request } from '../project/api'
 import type { BuildIntent } from './model'
 
@@ -18,6 +18,9 @@ function invalid(): RequestError { return new RequestError({ code: 'INVALID_RESP
 /** @param projectId 项目 @param serviceId 服务 @returns 受编码的同源相对构建路由。 */
 function route(projectId: string, serviceId: string): string { return `/projects/${encodeURIComponent(projectId)}/services/${encodeURIComponent(serviceId)}` }
 
+/** @param value 已通过schema的镜像 @returns 实际本地ID仍须严格绑定已检查config或manifest，不接受第三摘要。 */
+function boundImageID(value: BuildImage): boolean { return value.id === value.configDigest || value.id === value.manifestDigest }
+
 /** @param value 已通过schema的投影 @param projectId 项目 @param serviceId 服务 @returns 指针与内容身份一致的投影。 */
 function snapshot(value: BuildSnapshot, projectId: string, serviceId: string): BuildSnapshot {
   if (value.projectId !== projectId || value.serviceId !== serviceId || value.currentSource.projectId !== projectId || value.currentSource.serviceId !== serviceId) throw invalid()
@@ -29,7 +32,7 @@ function snapshot(value: BuildSnapshot, projectId: string, serviceId: string): B
   if (value.target.projectId !== projectId || value.target.serviceId !== serviceId || value.target.generation !== value.generation || operation?.projectId !== projectId || operation.serviceId !== serviceId || operation.targetId !== value.target.id) throw invalid()
   if (operation.candidate !== null && (operation.state !== 'succeeded' || operation.candidate.operationId !== operation.id || operation.candidate.targetId !== operation.targetId)) throw invalid()
   const candidate = value.candidate
-  if (candidate !== null && (candidate.source.projectId !== projectId || candidate.source.serviceId !== serviceId || candidate.image.id !== candidate.image.configDigest)) throw invalid()
+  if (candidate !== null && (candidate.source.projectId !== projectId || candidate.source.serviceId !== serviceId || !boundImageID(candidate.image))) throw invalid()
   if (value.candidateCurrent) validateCurrentCandidate(value, operation)
   return value
 }

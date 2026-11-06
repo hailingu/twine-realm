@@ -1,9 +1,16 @@
 /** 发布schema与跨字段归属同时通过才允许构建状态进入界面。 */
 import { afterEach, expect, it, vi } from 'vitest'
-import { BUILD_CAPABILITY, BUILD_COMMAND, BUILD_RECEIPT, EMPTY_BUILD, READY_BUILD, RUNNING_BUILD } from '../testing/buildFixtures'
+import { BUILD_CANDIDATE, BUILD_CAPABILITY, BUILD_COMMAND, BUILD_RECEIPT, EMPTY_BUILD, READY_BUILD, RUNNING_BUILD } from '../testing/buildFixtures'
 import { BUILD_API } from './api'
 
 afterEach(() => { vi.unstubAllGlobals() })
+
+it('containerd实际本地ID可为已检查manifest，仍保留独立config摘要并拒绝任意第三摘要', async () => {
+  const candidate = { ...BUILD_CANDIDATE, image: { ...BUILD_CANDIDATE.image, id: BUILD_CANDIDATE.image.manifestDigest } }
+  const value = { ...READY_BUILD, candidate, operation: { ...RUNNING_BUILD.operation, state: 'succeeded', candidate } }
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(value)))))
+  await expect(BUILD_API.snapshot(EMPTY_BUILD.projectId, EMPTY_BUILD.serviceId)).resolves.toMatchObject({ candidate: { image: { id: candidate.image.manifestDigest, configDigest: candidate.image.configDigest } } })
+})
 
 it('真实端点保持同源v3和原请求，成功镜像含独立manifest与config摘要', async () => {
   let value: object = BUILD_CAPABILITY

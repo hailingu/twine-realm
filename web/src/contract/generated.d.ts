@@ -799,7 +799,13 @@ export interface BuildMigration {
   path: string
   digest: string
 }
+/**
+ * 实际本地引擎ID与Buildx的config、manifest/index内容摘要分别保存，不能假设ID恒等于config digest。
+ */
 export interface BuildImage {
+  /**
+   * 实际Docker image inspect返回的ID，必须严格等于已检查config或manifest/index摘要之一。
+   */
   id: string
   manifestDigest: string
   configDigest: string

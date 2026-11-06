@@ -125,10 +125,11 @@ func TestRealFixedCommitBuild(t *testing.T) {
 		t.Fatalf("真实构建未通过：%T %v", err, err)
 	}
 	t.Cleanup(func() { cleanupBuildImage(t, f.driver, f.driver.newSandbox(f.target, f.operationID), candidate.Image) })
-	if candidate.Source.PinnedCommit != f.target.Source.PinnedCommit || candidate.InputDigest != f.target.InputDigest || !digestPattern.MatchString(candidate.Image.ManifestDigest) || candidate.Image.ID != candidate.Image.ConfigDigest || len(candidate.Migrations) == 0 {
+	if candidate.Source.PinnedCommit != f.target.Source.PinnedCommit || candidate.InputDigest != f.target.InputDigest || !digestPattern.MatchString(candidate.Image.ManifestDigest) || !boundImageID(candidate.Image.ID, candidate.Image) || len(candidate.Migrations) == 0 {
 		t.Fatal("候选没有绑定完整实际输入和内容摘要")
 	}
 	assertBuildChecks(t, states)
+	assertActualImageID(t, f.driver, candidate.Image)
 	if gitBuild(t, f.repository, "status", "--porcelain=v1") != before {
 		t.Fatal("构建改变了原仓库工作区")
 	}
@@ -140,6 +141,21 @@ func TestRealFixedCommitBuild(t *testing.T) {
 	data, err := json.Marshal(candidate)
 	if err != nil || strings.Contains(string(data), "PASSWORD") || reflect.DeepEqual(candidate.Checks, []Check{}) {
 		t.Fatal("候选检查证据无效")
+	}
+}
+
+// assertActualImageID 从真实Docker独立读取候选tag，核对实际ID而非在测试中复写config-ID假设。
+func assertActualImageID(t *testing.T, driver *Driver, image Image) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	data, err := driver.run(ctx, "image", "inspect", "--format={{json .Id}}", image.Tag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var actual string
+	if json.Unmarshal(data, &actual) != nil || actual != image.ID || !boundImageID(actual, image) {
+		t.Fatal("真实引擎ID没有绑定原构建证明")
 	}
 }
 

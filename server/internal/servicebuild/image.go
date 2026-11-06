@@ -44,8 +44,8 @@ func (driver *Driver) buildImage(ctx context.Context, box sandbox, id string) (v
 	if err != nil {
 		return value, err
 	}
-	value.ID = value.ConfigDigest
-	return value, driver.verifyImage(ctx, box, value)
+	value.ID, err = driver.loadedImageID(ctx, box, value)
+	return value, err
 }
 
 // producedFile 只接收本进程新建私有目录内的普通有限文件，不跟随链接或设备。
@@ -113,11 +113,28 @@ func imageMetadata(data []byte) (string, string, error) {
 	return manifest, config, nil
 }
 
-// verifyImage 以完整config ID再次核实加载结果，未将tag当作不可变镜像身份。
+// verifyImage 同时核实原记录的实际本地ID和内容证明，tag改变不能沿用旧候选。
 func (driver *Driver) verifyImage(ctx context.Context, box sandbox, image Image) error {
-	data, err := driver.run(ctx, "image", "inspect", image.Tag)
+	id, err := driver.loadedImageID(ctx, box, image)
 	if err != nil {
 		return err
+	}
+	if id != image.ID {
+		return failure("BUILD_IMAGE_IDENTITY_CONFLICT", "实际本地镜像身份与原候选不一致")
+	}
+	return nil
+}
+
+// boundImageID 适配classic的config-ID与containerd的manifest/index-ID，只接受本次已检查的内容摘要。
+func boundImageID(id string, image Image) bool {
+	return digestPattern.MatchString(id) && (id == image.ConfigDigest || id == image.ManifestDigest)
+}
+
+// loadedImageID 在保存候选前实际读取本地ID，不能假设所有Docker存储后端都使用config digest。
+func (driver *Driver) loadedImageID(ctx context.Context, box sandbox, image Image) (string, error) {
+	data, err := driver.run(ctx, "image", "inspect", image.Tag)
+	if err != nil {
+		return "", err
 	}
 	var values []struct {
 		ID, Os, Architecture string
@@ -128,13 +145,13 @@ func (driver *Driver) verifyImage(ctx context.Context, box sandbox, image Image)
 		}
 	}
 	if json.Unmarshal(data, &values) != nil || len(values) != 1 {
-		return invalidOutput()
+		return "", invalidOutput()
 	}
 	value := values[0]
-	if value.ID != image.ConfigDigest || value.Os != "linux" || value.Architecture != box.target.Environment.Architecture || value.Config.User != "65532:65532" || !reflect.DeepEqual(value.Config.Labels, box.labels()) || !reflect.DeepEqual(value.Config.Entrypoint, []string{"/service"}) || !reflect.DeepEqual(value.Config.Cmd, []string{"serve"}) {
-		return failure("BUILD_IMAGE_IDENTITY_CONFLICT", "已加载镜像与固定构建摘要或配置不一致")
+	if !boundImageID(value.ID, image) || value.Os != "linux" || value.Architecture != box.target.Environment.Architecture || value.Config.User != "65532:65532" || !reflect.DeepEqual(value.Config.Labels, box.labels()) || !reflect.DeepEqual(value.Config.Entrypoint, []string{"/service"}) || !reflect.DeepEqual(value.Config.Cmd, []string{"serve"}) {
+		return "", failure("BUILD_IMAGE_IDENTITY_CONFLICT", "已加载镜像与固定构建摘要或配置不一致")
 	}
-	return nil
+	return value.ID, nil
 }
 
 // frozenBinary 冻结全部原沙箱进程，并从本次限额卷提取核实的静态输出。

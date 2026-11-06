@@ -18,7 +18,7 @@ type Migration struct {
 	Digest string `json:"digest"`
 }
 
-// Image 分别记录本地config/image身份和真实manifest摘要，不以tag作为内容身份。
+// Image 分别记录实际本地引擎ID、config与manifest/index摘要，不以tag或固定后端假设作为内容身份。
 type Image struct {
 	ID             string `json:"id"`
 	ManifestDigest string `json:"manifestDigest"`

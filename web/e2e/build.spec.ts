@@ -57,7 +57,11 @@ test('原键恢复真实构建，布局草稿与脏源码保持；重开/重启�
   await expect(x).toHaveValue('777'); await expect(page.getByLabel('画布保存状态')).toContainText('未保存')
   const value = parseContract<BuildSnapshot>('BuildSnapshot', await (await request.get(route + '/build')).json())
   expect(value.candidateCurrent).toBe(true); expect(value.candidate?.source.pinnedCommit).toBe(source.commit)
-  expect(value.candidate?.image.id).toBe(value.candidate?.image.configDigest)
+  const candidate = value.candidate
+  if (!candidate) throw new Error('缺少真实镜像候选')
+  const inspected: unknown = JSON.parse((await execute('docker', ['--context', candidate.environment.context, 'image', 'inspect', '--format={{json .Id}}', candidate.image.tag])).stdout)
+  expect(inspected).toBe(candidate.image.id)
+  expect([candidate.image.configDigest, candidate.image.manifestDigest]).toContain(inspected)
   expect(value.candidate?.image.manifestDigest).toMatch(/^sha256:[a-f0-9]{64}$/)
   expect(await platform.fingerprint(source.path)).toBe(original)
   const candidateId = value.candidate?.id

@@ -29,11 +29,13 @@ Git 读取原始 commit/tree/blob，导出到独占新目录，保留普通文�
 | 检查 | 实际 Go 版本、全部固定 Go 文件 gofmt、`go mod verify`、`go vet ./...`、`go test -race -count=1 ./...` |
 | 编译 | `CGO_ENABLED=0 go build -trimpath -buildvcs=false`，输出 `./cmd/service` 静态 Linux 二进制；原模块始终只读 |
 | 镜像 | 暂停并核实整个沙箱，提取二进制、核实 ELF 架构 / 静态属性 / SHA256，使用平台固定 scratch Dockerfile 与本地固定 builder；不执行服务 Dockerfile |
-| 发布候选 | Buildx 元数据提供真实 manifest/config digest，另按本地 image ID、归属、架构与固定启动配置核实加载结果；同库发布候选仍受取消与执行围栏保护，完整候选JSON最多48 KiB以保留同库操作 / 回执载荷余量 |
+| 发布候选 | Buildx 元数据提供真实 manifest/index 与 config digest，另实际读取本地引擎 ID，按内容摘要、归属、架构与固定启动配置核实加载结果；同库发布候选仍受取消与执行围栏保护，完整候选JSON最多48 KiB以保留同库操作 / 回执载荷余量 |
 
 策略 `go-container-local-v1/1` 固定：总执行 480 秒、每命令最多 180 秒、CPU 2、内存及 swap 上限 4096 MiB、PID 256、有界输出每流 1 MiB。Go 缓存 / 测试临时目录为 3072 MiB tmpfs，明确 exec/nosuid/nodev；执行生成的测试二进制不放宽容器能力。最终二进制使用独立、完整归属的 128 MiB local-driver tmpfs 输出卷，noexec/nosuid/nodev；没有宿主可写目录挂载。
 
 Docker 官方说明 [docker cp 不支持容器内 tmpfs 等特殊挂载](https://docs.docker.com/reference/cli/docker/container/cp/#corner-cases)。本切片使用 daemon 挂载的独立限额输出卷，在暂停后提取；不会为绕过该限制取消冻结。所有沙箱及输出卷只在完整标签、名字、镜像、用户、挂载、资源限额、端点及 daemon 相符时清理。失败清理不覆盖原错误，也不能发布候选。
+
+本地引擎 ID、config digest 与 manifest/index digest 分开保存。classic 存储通常以 config digest 作为本地 ID；containerd 存储的本地 ID 可为目标 manifest/index digest，见 [Moby 固定实现](https://github.com/moby/moby/blob/6a43e3d/daemon/containerd/image_inspect.go)。本切片只接受实际 ID 严格匹配本次 Buildx 已检查的两份内容摘要之一，后续查询还必须匹配原记录的实际本地 ID；不能因后端差异接受任意第三摘要、放宽归属或只检查 tag。
 
 ## 持久状态与恢复
 
