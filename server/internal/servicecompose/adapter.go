@@ -14,7 +14,7 @@ import (
 // Sources 提供已接受物理计划与原数据库资源，不把管理秘密存入领域对象。
 type Sources interface {
 	RuntimeSnapshot(context.Context, string) (mysqlruntime.Snapshot, error)
-	RuntimeDeployment(context.Context, string) (*servicedeploy.Target, error)
+	RuntimeDeployment(context.Context, string) (*servicedeploy.RuntimeMaterial, error)
 }
 
 // Driver 复用原运行根、项目锁和构建镜像验证，各自句柄仍由平台生命周期关闭。
@@ -105,10 +105,11 @@ func (driver *Driver) verifyPlanEnvironment(plan servicedeploy.Plan) error {
 
 // RuntimeOverlay 由同库已接受目标确定，原MySQL重启不能忽略已部署业务容器。
 func (driver *Driver) RuntimeOverlay(ctx context.Context, resource mysqlruntime.Resource) (*mysqlruntime.ComposeOverlay, error) {
-	target, err := driver.sources.RuntimeDeployment(ctx, resource.ProjectID)
-	if err != nil || target == nil {
+	material, err := driver.sources.RuntimeDeployment(ctx, resource.ProjectID)
+	if err != nil || material == nil {
 		return nil, err
 	}
+	target := material.Target
 	request, err := driver.bindingRequest(ctx, target.Plan)
 	if err != nil {
 		return nil, err
@@ -121,5 +122,12 @@ func (driver *Driver) RuntimeOverlay(ctx context.Context, resource mysqlruntime.
 		return nil, err
 	}
 	data, err := composeMaterial(target.Plan, files)
-	return &mysqlruntime.ComposeOverlay{ServiceID: target.ServiceID, Data: data}, err
+	if err != nil {
+		return nil, err
+	}
+	unmaterialized := false
+	if !material.Materialized {
+		unmaterialized, err = driver.noDeploymentResources(ctx, target.Plan)
+	}
+	return &mysqlruntime.ComposeOverlay{ServiceID: target.ServiceID, Data: data, Unmaterialized: unmaterialized}, err
 }

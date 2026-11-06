@@ -18,7 +18,7 @@ type readonlySources struct {
 }
 
 // RuntimeDeployment 不返回可执行目标，供错误与尚未部署两种路径断言。
-func (source readonlySources) RuntimeDeployment(context.Context, string) (*servicedeploy.Target, error) {
+func (source readonlySources) RuntimeDeployment(context.Context, string) (*servicedeploy.RuntimeMaterial, error) {
 	return nil, source.err
 }
 

@@ -27,8 +27,8 @@ func (store *Store) YieldDeployment(ctx context.Context, lease servicedeploy.Lea
 }
 
 // RuntimeDeployment 返回原Compose扩展的已接受目标，执行中也必须属于同一原项目。
-func (store *Store) RuntimeDeployment(ctx context.Context, id string) (*servicedeploy.Target, error) {
-	return runtimeRead(ctx, store.db, func(tx *sql.Tx) (*servicedeploy.Target, error) {
+func (store *Store) RuntimeDeployment(ctx context.Context, id string) (*servicedeploy.RuntimeMaterial, error) {
+	return runtimeRead(ctx, store.db, func(tx *sql.Tx) (*servicedeploy.RuntimeMaterial, error) {
 		instance, err := readDeploymentInstance(ctx, tx, id, false)
 		if err != nil || instance == nil {
 			return nil, err
@@ -38,6 +38,12 @@ func (store *Store) RuntimeDeployment(ctx context.Context, id string) (*serviced
 			return nil, err
 		}
 		target, err := readDeploymentTarget(ctx, tx, row.value.TargetID)
-		return &target, err
+		if err != nil {
+			return nil, err
+		}
+		var materialized bool
+		// 同一操作重新领取可覆盖步骤；不可变事件保留先前已经完成材料的正面证明。
+		err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM deployment_events e JOIN deployment_operations o ON e.operation_id=o.id AND e.project_id=o.project_id JOIN deployment_targets t ON t.id=o.target_id WHERE e.project_id=? AND o.service_id=? AND t.payload->>'$.plan.runtimeDigest'=? AND JSON_CONTAINS(e.payload,?))`, id, target.ServiceID, target.Plan.RuntimeDigest, `{"steps":[{"name":"material","state":"succeeded"}]}`).Scan(&materialized)
+		return &servicedeploy.RuntimeMaterial{Target: target, Materialized: materialized}, err
 	})
 }

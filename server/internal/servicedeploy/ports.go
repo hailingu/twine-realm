@@ -31,6 +31,12 @@ type Completion struct {
 	Observation          *Observation
 }
 
+// RuntimeMaterial 将原物理目标与不可回退的材料完成证明一起读取，不用新操作pending掩盖历史。
+type RuntimeMaterial struct {
+	Target       Target
+	Materialized bool
+}
+
 // Repository 同库拥有目标、原键、围栏与最后事实，不拥有Docker事务。
 type Repository interface {
 	AcceptDeployment(context.Context, AcceptedInput) (Receipt, error)
