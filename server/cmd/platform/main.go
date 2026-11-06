@@ -56,11 +56,23 @@ func run(logger *slog.Logger) (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, running.close()) }()
+	building, err := configureBuild(starting, configuration, database, inspector, logger)
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, building.close()) }()
 	cancel()
 	service := project.NewService(database, database, database, inspector, definitions)
-	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger, running.service)
+	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger, httpapi.Features{Runtime: running.service, Build: building.service})
 	if err != nil {
 		return fmt.Errorf("装配 HTTP 契约失败")
 	}
-	return listenAndServe(ctx, configuration.Address, handler, running.worker, logger)
+	tasks := &backgroundTasks{}
+	if running.worker != nil {
+		tasks.values = append(tasks.values, running.worker)
+	}
+	if building.worker != nil {
+		tasks.values = append(tasks.values, building.worker)
+	}
+	return listenAndServe(ctx, configuration.Address, handler, tasks, logger)
 }

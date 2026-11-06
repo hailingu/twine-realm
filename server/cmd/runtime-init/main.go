@@ -38,6 +38,9 @@ func run(ctx context.Context, args []string, output io.Writer) (err error) {
 	if err != nil {
 		return err
 	}
+	if build := os.Getenv("TWINE_BUILD_DIRECTORY"); build != "" {
+		forbidden = append(forbidden, build)
+	}
 	environment, err := mysqlruntime.DiscoverEnvironment(ctx)
 	if err != nil {
 		return err

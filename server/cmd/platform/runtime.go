@@ -26,6 +26,9 @@ func configureRuntime(ctx context.Context, configuration config.Config, database
 		if err != nil {
 			return value, err
 		}
+		if configuration.BuildDirectory != "" {
+			forbidden = append(forbidden, configuration.BuildDirectory)
+		}
 		driver, err := mysqlruntime.OpenDriver(configuration.RuntimeDirectory, forbidden)
 		if err != nil {
 			return value, err

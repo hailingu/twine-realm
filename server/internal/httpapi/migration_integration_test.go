@@ -23,33 +23,51 @@ import (
 // migrationRunner 使用与平台完全相同的版本化 SQL，连接关闭由迁移器统一负责。
 func migrationRunner(t *testing.T, dsn string) *migrate.Migrate {
 	t.Helper()
-	runner, err := newMigrationRunner(dsn, "migrations", "")
-	if err != nil {
-		t.Fatal(err)
+	runners := ownedMigrationRunners(t, dsn)
+	t.Cleanup(func() { restoreMigrationRunners(t, runners) })
+	for index := len(runners) - 1; index > 0; index-- {
+		if err := runners[index].Down(); err != nil && err != migrate.ErrNoChange {
+			t.Fatal(err)
+		}
 	}
-	runtime, err := newMigrationRunner(dsn, "runtime-migrations", "runtime_schema_migrations")
-	if err != nil {
-		sourceErr, databaseErr := runner.Close()
-		t.Fatal(errors.Join(err, sourceErr, databaseErr))
+	return runners[0]
+}
+
+// ownedMigrationRunners 按核心、运行、构建依赖顺序创建真实迁移器，失败保留原错误。
+func ownedMigrationRunners(t *testing.T, dsn string) []*migrate.Migrate {
+	t.Helper()
+	runners := []*migrate.Migrate{}
+	for _, spec := range []struct{ directory, table string }{{"migrations", ""}, {"runtime-migrations", "runtime_schema_migrations"}, {"build-migrations", "build_schema_migrations"}} {
+		runner, err := newMigrationRunner(dsn, spec.directory, spec.table)
+		if err != nil {
+			closeMigrationRunners(t, runners)
+			t.Fatal(err)
+		}
+		runners = append(runners, runner)
 	}
-	t.Cleanup(func() {
+	return runners
+}
+
+// restoreMigrationRunners 不清dirty、不禁外键，依赖顺序应用真实升级后关闭。
+func restoreMigrationRunners(t *testing.T, runners []*migrate.Migrate) {
+	t.Helper()
+	for _, runner := range runners {
 		if err := runner.Up(); err != nil && err != migrate.ErrNoChange {
 			t.Error(err)
 		}
-		if err := runtime.Up(); err != nil && err != migrate.ErrNoChange {
+	}
+	closeMigrationRunners(t, runners)
+}
+
+// closeMigrationRunners 同时报告source与数据库关闭错误，不覆盖迁移失败。
+func closeMigrationRunners(t *testing.T, runners []*migrate.Migrate) {
+	t.Helper()
+	for index := len(runners) - 1; index >= 0; index-- {
+		source, database := runners[index].Close()
+		if err := errors.Join(source, database); err != nil {
 			t.Error(err)
 		}
-		for _, owned := range []*migrate.Migrate{runtime, runner} {
-			sourceErr, databaseErr := owned.Close()
-			if err := errors.Join(sourceErr, databaseErr); err != nil {
-				t.Error(err)
-			}
-		}
-	})
-	if err := runtime.Down(); err != nil && err != migrate.ErrNoChange {
-		t.Fatal(err)
 	}
-	return runner
 }
 
 // newMigrationRunner 在本次临时库按依赖顺序构造历史；不暴露产品回退入口。

@@ -1,0 +1,389 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twine-realm.local/contract/v3/build.schema.json",
+  "title": "BuildContract",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "buildCommand": {
+      "$ref": "https://twine-realm.local/contract/v3/build.schema.json#/$defs/BuildCommand"
+    },
+    "buildCancelCommand": {
+      "$ref": "https://twine-realm.local/contract/v3/build.schema.json#/$defs/BuildCancelCommand"
+    },
+    "buildStep": {
+      "$ref": "https://twine-realm.local/contract/v3/build.schema.json#/$defs/BuildStep"
+    },
+    "buildOperation": {
+      "$ref": "https://twine-realm.local/contract/v3/build.schema.json#/$defs/BuildOperation"
+    },
+    "buildReceipt": {
+      "$ref": "https://twine-realm.local/contract/v3/build.schema.json#/$defs/BuildReceipt"
+    },
+    "buildSnapshot": {
+      "$ref": "https://twine-realm.local/contract/v3/build.schema.json#/$defs/BuildSnapshot"
+    },
+    "buildCapability": {
+      "$ref": "https://twine-realm.local/contract/v3/build.schema.json#/$defs/BuildCapability"
+    }
+  },
+  "$defs": {
+    "BuildCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mutationId",
+        "baseRevision",
+        "baseGeneration",
+        "commit",
+        "profile"
+      ],
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "baseRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20
+        },
+        "baseGeneration": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+        },
+        "profile": {
+          "$ref": "https://twine-realm.local/contract/v3/build-inputs.schema.json#/$defs/BuildIdentity"
+        },
+        "retryOf": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        }
+      }
+    },
+    "BuildCancelCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mutationId",
+        "baseVersion"
+      ],
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "baseVersion": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20
+        }
+      }
+    },
+    "BuildStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "state",
+        "code",
+        "updatedAt"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "executing",
+            "succeeded",
+            "failed",
+            "needs_attention",
+            "cancelled"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^(?:[A-Z][A-Z0-9_]{0,95})?$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "BuildOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "targetId",
+        "projectId",
+        "serviceId",
+        "version",
+        "state",
+        "code",
+        "message",
+        "cancelRequested",
+        "steps",
+        "createdAt",
+        "updatedAt",
+        "candidate"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "targetId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "serviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20
+        },
+        "state": {
+          "enum": [
+            "accepted",
+            "executing",
+            "cancelling",
+            "succeeded",
+            "cancelled",
+            "failed",
+            "needs_attention"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,95}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "cancelRequested": {
+          "type": "boolean"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "https://twine-realm.local/contract/v3/build.schema.json#/$defs/BuildStep"
+          },
+          "maxItems": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "candidate": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v3/build-artifacts.schema.json#/$defs/BuildCandidate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "BuildReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "mutationId",
+        "kind",
+        "operationId",
+        "target",
+        "version",
+        "replayed"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "mutationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "kind": {
+          "enum": [
+            "build",
+            "cancelBuild"
+          ]
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "target": {
+          "$ref": "https://twine-realm.local/contract/v3/build-inputs.schema.json#/$defs/BuildTarget"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "BuildSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "projectId",
+        "serviceId",
+        "generation",
+        "target",
+        "operation",
+        "candidate",
+        "candidateCurrent",
+        "candidateCode",
+        "currentSource"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "serviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "maxLength": 20
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v3/build-inputs.schema.json#/$defs/BuildTarget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operation": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v3/build.schema.json#/$defs/BuildOperation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidate": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v3/build-artifacts.schema.json#/$defs/BuildCandidate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidateCurrent": {
+          "type": "boolean"
+        },
+        "candidateCode": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,95}$"
+        },
+        "currentSource": {
+          "$ref": "../v1/schema.json#/$defs/SourceVersion"
+        }
+      }
+    },
+    "BuildCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "enabled",
+        "adapter",
+        "code",
+        "message",
+        "profile",
+        "imageReference",
+        "policy"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "adapter": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,95}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "profile": {
+          "$ref": "https://twine-realm.local/contract/v3/build-inputs.schema.json#/$defs/BuildIdentity"
+        },
+        "imageReference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "policy": {
+          "$ref": "https://twine-realm.local/contract/v3/build-inputs.schema.json#/$defs/BuildPolicy"
+        }
+      }
+    }
+  }
+}

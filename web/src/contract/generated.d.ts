@@ -28,6 +28,46 @@ export type GraphOperation =
       type: 'binding.remove'
       bindingId: string
     }
+/**
+ * 本地不可变ID、证据类型与Buildx实际导出摘要；独立配置或描述符仅在工具确实提供时保存，不补造缺字段。
+ */
+export type BuildImage = {
+  /**
+   * 实际Docker image inspect的不可变ID，必须匹配idKind对应的已检查内容摘要。
+   */
+  id: string
+  manifestDigest?: string
+  configDigest?: string
+  tag: string
+  binaryDigest: string
+  idKind: 'config' | 'manifest' | 'index'
+  /**
+   * 本次Buildx实际containerimage.digest，不假定它恒为manifest。
+   */
+  exportDigest: string
+  manifestMediaType?:
+    | 'application/vnd.oci.image.manifest.v1+json'
+    | 'application/vnd.docker.distribution.manifest.v2+json'
+    | 'application/vnd.oci.image.index.v1+json'
+    | 'application/vnd.docker.distribution.manifest.list.v2+json'
+} & BuildImage1
+export type BuildImage1 =
+  | {
+      idKind?: 'config'
+      configDigest: string
+    }
+  | {
+      idKind?: 'manifest'
+      manifestDigest: string
+      manifestMediaType:
+        'application/vnd.oci.image.manifest.v1+json' | 'application/vnd.docker.distribution.manifest.v2+json'
+    }
+  | {
+      idKind?: 'index'
+      manifestDigest: string
+      manifestMediaType:
+        'application/vnd.oci.image.index.v1+json' | 'application/vnd.docker.distribution.manifest.list.v2+json'
+    }
 
 /**
  * 本地项目登记与增量源码追溯的权威契约；原 Project/Repository/Receipt 保持不变
@@ -86,6 +126,13 @@ export interface Contract {
   graphOperation?: GraphOperation
   graphEditCommand?: GraphEditCommand
   graphReceipt?: GraphReceipt
+  buildCommand?: BuildCommand
+  buildCancelCommand?: BuildCancelCommand
+  buildStep?: BuildStep
+  buildOperation?: BuildOperation
+  buildReceipt?: BuildReceipt
+  buildSnapshot?: BuildSnapshot
+  buildCapability?: BuildCapability
 }
 /**
  * 版本一Position契约
@@ -700,4 +747,161 @@ export interface GraphReceipt {
   project: Project
   replayed: boolean
   graph: GraphState
+}
+export interface BuildCommand {
+  mutationId: string
+  baseRevision: string
+  baseGeneration: string
+  commit: string
+  profile: BuildIdentity
+  retryOf?: string
+}
+export interface BuildIdentity {
+  id: string
+  version: string
+  digest: string
+}
+export interface BuildCancelCommand {
+  mutationId: string
+  baseVersion: string
+}
+export interface BuildStep {
+  name: string
+  state: 'pending' | 'executing' | 'succeeded' | 'failed' | 'needs_attention' | 'cancelled'
+  code: string
+  updatedAt: string
+}
+export interface BuildOperation {
+  id: string
+  targetId: string
+  projectId: string
+  serviceId: string
+  version: string
+  state: 'accepted' | 'executing' | 'cancelling' | 'succeeded' | 'cancelled' | 'failed' | 'needs_attention'
+  code: string
+  message: string
+  cancelRequested: boolean
+  /**
+   * @maxItems 32
+   */
+  steps: BuildStep[]
+  createdAt: string
+  updatedAt: string
+  candidate: BuildCandidate | null
+}
+export interface BuildCandidate {
+  id: string
+  targetId: string
+  operationId: string
+  inputDigest: string
+  sourceDigest: string
+  profile: BuildIdentity
+  template: BuildIdentity
+  environment: BuildEnvironment
+  /**
+   * @maxItems 32
+   */
+  checks: BuildCheck[]
+  /**
+   * @maxItems 512
+   */
+  migrations: BuildMigration[]
+  migrationDigest: string
+  image: BuildImage
+  createdAt: string
+  source: BuildSource
+  policy: BuildPolicy
+}
+export interface BuildEnvironment {
+  context: string
+  daemonId: string
+  dockerVersion: string
+  buildxVersion: string
+  builderName: string
+  buildkitVersion: string
+  imageId: string
+  imageReference: string
+  architecture: 'amd64' | 'arm64'
+  operatingSystem: 'linux'
+  bindSourceMode: 'canonical' | 'desktop-host-mnt-v1'
+  uid: number
+  gid: number
+  endpointDigest: string
+}
+export interface BuildCheck {
+  name: string
+  state: 'succeeded'
+  toolVersion: string
+  outputDigest: string
+  completedAt: string
+}
+export interface BuildMigration {
+  path: string
+  digest: string
+}
+export interface BuildSource {
+  projectId: string
+  projectRevision: string
+  serviceId: string
+  repositoryId: string
+  repositoryPath: string
+  pinnedCommit: string
+}
+export interface BuildPolicy {
+  id: 'go-container-local-v1'
+  version: 1
+  totalSeconds: 480
+  commandSeconds: 180
+  sourceBytes: 67108864
+  sourceFiles: 4096
+  binaryBytes: 134217728
+  memoryMiB: 4096
+  tmpfsMiB: 3072
+  pids: 256
+  cpus: 2
+}
+export interface BuildReceipt {
+  schemaVersion: 1
+  mutationId: string
+  kind: 'build' | 'cancelBuild'
+  operationId: string
+  target: BuildTarget
+  version: string
+  replayed: boolean
+}
+export interface BuildTarget {
+  id: string
+  projectId: string
+  serviceId: string
+  generation: string
+  canvasRevision: string
+  installationId: string
+  source: BuildSource
+  profile: BuildIdentity
+  environment: BuildEnvironment
+  policy: BuildPolicy
+  inputDigest: string
+  createdAt: string
+}
+export interface BuildSnapshot {
+  schemaVersion: 1
+  projectId: string
+  serviceId: string
+  generation: string
+  target: BuildTarget | null
+  operation: BuildOperation | null
+  candidate: BuildCandidate | null
+  candidateCurrent: boolean
+  candidateCode: string
+  currentSource: SourceVersion
+}
+export interface BuildCapability {
+  schemaVersion: 1
+  enabled: boolean
+  adapter: string
+  code: string
+  message: string
+  profile: BuildIdentity
+  imageReference: string
+  policy: BuildPolicy
 }

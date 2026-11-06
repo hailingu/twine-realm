@@ -13,6 +13,7 @@ async function fixture(options, action) {
   const execute = async (command, args, settings) => {
     calls.push({ command, args, settings })
     if (command.endsWith('/runtime-init')) return { code: 0, output: JSON.stringify({ schemaVersion: 1, installationId: '10000000-0000-4000-8000-000000000012', adapter: 'file-secrets-v1', context: 'local', daemonId: 'test-daemon' }) }
+    if (command.endsWith('/build-init')) return { code: 0, output: JSON.stringify({ schemaVersion: 1, installationId: '10000000-0000-4000-8000-000000000014', adapter: 'local-go-container-v1', environment: { context: 'local', daemonId: 'test-daemon', imageId: 'sha256:'+'a'.repeat(64), architecture: 'amd64' } }) }
     if (command === 'docker' && args[0] === '--context' && args[2] === 'info') return { code: 0, output: JSON.stringify('test-daemon') }
     if (command === 'docker' && args[0] === 'run') {
       configuration = args[args.indexOf('--env-file') + 1]

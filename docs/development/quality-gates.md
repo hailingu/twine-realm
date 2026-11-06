@@ -12,6 +12,7 @@
 | 本地 issue 元数据与状态 | `npm run issue:status` | 仅解析 `issues/` 的历史 / 草稿文件头，校验必填字段、枚举、编号唯一和日期，报告本地状态（`--json` 可用）；不读取 GitHub / Project，不证明远端总数、同步、验收或证据质量，未关闭记录不构成失败 |
 | 单独 Sonar 复核 | `npm run sonar` | 只扫描与核对本次分析；不自动复用本地覆盖率报告，不替代完整门禁 |
 | 平台完整检查 | `npm run test:platform` | 临时平台库、全新运行安装、gofmt / build / vet、契约、TS / lint / Vitest / Vite、真实 Chromium、Compose / 认证 / 数据见证 / 创建响应丢失 / 重启、SQL 迁移 / 回滚 / 围栏与 Go `-race`；不接入开发数据 |
+| 固定源码隔离构建 | 完整 `test:platform` | 固定 commit / 原仓库指纹、真实断网 Go 检查及镜像摘要、SQL 原键 / 取消 / 旧租约围栏、浏览器草稿 / 重开 / 中断；见[构建切片](service-build-slice.md) |
 | Go 业务工程包 | `npm run profile:check`；完整 `test:platform` | 固定规范 / 模板摘要、实际导出、Go 版本 / 格式 / 模块 / vet / race / 构建、独立用途账号、真实迁移与 HTTP / SIGTERM / 重启；见[模板切片](service-profile-slice.md) |
 | 提交前门禁 | `npm run precommit`；`npm run hooks:install` | 全部代码告警和依赖漏洞清零；真实 Git hook 还核对索引前后一致，失败不提交；见[详细规则](warning-free-commits.md) |
 | 完整质量门禁 | `npm run quality:gate` | 同次脚本覆盖率、issue 校验、平台检查与真实 Sonar；失败立即停止，只清理归属已确认的临时资源，清理未知时保留绑定文件并失败 |

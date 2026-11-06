@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twine-realm.local/contract/v3/build-artifacts.schema.json",
+  "title": "build-artifacts.schema.json",
+  "type": "object",
+  "$defs": {
+    "BuildCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "state",
+        "toolVersion",
+        "outputDigest",
+        "completedAt"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "state": {
+          "enum": [
+            "succeeded"
+          ]
+        },
+        "toolVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "outputDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "BuildMigration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "digest"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "BuildImage": {
+      "description": "本地不可变ID、证据类型与Buildx实际导出摘要；独立配置或描述符仅在工具确实提供时保存，不补造缺字段。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "idKind",
+        "exportDigest",
+        "tag",
+        "binaryDigest"
+      ],
+      "properties": {
+        "id": {
+          "description": "实际Docker image inspect的不可变ID，必须匹配idKind对应的已检查内容摘要。",
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "manifestDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "configDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "binaryDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "idKind": {
+          "enum": [
+            "config",
+            "manifest",
+            "index"
+          ]
+        },
+        "exportDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "本次Buildx实际containerimage.digest，不假定它恒为manifest。"
+        },
+        "manifestMediaType": {
+          "enum": [
+            "application/vnd.oci.image.manifest.v1+json",
+            "application/vnd.docker.distribution.manifest.v2+json",
+            "application/vnd.oci.image.index.v1+json",
+            "application/vnd.docker.distribution.manifest.list.v2+json"
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "configDigest"
+          ],
+          "properties": {
+            "idKind": {
+              "const": "config"
+            },
+            "configDigest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          }
+        },
+        {
+          "required": [
+            "manifestDigest",
+            "manifestMediaType"
+          ],
+          "properties": {
+            "idKind": {
+              "const": "manifest"
+            },
+            "manifestDigest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "manifestMediaType": {
+              "enum": [
+                "application/vnd.oci.image.manifest.v1+json",
+                "application/vnd.docker.distribution.manifest.v2+json"
+              ]
+            }
+          }
+        },
+        {
+          "required": [
+            "manifestDigest",
+            "manifestMediaType"
+          ],
+          "properties": {
+            "idKind": {
+              "const": "index"
+            },
+            "manifestDigest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "manifestMediaType": {
+              "enum": [
+                "application/vnd.oci.image.index.v1+json",
+                "application/vnd.docker.distribution.manifest.list.v2+json"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "BuildCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "targetId",
+        "operationId",
+        "inputDigest",
+        "sourceDigest",
+        "profile",
+        "template",
+        "environment",
+        "checks",
+        "migrations",
+        "migrationDigest",
+        "image",
+        "createdAt",
+        "source",
+        "policy"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "targetId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "inputDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "sourceDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "profile": {
+          "$ref": "https://twine-realm.local/contract/v3/build-inputs.schema.json#/$defs/BuildIdentity"
+        },
+        "template": {
+          "$ref": "https://twine-realm.local/contract/v3/build-inputs.schema.json#/$defs/BuildIdentity"
+        },
+        "environment": {
+          "$ref": "https://twine-realm.local/contract/v3/build-inputs.schema.json#/$defs/BuildEnvironment"
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "$ref": "https://twine-realm.local/contract/v3/build-artifacts.schema.json#/$defs/BuildCheck"
+          },
+          "maxItems": 32
+        },
+        "migrations": {
+          "type": "array",
+          "items": {
+            "$ref": "https://twine-realm.local/contract/v3/build-artifacts.schema.json#/$defs/BuildMigration"
+          },
+          "maxItems": 512
+        },
+        "migrationDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "image": {
+          "$ref": "https://twine-realm.local/contract/v3/build-artifacts.schema.json#/$defs/BuildImage"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "$ref": "https://twine-realm.local/contract/v3/build-inputs.schema.json#/$defs/BuildSource"
+        },
+        "policy": {
+          "$ref": "https://twine-realm.local/contract/v3/build-inputs.schema.json#/$defs/BuildPolicy"
+        }
+      }
+    }
+  }
+}

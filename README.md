@@ -2,7 +2,7 @@
 
 本地服务画布。当前实现 [Issue #1](https://github.com/hailingu/twine-realm/issues/1) 的本机项目、只读仓库登记与布局恢复，[Issue #2](https://github.com/hailingu/twine-realm/issues/2) 的明确固定 commit 与恢复，以及 [Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的版本化 MySQL 目录、配置草稿和混合节点布局，以及 [Issue #8](https://github.com/hailingu/twine-realm/issues/8) 的服务接口声明、具名端口与 MySQL 依赖连线。 [Issue #12](https://github.com/hailingu/twine-realm/issues/12) 另提供显式本机 MySQL 运行、持久操作与数据保留恢复。
 
-服务节点保持待配置草稿。用户已选择首个业务工程组合为 Go + 标准库 `net/http`；[Issue #10](https://github.com/hailingu/twine-realm/issues/10) 提供离线工程包与最小服务模板，使用见[工程模板切片](docs/development/service-profile-slice.md)。不包含账号 / 登录 / 配对 / RBAC、AI、GitHub 同步、业务构建部署或代码编辑器。项目与仓库关联只保存在本机，导入不修改源码、`AGENTS.md`、索引、分支或 Git 配置。
+服务节点保持待配置草稿。用户已选择首个业务工程组合为 Go + 标准库 `net/http`；[Issue #10](https://github.com/hailingu/twine-realm/issues/10) 提供离线工程包与最小服务模板，使用见[工程模板切片](docs/development/service-profile-slice.md)。不包含账号 / 登录 / 配对 / RBAC、AI、GitHub 同步、业务部署或代码编辑器。项目与仓库关联只保存在本机，导入不修改源码、`AGENTS.md`、索引、分支或 Git 配置。
 
 ## 运行
 
@@ -29,6 +29,8 @@
 点击服务列表中的「源码版本」查看登记快照、已固定 commit 与带时间的当前 HEAD / 分支 / 修改状态。点击「选择当前 HEAD」只填写候选，点击「确认固定 commit」才保存；也可输入仓库内已有完整小写 commit。后续提交、切分支和未提交修改不会自动更新固定值。先保存 / 还原布局再固定源码；请求失败保留候选，结果未知时核实原请求。仓库失联或对象丢失仍显示已保存记录；配置外部过滤器或子模块时修改状态明确为未知。尚未确认的候选只保留在当前页面，刷新不会自动提交它。
 
 点击「＋ MySQL 组件」打开固定版本目录，填写名称和内存上限后明确加入。运行方案可暂不选择，节点显示配置未完整；保存完整配置仍不会自动运行。点击组件列表的「配置」修改并保存候选；服务与 MySQL 的位置使用同一次「保存布局」。定义版本、配置和节点身份可重开 / 重启恢复。
+
+固定源码构建默认禁用。按[构建切片](docs/development/service-build-slice.md)准备固定 Go 镜像、在仓库及运行根之外执行 `build-init`，明确配置 `TWINE_BUILD_ADAPTER=local-go-container-v1` 和 `TWINE_BUILD_DIRECTORY` 后，可在服务源码详情检查并构建已保存的 commit。未知请求保留原键核实 / 重试，成功只产生本地不可变镜像候选；可以明确取消原构建，未自动部署。
 
 项目 MySQL 运行默认禁用。按[运行切片](docs/development/mysql-runtime-slice.md)在仓库范围外初始化全新私有根，明确设置 `TWINE_RUNTIME_ADAPTER=file-secrets-v1` 与 `TWINE_RUNTIME_DIRECTORY` 后启动控制面。该适配器以 0700 / 0600 文件权限保护本机明文秘密，不是加密凭据库；不自动安装工具或拉取镜像。在 MySQL 详情点击「确认运行 MySQL」，才接受独立的持久目标；202 或容器运行不等于认证就绪。每项目固定一个实例、私网与持久卷，不发布数据库宿主端口；关闭页面或平台不会停止它。需要停止时在详情确认「确认停止 MySQL」，保留数据和秘密。配置升级、删除卷、业务连线 / 账号 / 迁移 / 部署仍待后续。
 

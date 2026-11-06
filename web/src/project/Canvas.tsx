@@ -1,6 +1,6 @@
 /** React Flow 只投影确认图；连接手势产生待确认候选，不直接改变持久关系。 */
-import { useEffect } from 'react'
-import { Background, BackgroundVariant, Controls, Handle, MarkerType, Position as HandlePosition, ReactFlow, useUpdateNodeInternals, type Connection, type Edge, type Node, type NodeProps } from '@xyflow/react'
+import { useEffect, useState } from 'react'
+import { Background, BackgroundVariant, Controls, Handle, MarkerType, Position as HandlePosition, ReactFlow, useNodesInitialized, useUpdateNodeInternals, type Connection, type Dimensions, type Edge, type Node, type NodeChange, type NodeProps } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import type { CanvasPosition, GraphState, Position, Project, ServicePort } from '../contract/generated'
 import { runtimeLabel, type RuntimeState } from '../runtime/model'
@@ -37,6 +37,16 @@ function MySQLCard({ data, isConnectable }: NodeProps<MiddlewareCanvasNode>) {
 
 const nodeTypes = { service: ServiceCard, mysql: MySQLCard }
 
+/** @param props 当前投影节点身份 @returns 所有节点测量完成后刷新具名端口，避免首次挂载时旧投影清空边界。 */
+function MeasuredPorts({ identities }: Readonly<{ identities: string }>) {
+  const initialized = useNodesInitialized()
+  const updateInternals = useUpdateNodeInternals()
+  useEffect(() => {
+    if (initialized && identities) updateInternals(identities.split('|'))
+  }, [initialized, identities, updateInternals])
+  return null
+}
+
 /** @param project 服务身份 @param graph 完整确认图 @param draft 本地位置 @param runtime 独立运行观测 @returns 不赋予 React Flow 领域状态所有权的节点投影。 */
 function projectNodes(project: Project, graph: GraphState, draft: CanvasPosition[], runtime?: RuntimeState): CanvasNode[] {
   const services: ServiceCanvasNode[] = project.nodes.map(node => ({ id: node.id, type: 'service', position: draft.find(item => item.componentId === node.id) ?? node.position, data: { label: node.displayName, path: node.repository.path, commit: node.repository.headCommit, ports: servicePorts(graph, node.id), missing: missingPorts(graph, node.id), declared: graph.serviceContracts.some(value => value.serviceId === node.id) } }))
@@ -46,9 +56,24 @@ function projectNodes(project: Project, graph: GraphState, draft: CanvasPosition
 
 /** @param props 确认图、交互草稿与候选命令 @returns 支持具名端口和依赖重连的本机画布。 */
 export function Canvas({ project, canvas, draft, blocked, connectionBlocked, onMove, onConnect, onReconnect, runtime }: Readonly<{ project: Project; canvas: GraphState; draft: CanvasPosition[]; blocked: boolean; connectionBlocked: boolean; onMove: (id: string, position: Position) => void; onConnect: (connection: Connection) => void; onReconnect: (id: string, connection: Connection) => void; runtime?: RuntimeState }>) {
-  const nodes = projectNodes(project, canvas, draft, runtime)
+  // 受控节点重新投影时必须保留 measured，否则图库会清空已测量的具名端口边界。
+  // 尺寸只属于当前画布的渲染会话，不进入领域快照、位置草稿或保存命令。
+  const [measurements, setMeasurements] = useState<Record<string, Dimensions>>({})
+  const nodes = projectNodes(project, canvas, draft, runtime).map(node => {
+    const measured = measurements[node.id]
+    return measured ? { ...node, measured } : node
+  })
+  const handleNodesChange = (changes: NodeChange<CanvasNode>[]) => {
+    for (const change of changes) {
+      if (change.type === 'dimensions' && change.dimensions) {
+        const dimensions = change.dimensions
+        setMeasurements(previous => ({ ...previous, [change.id]: { ...dimensions } }))
+      }
+      if (change.type === 'position' && change.position && !blocked) onMove(change.id, change.position)
+    }
+  }
   const edges: Edge[] = canvas.bindings.map(binding => ({ id: binding.id, source: binding.source.componentId, sourceHandle: binding.source.portId, target: binding.target.componentId, targetHandle: binding.target.portId, label: `${binding.source.portId} → ${binding.target.portId} · ${binding.databaseName} · 声明未应用`, markerEnd: { type: MarkerType.ArrowClosed }, ariaLabel: `数据库依赖 ${binding.databaseName}`, reconnectable: !connectionBlocked }))
-  return <div className="canvas" data-testid="canvas"><ReactFlow<CanvasNode> nodes={nodes} nodeTypes={nodeTypes} edges={edges} nodesDraggable={!blocked} nodesConnectable={!connectionBlocked} edgesReconnectable={!connectionBlocked} deleteKeyCode={null} minZoom={0.2} maxZoom={2} fitView={nodes.length > 0} fitViewOptions={{ maxZoom: 1, padding: 0.3 }} onConnect={onConnect} onReconnect={(edge, connection) => { onReconnect(edge.id, connection) }} onNodesChange={changes => { for (const change of changes) if (change.type === 'position' && change.position && !blocked) onMove(change.id, change.position) }} proOptions={{ hideAttribution: true }} ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': '放大画布', 'controls.zoomOut.ariaLabel': '缩小画布', 'controls.fitView.ariaLabel': '适应画布', 'node.a11yDescription.default': '拖动节点整理布局，或使用检查面板编辑具名接口与依赖' }}>
-    <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color="#d8d8cc" /><Controls showInteractive={false} />
+  return <div className="canvas" data-testid="canvas"><ReactFlow<CanvasNode> nodes={nodes} nodeTypes={nodeTypes} edges={edges} nodesDraggable={!blocked} nodesConnectable={!connectionBlocked} edgesReconnectable={!connectionBlocked} deleteKeyCode={null} minZoom={0.2} maxZoom={2} fitView={nodes.length > 0} fitViewOptions={{ maxZoom: 1, padding: 0.3 }} onConnect={onConnect} onReconnect={(edge, connection) => { onReconnect(edge.id, connection) }} onNodesChange={handleNodesChange} proOptions={{ hideAttribution: true }} ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': '放大画布', 'controls.zoomOut.ariaLabel': '缩小画布', 'controls.fitView.ariaLabel': '适应画布', 'node.a11yDescription.default': '拖动节点整理布局，或使用检查面板编辑具名接口与依赖' }}>
+    <MeasuredPorts identities={nodes.map(node => node.id).join('|')} /><Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color="#d8d8cc" /><Controls showInteractive={false} />
   </ReactFlow><div className="canvas-caption"><span>LOCAL CANVAS</span><span>{project.nodes.length} 个服务 · {canvas.middlewares.length} 个中间件 · {edges.length} 个依赖声明</span></div>{nodes.length === 0 && <div className="canvas-empty"><div className="empty-diagram" aria-hidden="true">⌘<span>＋</span></div><h2>让第一个组件就位</h2><p>登记已有 Git 仓库，或从目录加入 MySQL，<br />它会成为这张画布上的一个节点。</p><span className="empty-step">01 — 加入组件 02 — 整理布局 03 — 保存</span></div>}</div>
 }

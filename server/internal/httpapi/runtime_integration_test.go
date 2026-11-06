@@ -87,7 +87,7 @@ func attachRuntime(t *testing.T, f *fixture, driver *mysqlruntime.Driver) {
 	}
 	service := project.NewService(f.database, f.database, f.database, inspector, definitions)
 	running := mysqlruntime.NewService(f.database, f.database, f.database, definitions, driver)
-	f.handler, err = httpapi.New(service, host, []string{"http://" + host}, t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)), running)
+	f.handler, err = httpapi.New(service, host, []string{"http://" + host}, t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)), httpapi.Features{Runtime: running})
 	if err != nil {
 		t.Fatal(err)
 	}

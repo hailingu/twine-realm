@@ -40,6 +40,12 @@ func New(roots []string) (*Inspector, error) {
 		return nil, project.Failure("GIT_UNAVAILABLE", "未找到本机 Git，请先安装")
 	}
 	inspector.git = git
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	version, err := inspector.command(ctx, inspector.roots[0], "version")
+	if err != nil || !strings.HasPrefix(version, "git version ") {
+		return nil, project.Failure("GIT_UNAVAILABLE", "本机Git未通过只读选项核实，请使用支持--no-lazy-fetch的版本")
+	}
 	return inspector, nil
 }
 

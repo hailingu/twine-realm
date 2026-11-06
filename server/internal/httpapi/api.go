@@ -16,6 +16,7 @@ import (
 	"github.com/hailingu/twine-realm/server/contract"
 	"github.com/hailingu/twine-realm/server/internal/mysqlruntime"
 	"github.com/hailingu/twine-realm/server/internal/project"
+	"github.com/hailingu/twine-realm/server/internal/servicebuild"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
@@ -25,20 +26,27 @@ type API struct {
 	schemas map[string]*jsonschema.Schema
 	logger  *slog.Logger
 	runtime *mysqlruntime.Service
+	build   *servicebuild.Service
+}
+
+// Features 显式装配独立能力，未启用的执行器不会隐式产生本机副作用。
+type Features struct {
+	Runtime *mysqlruntime.Service
+	Build   *servicebuild.Service
 }
 
 // New 装配路由和最小本机防护，Host/Origin 来源必须由启动配置确定。
-func New(service *project.Service, host string, origins []string, webDirectory string, logger *slog.Logger, runtimes ...*mysqlruntime.Service) (http.Handler, error) {
-	if len(runtimes) > 1 {
-		return nil, errors.New("HTTP仅接受一个明确运行服务")
+func New(service *project.Service, host string, origins []string, webDirectory string, logger *slog.Logger, features ...Features) (http.Handler, error) {
+	if len(features) > 1 {
+		return nil, errors.New("HTTP仅接受一组明确能力装配")
 	}
 	schemas, err := contract.Load()
 	if err != nil {
 		return nil, err
 	}
 	api := &API{service: service, schemas: schemas, logger: logger}
-	if len(runtimes) == 1 {
-		api.runtime = runtimes[0]
+	if len(features) == 1 {
+		api.runtime, api.build = features[0].Runtime, features[0].Build
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +71,7 @@ func New(service *project.Service, host string, origins []string, webDirectory s
 	mux.HandleFunc("GET /api/v2/graph-mutations/{id}", api.graphReceipt)
 	mux.HandleFunc("GET /api/v1/mutations/{id}", api.receipt)
 	api.runtimeRoutes(mux)
+	api.buildRoutes(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		api.failure(w, project.Failure("NOT_FOUND", "接口不存在"))
 	})
@@ -190,13 +199,15 @@ func (api *API) failure(w http.ResponseWriter, err error) {
 	if errors.As(err, &domain) {
 		failure = domain
 		switch domain.Code {
-		case "PROJECT_NOT_FOUND", "SERVICE_NOT_FOUND", "COMPONENT_NOT_FOUND", "BINDING_NOT_FOUND", "MUTATION_NOT_FOUND", "NOT_FOUND", "RUNTIME_OPERATION_NOT_FOUND":
+		case "PROJECT_NOT_FOUND", "SERVICE_NOT_FOUND", "COMPONENT_NOT_FOUND", "BINDING_NOT_FOUND", "MUTATION_NOT_FOUND", "NOT_FOUND", "RUNTIME_OPERATION_NOT_FOUND", "BUILD_OPERATION_NOT_FOUND":
 			status = http.StatusNotFound
 		case "DUPLICATE_REPOSITORY", "DUPLICATE_BINDING", "CONTRACT_VERSION_CONFLICT", "REVISION_CONFLICT", "IDEMPOTENCY_CONFLICT", "DEFINITION_CONFLICT", "RUNTIME_GENERATION_CONFLICT", "RUNTIME_COMPONENT_CONFLICT", "RUNTIME_CONFIGURATION_LOCKED", "RUNTIME_RETRY_CONFLICT", "RUNTIME_BUSY", "RUNTIME_INSTALLATION_CONFLICT":
 			status = http.StatusConflict
 		case "RESULT_UNKNOWN":
 			status = http.StatusServiceUnavailable
-		case "RUNTIME_DISABLED":
+		case "BUILD_GENERATION_CONFLICT", "BUILD_INSTALLATION_CONFLICT", "BUILD_OPERATION_CONFLICT", "BUILD_VERSION_CONFLICT", "BUILD_BUSY", "BUILD_RETRY_CONFLICT", "BUILD_RECOVERY_REQUIRED", "BUILD_SOURCE_CHANGED":
+			status = http.StatusConflict
+		case "RUNTIME_DISABLED", "BUILD_DISABLED":
 			status = http.StatusServiceUnavailable
 		case "FORBIDDEN":
 			status = http.StatusForbidden

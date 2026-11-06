@@ -9,12 +9,10 @@ import (
 	"net"
 	"net/http"
 	"time"
-
-	"github.com/hailingu/twine-realm/server/internal/mysqlruntime"
 )
 
 // listenAndServe 只有本机监听成功才启动后台工作器，所有goroutine都在返回前收回。
-func listenAndServe(ctx context.Context, address string, handler http.Handler, worker *mysqlruntime.Worker, logger *slog.Logger) (err error) {
+func listenAndServe(ctx context.Context, address string, handler http.Handler, worker backgroundWorker, logger *slog.Logger) (err error) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return fmt.Errorf("本机监听失败，请检查端口是否占用")

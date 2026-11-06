@@ -19,16 +19,17 @@ type Config struct {
 	WebDirectory     string
 	RuntimeAdapter   string
 	RuntimeDirectory string
+	BuildAdapter     string
+	BuildDirectory   string
 }
 
 // Load 拒绝外部监听和泛化来源，不读取或建立用户账号。
 func Load() (Config, error) {
 	value := Config{Address: os.Getenv("TWINE_ADDRESS"), DSN: os.Getenv("TWINE_DATABASE_DSN"), WebDirectory: os.Getenv("TWINE_WEB_DIRECTORY")}
 	value.RuntimeAdapter, value.RuntimeDirectory = os.Getenv("TWINE_RUNTIME_ADAPTER"), os.Getenv("TWINE_RUNTIME_DIRECTORY")
-	if value.RuntimeAdapter != "" || value.RuntimeDirectory != "" {
-		if value.RuntimeAdapter != "file-secrets-v1" || value.RuntimeDirectory == "" {
-			return value, fmt.Errorf("运行能力仅接受显式file-secrets-v1与私有运行目录组合")
-		}
+	value.BuildAdapter, value.BuildDirectory = os.Getenv("TWINE_BUILD_ADAPTER"), os.Getenv("TWINE_BUILD_DIRECTORY")
+	if err := validateAdapters(value); err != nil {
+		return value, err
 	}
 	if value.Address == "" {
 		value.Address = "127.0.0.1:8080"
@@ -65,4 +66,19 @@ func loopback(address string) bool {
 	parsed := net.ParseIP(host)
 	number, err := strconv.Atoi(port)
 	return parsed != nil && parsed.IsLoopback() && err == nil && number > 0 && number <= 65535
+}
+
+// validateAdapters 把运行与构建显式启用规则集中校验，不改变缺省禁用语义。
+func validateAdapters(value Config) error {
+	if value.BuildAdapter != "" || value.BuildDirectory != "" {
+		if value.BuildAdapter != "local-go-container-v1" || value.BuildDirectory == "" {
+			return fmt.Errorf("构建仅接受显式local-go-container-v1与独立私有构建目录组合")
+		}
+	}
+	if value.RuntimeAdapter != "" || value.RuntimeDirectory != "" {
+		if value.RuntimeAdapter != "file-secrets-v1" || value.RuntimeDirectory == "" {
+			return fmt.Errorf("运行能力仅接受显式file-secrets-v1与私有运行目录组合")
+		}
+	}
+	return nil
 }
