@@ -103,7 +103,7 @@ func imageMetadata(data []byte) (string, string, error) {
 		return "", "", invalidOutput()
 	}
 	warnings := strings.TrimSpace(string(metadata["buildx.build.warnings"]))
-	if warnings != "" && warnings != "[]" && warnings != "null" {
+	if warnings != "" && warnings != "[]" && warnings != "{}" && warnings != "null" {
 		return "", "", failure("BUILD_IMAGE_WARNING", "Buildx报告告警，候选不能通过")
 	}
 	var manifest, config string

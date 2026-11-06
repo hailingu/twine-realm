@@ -71,6 +71,13 @@ func TestActualImageMetadata(t *testing.T) {
 			t.Fatal("不完整镜像证明被接受")
 		}
 	}
+	data, err = json.Marshal(map[string]any{"containerimage.digest": manifest, "containerimage.config.digest": config, "buildx.build.warnings": map[string]any{"warning": "real warning"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := imageMetadata(data); err == nil {
+		t.Fatal("非空告警对象被当成无告警")
+	}
 	if _, err := decodeJSONForTest([]byte(`{"id":"x","extra":true}`)); err == nil {
 		t.Fatal("未知字段被接受")
 	}

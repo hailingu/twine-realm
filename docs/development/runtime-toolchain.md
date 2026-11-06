@@ -11,6 +11,7 @@
 | npm | Node 26 随附 11.20.0 | 默认 10.9.2；本任务 11.20.0 | 根与 web 各自锁文件，单一包管理器 |
 | MySQL（平台元数据及首个项目实例） | **9.7.4 LTS** | 两类独立临时容器验证 | `deploy/compose.yaml`、内置目录和运行适配器固定相同 tag + digest；网络、卷与凭据隔离，项目库不发布宿主端口 |
 | Docker / Compose | Docker 29.x / Compose v5.x | 29.9.2 / v5.6.1 | 已满足；compose 文件锁定 `version` 语义，不依赖已弃用的顶层 version 字段 |
+| Git | 必须支持 `--no-lazy-fetch`，装配时按功能探测 | 本机 2.54.0；CI 2.56.0 | 所有只读子进程禁止缺失对象隐式补拉；不认识选项时明确拒绝，不改全局Git或安装软件 |
 | React / React Flow | React 19.3.1 / `@xyflow/react` 12.12.1 | 已建前端工程 | `web/package.json` / 锁文件固定实际依赖 |
 | SonarQube 服务（本地门禁） | 本地 docker 社区版 | 26.8.0（`localhost:9000`，项目 `twine-realm` 已建立） | 已满足；服务地址与凭据只经环境注入，不入库 |
 | sonar-scanner CLI | 7.x | 7.3.0 | 已满足；可用 `SONAR_SCANNER_BIN` 覆盖路径 |

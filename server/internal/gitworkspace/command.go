@@ -42,9 +42,9 @@ func (inspector *Inspector) command(ctx context.Context, path, name string, argu
 
 // newCommand 只供固定只读协议组合，不继承外层Git定位、凭据或配置注入。
 func (inspector *Inspector) newCommand(ctx context.Context, path, name string, arguments ...string) *exec.Cmd {
-	args := append([]string{"-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false", "-C", path, name}, arguments...)
+	args := append([]string{"--no-lazy-fetch", "-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false", "-C", path, name}, arguments...)
 	command := exec.CommandContext(ctx, inspector.git, args...)
-	command.Env = []string{"PATH=" + os.Getenv("PATH"), "LANG=C", "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=" + os.DevNull, "GIT_CONFIG_SYSTEM=" + os.DevNull, "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0", "GIT_NO_REPLACE_OBJECTS=1"}
+	command.Env = []string{"PATH=" + os.Getenv("PATH"), "LANG=C", "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=" + os.DevNull, "GIT_CONFIG_SYSTEM=" + os.DevNull, "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0", "GIT_NO_REPLACE_OBJECTS=1", "GIT_NO_LAZY_FETCH=1"}
 	command.WaitDelay = 2 * time.Second
 	return command
 }

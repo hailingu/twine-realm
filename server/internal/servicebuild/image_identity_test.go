@@ -51,3 +51,13 @@ func TestCompletionKeepsActualManifestID(t *testing.T) {
 		t.Fatal("第三摘要被当成本次候选")
 	}
 }
+
+// TestEmptyMetadataWarningObject 是Buildx文档定义的无告警对象形态，不把空对象误报为真实告警。
+func TestEmptyMetadataWarningObject(t *testing.T) {
+	manifest, config := ContentDigest([]byte("manifest")), ContentDigest([]byte("config"))
+	data := []byte(`{"containerimage.digest":"` + manifest + `","containerimage.config.digest":"` + config + `","buildx.build.warnings":{}}`)
+	actualManifest, actualConfig, err := imageMetadata(data)
+	if err != nil || actualManifest != manifest || actualConfig != config {
+		t.Fatal("无告警元数据被误判为失败", err)
+	}
+}
