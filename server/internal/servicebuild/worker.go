@@ -98,6 +98,10 @@ func (worker *Worker) watch(ctx context.Context, cancel context.CancelFunc, leas
 			return nil
 		case <-ticker.C:
 			valid, err := worker.authorization.BuildAuthorized(ctx, lease)
+			// 已结束监测的ctx取消不是新的存储故障；父进程退出仍由执行结果与interrupted处理。
+			if stopped := ctx.Err(); stopped != nil && errors.Is(err, stopped) {
+				return nil
+			}
 			if err != nil || !valid {
 				cancel()
 				return err
