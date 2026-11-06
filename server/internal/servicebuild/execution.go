@@ -85,7 +85,7 @@ func (driver *Driver) Execute(ctx context.Context, target Target, operationID st
 	if err := work.step(ctx, "image", func() ([]byte, error) {
 		var e error
 		image, e = driver.buildImage(ctx, work.box, id)
-		return []byte(image.ManifestDigest), e
+		return []byte(image.ExportDigest), e
 	}); err != nil {
 		return nil, err
 	}

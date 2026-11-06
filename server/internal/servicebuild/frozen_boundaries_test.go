@@ -108,7 +108,7 @@ func TestLoadedImageRequiresFullIdentity(t *testing.T) {
 				}
 				return boundary.execute(ctx, duration, metadata, args...)
 			}
-			err := boundary.driver.verifyImage(context.Background(), boundary.box, Image{ID: digest, ConfigDigest: digest, Tag: "test-candidate:local"})
+			err := boundary.driver.verifyImage(context.Background(), boundary.box, Image{ID: digest, IDKind: "config", ExportDigest: digest, ConfigDigest: digest, Tag: "test-candidate:local"})
 			if (mode == "valid") != (err == nil) {
 				t.Fatal("已加载镜像身份核实错误", err)
 			}

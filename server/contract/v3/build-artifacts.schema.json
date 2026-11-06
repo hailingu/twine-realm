@@ -60,19 +60,19 @@
       }
     },
     "BuildImage": {
-      "description": "实际本地引擎ID与Buildx的config、manifest/index内容摘要分别保存，不能假设ID恒等于config digest。",
+      "description": "本地不可变ID、证据类型与Buildx实际导出摘要；独立配置或描述符仅在工具确实提供时保存，不补造缺字段。",
       "type": "object",
       "additionalProperties": false,
       "required": [
         "id",
-        "manifestDigest",
-        "configDigest",
+        "idKind",
+        "exportDigest",
         "tag",
         "binaryDigest"
       ],
       "properties": {
         "id": {
-          "description": "实际Docker image inspect返回的ID，必须严格等于已检查config或manifest/index摘要之一。",
+          "description": "实际Docker image inspect的不可变ID，必须匹配idKind对应的已检查内容摘要。",
           "type": "string",
           "pattern": "^sha256:[0-9a-f]{64}$"
         },
@@ -92,8 +92,86 @@
         "binaryDigest": {
           "type": "string",
           "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "idKind": {
+          "enum": [
+            "config",
+            "manifest",
+            "index"
+          ]
+        },
+        "exportDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "本次Buildx实际containerimage.digest，不假定它恒为manifest。"
+        },
+        "manifestMediaType": {
+          "enum": [
+            "application/vnd.oci.image.manifest.v1+json",
+            "application/vnd.docker.distribution.manifest.v2+json",
+            "application/vnd.oci.image.index.v1+json",
+            "application/vnd.docker.distribution.manifest.list.v2+json"
+          ]
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "configDigest"
+          ],
+          "properties": {
+            "idKind": {
+              "const": "config"
+            },
+            "configDigest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          }
+        },
+        {
+          "required": [
+            "manifestDigest",
+            "manifestMediaType"
+          ],
+          "properties": {
+            "idKind": {
+              "const": "manifest"
+            },
+            "manifestDigest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "manifestMediaType": {
+              "enum": [
+                "application/vnd.oci.image.manifest.v1+json",
+                "application/vnd.docker.distribution.manifest.v2+json"
+              ]
+            }
+          }
+        },
+        {
+          "required": [
+            "manifestDigest",
+            "manifestMediaType"
+          ],
+          "properties": {
+            "idKind": {
+              "const": "index"
+            },
+            "manifestDigest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "manifestMediaType": {
+              "enum": [
+                "application/vnd.oci.image.index.v1+json",
+                "application/vnd.docker.distribution.manifest.list.v2+json"
+              ]
+            }
+          }
+        }
+      ]
     },
     "BuildCandidate": {
       "type": "object",

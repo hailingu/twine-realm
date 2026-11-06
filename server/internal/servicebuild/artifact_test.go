@@ -54,20 +54,20 @@ func TestActualOutputFileBoundaries(t *testing.T) {
 	assertBuildFault(t, func() error { _, err := verifyBinary(file, "amd64", 128); return err }(), "BUILD_BINARY_INVALID")
 }
 
-// TestActualImageMetadata 核实真实manifest/config两个摘要，任何警告、缺字段或tag都不能通过。
+// TestActualImageMetadata 核实工具实际提供的描述符与配置，任何真实告警都不能通过。
 func TestActualImageMetadata(t *testing.T) {
 	manifest, config := ContentDigest([]byte("manifest")), ContentDigest([]byte("config"))
-	valid := map[string]any{"containerimage.digest": manifest, "containerimage.config.digest": config, "buildx.build.warnings": []any{}}
+	valid := map[string]any{"containerimage.digest": manifest, "containerimage.config.digest": config, "containerimage.descriptor": map[string]any{"digest": manifest, "mediaType": "application/vnd.oci.image.manifest.v1+json"}, "buildx.build.warnings": []any{}}
 	data, err := json.Marshal(valid)
 	if err != nil {
 		t.Fatal(err)
 	}
-	actualManifest, actualConfig, err := imageMetadata(data)
-	if err != nil || actualManifest != manifest || actualConfig != config || actualManifest == actualConfig {
+	image, err := imageMetadata(data)
+	if err != nil || image.ManifestDigest != manifest || image.ConfigDigest != config || image.ManifestDigest == image.ConfigDigest {
 		t.Fatal("不同内容摘要未分别保留")
 	}
 	for _, raw := range []string{"invalid", "{}", `{"containerimage.digest":"tag"}`, `{"containerimage.digest":"` + manifest + `","containerimage.config.digest":"` + config + `","buildx.build.warnings":[{"message":"real warning"}]}`} {
-		if _, _, err := imageMetadata([]byte(raw)); err == nil {
+		if _, err := imageMetadata([]byte(raw)); err == nil {
 			t.Fatal("不完整镜像证明被接受")
 		}
 	}
@@ -75,7 +75,7 @@ func TestActualImageMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := imageMetadata(data); err == nil {
+	if _, err := imageMetadata(data); err == nil {
 		t.Fatal("非空告警对象被当成无告警")
 	}
 	if _, err := decodeJSONForTest([]byte(`{"id":"x","extra":true}`)); err == nil {

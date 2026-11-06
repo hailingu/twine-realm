@@ -40,7 +40,7 @@ func ValidateCompletion(lease Lease, value Completion) error {
 	if err := validateCandidateIdentity(candidate); err != nil {
 		return err
 	}
-	if !digestPattern.MatchString(candidate.SourceDigest) || !digestPattern.MatchString(candidate.Image.ManifestDigest) || !digestPattern.MatchString(candidate.Image.ConfigDigest) || !boundImageID(candidate.Image.ID, candidate.Image) || !digestPattern.MatchString(candidate.Image.BinaryDigest) || len(candidate.Migrations) == 0 {
+	if !digestPattern.MatchString(candidate.SourceDigest) || !boundImageID(candidate.Image.ID, candidate.Image) || !digestPattern.MatchString(candidate.Image.BinaryDigest) || len(candidate.Migrations) == 0 {
 		return fmt.Errorf("构建成功候选缺少实际内容摘要")
 	}
 	if err := validateChecks(candidate.Checks); err != nil {

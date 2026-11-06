@@ -62,7 +62,10 @@ test('原键恢复真实构建，布局草稿与脏源码保持；重开/重启�
   const inspected: unknown = JSON.parse((await execute('docker', ['--context', candidate.environment.context, 'image', 'inspect', '--format={{json .Id}}', candidate.image.tag])).stdout)
   expect(inspected).toBe(candidate.image.id)
   expect([candidate.image.configDigest, candidate.image.manifestDigest]).toContain(inspected)
-  expect(value.candidate?.image.manifestDigest).toMatch(/^sha256:[a-f0-9]{64}$/)
+  expect(candidate.image.exportDigest).toMatch(/^sha256:[a-f0-9]{64}$/)
+  expect(inspected).toBe(candidate.image.idKind === 'config' ? candidate.image.configDigest : candidate.image.manifestDigest)
+  if (candidate.image.manifestDigest) expect(candidate.image.manifestMediaType).toMatch(/^application\/vnd\.(?:oci\.image|docker\.distribution\.manifest)/)
+  else expect(candidate.image.idKind).toBe('config')
   expect(await platform.fingerprint(source.path)).toBe(original)
   const candidateId = value.candidate?.id
   const reopened = await browser.newPage(); await reopened.goto(platform.url); await reopened.getByRole('button', { name: /固定源码构建验收/ }).click(); await reopened.getByRole('button', { name: '查看构建服务源码版本' }).click()

@@ -18,13 +18,16 @@ type Migration struct {
 	Digest string `json:"digest"`
 }
 
-// Image 分别记录实际本地引擎ID、config与manifest/index摘要，不以tag或固定后端假设作为内容身份。
+// Image 记录实际本地身份与工具提供的内容证据；缺失的独立摘要不补造。
 type Image struct {
-	ID             string `json:"id"`
-	ManifestDigest string `json:"manifestDigest"`
-	ConfigDigest   string `json:"configDigest"`
-	Tag            string `json:"tag"`
-	BinaryDigest   string `json:"binaryDigest"`
+	ID                string `json:"id"`
+	IDKind            string `json:"idKind"`
+	ExportDigest      string `json:"exportDigest"`
+	ManifestDigest    string `json:"manifestDigest,omitempty"`
+	ManifestMediaType string `json:"manifestMediaType,omitempty"`
+	ConfigDigest      string `json:"configDigest,omitempty"`
+	Tag               string `json:"tag"`
+	BinaryDigest      string `json:"binaryDigest"`
 }
 
 // Candidate 将检查、源码、工程包、工具链、策略与镜像绑定到同一不可变输入。

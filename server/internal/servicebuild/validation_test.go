@@ -45,7 +45,8 @@ func validMetadata(t *testing.T) (Lease, Completion) {
 		t.Fatal(err)
 	}
 	digest := ContentDigest([]byte("image"))
-	candidate.Image = Image{ID: digest, ManifestDigest: ContentDigest([]byte("manifest")), ConfigDigest: digest, Tag: "test-only:local", BinaryDigest: ContentDigest([]byte("binary"))}
+	manifest := ContentDigest([]byte("manifest"))
+	candidate.Image = Image{ID: digest, IDKind: "config", ExportDigest: manifest, ManifestDigest: manifest, ManifestMediaType: "application/vnd.oci.image.manifest.v1+json", ConfigDigest: digest, Tag: "test-only:local", BinaryDigest: ContentDigest([]byte("binary"))}
 	return lease, Completion{State: "succeeded", Code: "BUILT", Message: "结构验证", Candidate: candidate}
 }
 

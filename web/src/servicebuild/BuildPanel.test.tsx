@@ -2,17 +2,27 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it } from 'vitest'
-import { EMPTY_BUILD, READY_BUILD, RUNNING_BUILD, fakeBuildAPI } from '../testing/buildFixtures'
+import { BUILD_CANDIDATE, EMPTY_BUILD, READY_BUILD, RUNNING_BUILD, fakeBuildAPI } from '../testing/buildFixtures'
 import { RequestError } from '../project/api'
 import { BuildPanel } from './BuildPanel'
 
 afterEach(cleanup)
 
+it('配置单证据只显示真实本地内容，不冒称缺失的manifest', async () => {
+  const image = BUILD_CANDIDATE.image
+  const candidate = { ...BUILD_CANDIDATE, image: { id: image.id, idKind: 'config' as const, exportDigest: image.id, configDigest: image.id, tag: image.tag, binaryDigest: image.binaryDigest } }
+  const api = fakeBuildAPI(); api.snapshot.mockResolvedValue({ ...READY_BUILD, candidate })
+  render(<BuildPanel api={api} projectId={EMPTY_BUILD.projectId} serviceId={EMPTY_BUILD.serviceId} revision="1" blocked={false} />)
+  expect(await screen.findByText('本地配置内容证明；构建工具未提供独立 manifest 描述符。')).toBeVisible()
+  expect(screen.getByText('本地镜像内容 · config')).toBeVisible()
+  expect(screen.queryByText('镜像 manifest / index')).toBeNull()
+})
+
 it('构建成功显示镜像及输入追溯，未保存草稿阻止新的副作用', async () => {
   const api = fakeBuildAPI(); api.snapshot.mockResolvedValue(READY_BUILD)
   const view = render(<BuildPanel api={api} projectId={EMPTY_BUILD.projectId} serviceId={EMPTY_BUILD.serviceId} revision="1" blocked />)
   expect(await screen.findByText('当前固定输入已通过构建')).toBeVisible()
-  expect(screen.getByText('镜像 manifest')).toBeVisible()
+  expect(screen.getByText('镜像 manifest / index')).toBeVisible()
   expect(screen.getByRole('button', { name: '检查并构建固定 commit' })).toBeDisabled()
   view.rerender(<BuildPanel api={api} projectId={EMPTY_BUILD.projectId} serviceId={EMPTY_BUILD.serviceId} revision="1" blocked={false} />)
   expect(screen.getByRole('button', { name: '检查并构建固定 commit' })).toBeEnabled()

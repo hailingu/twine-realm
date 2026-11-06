@@ -125,7 +125,7 @@ func TestRealFixedCommitBuild(t *testing.T) {
 		t.Fatalf("真实构建未通过：%T %v", err, err)
 	}
 	t.Cleanup(func() { cleanupBuildImage(t, f.driver, f.driver.newSandbox(f.target, f.operationID), candidate.Image) })
-	if candidate.Source.PinnedCommit != f.target.Source.PinnedCommit || candidate.InputDigest != f.target.InputDigest || !digestPattern.MatchString(candidate.Image.ManifestDigest) || !boundImageID(candidate.Image.ID, candidate.Image) || len(candidate.Migrations) == 0 {
+	if candidate.Source.PinnedCommit != f.target.Source.PinnedCommit || candidate.InputDigest != f.target.InputDigest || !boundImageID(candidate.Image.ID, candidate.Image) || len(candidate.Migrations) == 0 {
 		t.Fatal("候选没有绑定完整实际输入和内容摘要")
 	}
 	assertBuildChecks(t, states)

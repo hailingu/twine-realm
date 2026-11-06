@@ -37,7 +37,15 @@ export function BuildPanel({ api, projectId, serviceId, revision, blocked }: Rea
 
 /** @param props 已持久候选与当前有效性 @returns 可审计镜像及输入摘要，不回显工具原日志。 */
 function CandidateDetails({ candidate, current, code }: Readonly<{ candidate: BuildCandidate; current: boolean; code: string }>) {
-  return <div aria-label="镜像候选"><h4>{current ? '当前固定输入已通过构建' : '历史镜像候选 · 当前尚未确认可用'}</h4><p>{code}</p><dl><dt>候选</dt><dd><code>{candidate.id}</code></dd><dt>源码</dt><dd><code>{candidate.source.pinnedCommit}</code></dd><dt>镜像 manifest</dt><dd><code>{candidate.image.manifestDigest}</code></dd><dt>本地镜像内容</dt><dd><code>{candidate.image.id}</code></dd><dt>输入摘要</dt><dd><code>{candidate.inputDigest}</code></dd></dl><p>{candidate.checks.length} 项检查 · {candidate.migrations.length} 份固定迁移材料 · {candidate.environment.architecture}</p></div>
+  const image = candidate.image
+  return <div aria-label="镜像候选"><h4>{current ? '当前固定输入已通过构建' : '历史镜像候选 · 当前尚未确认可用'}</h4><p>{code}</p><dl>
+    <dt>候选</dt><dd><code>{candidate.id}</code></dd><dt>源码</dt><dd><code>{candidate.source.pinnedCommit}</code></dd>
+    <dt>本地镜像内容 · {image.idKind}</dt><dd><code>{image.id}</code></dd><dt>Buildx 导出摘要</dt><dd><code>{image.exportDigest}</code></dd>
+    {image.configDigest && <><dt>镜像配置摘要</dt><dd><code>{image.configDigest}</code></dd></>}
+    {image.manifestDigest && <><dt>镜像 manifest / index</dt><dd><code>{image.manifestDigest}</code></dd><dt>描述符类型</dt><dd>{image.manifestMediaType}</dd></>}
+    <dt>输入摘要</dt><dd><code>{candidate.inputDigest}</code></dd></dl>
+    {!image.manifestDigest && <p>本地配置内容证明；构建工具未提供独立 manifest 描述符。</p>}
+    <p>{candidate.checks.length} 项检查 · {candidate.migrations.length} 份固定迁移材料 · {candidate.environment.architecture}</p></div>
 }
 
 /** @param value 服务端固定状态 @returns 受理、运行和终态的准确文字。 */

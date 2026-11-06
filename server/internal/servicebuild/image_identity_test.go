@@ -1,4 +1,4 @@
-// 本文件复现containerd的本地ID为manifest的真实协议形态，config与manifest摘要仍必须独立可查。
+// 本文件复现containerd的实际本地ID与工具内容证明绑定，不能以第三摘要替代。
 package servicebuild
 
 import (
@@ -15,6 +15,7 @@ func TestContainerdManifestIdentity(t *testing.T) {
 	_, complete := validMetadata(t)
 	image := complete.Candidate.Image
 	image.ID = image.ManifestDigest
+	image.IDKind = "manifest"
 	var rows []map[string]any
 	if err := json.Unmarshal(loadedImageJSON(t, boundary, image.ConfigDigest, "valid"), &rows); err != nil {
 		t.Fatal(err)
@@ -43,6 +44,7 @@ func TestContainerdManifestIdentity(t *testing.T) {
 func TestCompletionKeepsActualManifestID(t *testing.T) {
 	lease, complete := validMetadata(t)
 	complete.Candidate.Image.ID = complete.Candidate.Image.ManifestDigest
+	complete.Candidate.Image.IDKind = "manifest"
 	if err := ValidateCompletion(lease, complete); err != nil {
 		t.Fatal("完整manifest本地ID候选被拒绝", err)
 	}
@@ -52,12 +54,37 @@ func TestCompletionKeepsActualManifestID(t *testing.T) {
 	}
 }
 
+// TestCompletionWithObservedProofs 成功持久边界接受实际工具证据组合，缺失摘要在JSON中也不得出现。
+func TestCompletionWithObservedProofs(t *testing.T) {
+	for _, kind := range []string{"config", "manifest", "index"} {
+		lease, complete := validMetadata(t)
+		image := &complete.Candidate.Image
+		image.IDKind = kind
+		if kind == "config" {
+			image.ExportDigest = image.ConfigDigest
+			image.ManifestDigest, image.ManifestMediaType = "", ""
+		} else {
+			image.ID, image.ConfigDigest = image.ManifestDigest, ""
+			if kind == "index" {
+				image.ManifestMediaType = "application/vnd.oci.image.index.v1+json"
+			}
+		}
+		if err := ValidateCompletion(lease, complete); err != nil {
+			t.Fatal("实际证据组合不能持久化", kind, err)
+		}
+		data, err := json.Marshal(image)
+		if err != nil || strings.Contains(string(data), `:""`) {
+			t.Fatal("缺失摘要被填为空字符串", err)
+		}
+	}
+}
+
 // TestEmptyMetadataWarningObject 是Buildx文档定义的无告警对象形态，不把空对象误报为真实告警。
 func TestEmptyMetadataWarningObject(t *testing.T) {
-	manifest, config := ContentDigest([]byte("manifest")), ContentDigest([]byte("config"))
-	data := []byte(`{"containerimage.digest":"` + manifest + `","containerimage.config.digest":"` + config + `","buildx.build.warnings":{}}`)
-	actualManifest, actualConfig, err := imageMetadata(data)
-	if err != nil || actualManifest != manifest || actualConfig != config {
+	config := ContentDigest([]byte("config"))
+	data := []byte(`{"containerimage.digest":"` + config + `","containerimage.config.digest":"` + config + `","buildx.build.warnings":{}}`)
+	image, err := imageMetadata(data)
+	if err != nil || image.ManifestDigest != "" || image.ConfigDigest != config {
 		t.Fatal("无告警元数据被误判为失败", err)
 	}
 }

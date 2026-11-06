@@ -28,6 +28,46 @@ export type GraphOperation =
       type: 'binding.remove'
       bindingId: string
     }
+/**
+ * 本地不可变ID、证据类型与Buildx实际导出摘要；独立配置或描述符仅在工具确实提供时保存，不补造缺字段。
+ */
+export type BuildImage = {
+  /**
+   * 实际Docker image inspect的不可变ID，必须匹配idKind对应的已检查内容摘要。
+   */
+  id: string
+  manifestDigest?: string
+  configDigest?: string
+  tag: string
+  binaryDigest: string
+  idKind: 'config' | 'manifest' | 'index'
+  /**
+   * 本次Buildx实际containerimage.digest，不假定它恒为manifest。
+   */
+  exportDigest: string
+  manifestMediaType?:
+    | 'application/vnd.oci.image.manifest.v1+json'
+    | 'application/vnd.docker.distribution.manifest.v2+json'
+    | 'application/vnd.oci.image.index.v1+json'
+    | 'application/vnd.docker.distribution.manifest.list.v2+json'
+} & BuildImage1
+export type BuildImage1 =
+  | {
+      idKind?: 'config'
+      configDigest: string
+    }
+  | {
+      idKind?: 'manifest'
+      manifestDigest: string
+      manifestMediaType:
+        'application/vnd.oci.image.manifest.v1+json' | 'application/vnd.docker.distribution.manifest.v2+json'
+    }
+  | {
+      idKind?: 'index'
+      manifestDigest: string
+      manifestMediaType:
+        'application/vnd.oci.image.index.v1+json' | 'application/vnd.docker.distribution.manifest.list.v2+json'
+    }
 
 /**
  * 本地项目登记与增量源码追溯的权威契约；原 Project/Repository/Receipt 保持不变
@@ -798,19 +838,6 @@ export interface BuildCheck {
 export interface BuildMigration {
   path: string
   digest: string
-}
-/**
- * 实际本地引擎ID与Buildx的config、manifest/index内容摘要分别保存，不能假设ID恒等于config digest。
- */
-export interface BuildImage {
-  /**
-   * 实际Docker image inspect返回的ID，必须严格等于已检查config或manifest/index摘要之一。
-   */
-  id: string
-  manifestDigest: string
-  configDigest: string
-  tag: string
-  binaryDigest: string
 }
 export interface BuildSource {
   projectId: string

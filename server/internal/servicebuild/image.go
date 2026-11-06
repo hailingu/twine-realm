@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -40,11 +39,14 @@ func (driver *Driver) buildImage(ctx context.Context, box sandbox, id string) (v
 	if err != nil {
 		return value, err
 	}
-	value.ManifestDigest, value.ConfigDigest, err = imageMetadata(metadata)
+	evidence, err := imageMetadata(metadata)
 	if err != nil {
 		return value, err
 	}
+	value.ExportDigest, value.ConfigDigest = evidence.ExportDigest, evidence.ConfigDigest
+	value.ManifestDigest, value.ManifestMediaType = evidence.ManifestDigest, evidence.ManifestMediaType
 	value.ID, err = driver.loadedImageID(ctx, box, value)
+	value.IDKind = imageIDKind(value.ID, value)
 	return value, err
 }
 
@@ -96,38 +98,16 @@ func verifyBinary(path, architecture string, limit int64) (digest string, err er
 	return ContentDigest(data), nil
 }
 
-// imageMetadata 分别保存真实manifest与config摘要；Buildx警告同样导致失败。
-func imageMetadata(data []byte) (string, string, error) {
-	var metadata map[string]json.RawMessage
-	if json.Unmarshal(data, &metadata) != nil {
-		return "", "", invalidOutput()
-	}
-	warnings := strings.TrimSpace(string(metadata["buildx.build.warnings"]))
-	if warnings != "" && warnings != "[]" && warnings != "{}" && warnings != "null" {
-		return "", "", failure("BUILD_IMAGE_WARNING", "Buildx报告告警，候选不能通过")
-	}
-	var manifest, config string
-	if json.Unmarshal(metadata["containerimage.digest"], &manifest) != nil || json.Unmarshal(metadata["containerimage.config.digest"], &config) != nil || !digestPattern.MatchString(manifest) || !digestPattern.MatchString(config) {
-		return "", "", invalidOutput()
-	}
-	return manifest, config, nil
-}
-
 // verifyImage 同时核实原记录的实际本地ID和内容证明，tag改变不能沿用旧候选。
 func (driver *Driver) verifyImage(ctx context.Context, box sandbox, image Image) error {
 	id, err := driver.loadedImageID(ctx, box, image)
 	if err != nil {
 		return err
 	}
-	if id != image.ID {
+	if id != image.ID || !boundImageID(id, image) {
 		return failure("BUILD_IMAGE_IDENTITY_CONFLICT", "实际本地镜像身份与原候选不一致")
 	}
 	return nil
-}
-
-// boundImageID 适配classic的config-ID与containerd的manifest/index-ID，只接受本次已检查的内容摘要。
-func boundImageID(id string, image Image) bool {
-	return digestPattern.MatchString(id) && (id == image.ConfigDigest || id == image.ManifestDigest)
 }
 
 // loadedImageID 在保存候选前实际读取本地ID，不能假设所有Docker存储后端都使用config digest。
@@ -148,7 +128,7 @@ func (driver *Driver) loadedImageID(ctx context.Context, box sandbox, image Imag
 		return "", invalidOutput()
 	}
 	value := values[0]
-	if !boundImageID(value.ID, image) || value.Os != "linux" || value.Architecture != box.target.Environment.Architecture || value.Config.User != "65532:65532" || !reflect.DeepEqual(value.Config.Labels, box.labels()) || !reflect.DeepEqual(value.Config.Entrypoint, []string{"/service"}) || !reflect.DeepEqual(value.Config.Cmd, []string{"serve"}) {
+	if imageIDKind(value.ID, image) == "" || value.Os != "linux" || value.Architecture != box.target.Environment.Architecture || value.Config.User != "65532:65532" || !reflect.DeepEqual(value.Config.Labels, box.labels()) || !reflect.DeepEqual(value.Config.Entrypoint, []string{"/service"}) || !reflect.DeepEqual(value.Config.Cmd, []string{"serve"}) {
 		return "", failure("BUILD_IMAGE_IDENTITY_CONFLICT", "已加载镜像与固定构建摘要或配置不一致")
 	}
 	return value.ID, nil

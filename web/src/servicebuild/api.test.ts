@@ -5,8 +5,43 @@ import { BUILD_API } from './api'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
+it('实际配置单证据和缺配置的描述符均可恢复，缺失字段保持省略', async () => {
+  const image = BUILD_CANDIDATE.image
+  const variants = [
+    { id: image.id, idKind: 'config', configDigest: image.configDigest, exportDigest: image.configDigest, tag: image.tag, binaryDigest: image.binaryDigest },
+    ...['application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json', 'application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.list.v2+json'].map(manifestMediaType => ({ id: image.manifestDigest, idKind: manifestMediaType.includes('index') || manifestMediaType.includes('list') ? 'index' : 'manifest', manifestDigest: image.manifestDigest, manifestMediaType, exportDigest: image.manifestDigest, tag: image.tag, binaryDigest: image.binaryDigest }))
+  ]
+  let value: object = READY_BUILD
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(value)))))
+  for (const proof of variants) {
+    const candidate = { ...BUILD_CANDIDATE, image: proof }
+    value = { ...READY_BUILD, candidate, operation: { ...READY_BUILD.operation, candidate } }
+    const result = await BUILD_API.snapshot(EMPTY_BUILD.projectId, EMPTY_BUILD.serviceId)
+    expect(result.candidate?.image).toEqual(proof)
+  }
+})
+
+it('拒绝内容种类、导出摘要和描述符的矛盾，操作内候选同样校验', async () => {
+  const image = BUILD_CANDIDATE.image
+  const invalid = [
+    { ...image, idKind: 'index' }, { ...image, exportDigest: image.id },
+    { ...image, manifestMediaType: 'unknown' }, { ...image, manifestDigest: image.configDigest },
+    { ...image, configDigest: undefined }, { ...image, idKind: 'config', manifestDigest: undefined },
+    { ...image, idKind: 'manifest', id: image.manifestDigest, manifestMediaType: undefined }
+  ]
+  let value: object = READY_BUILD
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(value)))))
+  for (const proof of invalid) {
+    const candidate = { ...BUILD_CANDIDATE, image: proof }
+    value = { ...READY_BUILD, candidate, operation: { ...READY_BUILD.operation, candidate } }
+    await expect(BUILD_API.snapshot(EMPTY_BUILD.projectId, EMPTY_BUILD.serviceId)).rejects.toMatchObject({ status: 0 })
+    value = { ...READY_BUILD, operation: { ...READY_BUILD.operation, candidate } }
+    await expect(BUILD_API.snapshot(EMPTY_BUILD.projectId, EMPTY_BUILD.serviceId)).rejects.toMatchObject({ status: 0 })
+  }
+})
+
 it('containerd实际本地ID可为已检查manifest，仍保留独立config摘要并拒绝任意第三摘要', async () => {
-  const candidate = { ...BUILD_CANDIDATE, image: { ...BUILD_CANDIDATE.image, id: BUILD_CANDIDATE.image.manifestDigest } }
+  const candidate = { ...BUILD_CANDIDATE, image: { ...BUILD_CANDIDATE.image, idKind: 'manifest', id: BUILD_CANDIDATE.image.manifestDigest } }
   const value = { ...READY_BUILD, candidate, operation: { ...RUNNING_BUILD.operation, state: 'succeeded', candidate } }
   vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(value)))))
   await expect(BUILD_API.snapshot(EMPTY_BUILD.projectId, EMPTY_BUILD.serviceId)).resolves.toMatchObject({ candidate: { image: { id: candidate.image.manifestDigest, configDigest: candidate.image.configDigest } } })
