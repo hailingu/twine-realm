@@ -5,6 +5,7 @@ import "testing"
 
 // TestLocalConfiguration 覆盖合法配置与宽泛监听、来源及缺失注入。
 func TestLocalConfiguration(t *testing.T) {
+	t.Setenv("TWINE_DEPLOY_ADAPTER", "")
 	t.Run("本机配置边界", func(t *testing.T) {
 		for _, test := range []struct {
 			name, address, origin, roots, dsn string
@@ -34,6 +35,7 @@ func TestLocalConfiguration(t *testing.T) {
 
 // TestExplicitRuntimeConfiguration 运行能力必须由完整组合显式启用，缺省和部分配置不发生静默降级。
 func TestExplicitRuntimeConfiguration(t *testing.T) {
+	t.Setenv("TWINE_DEPLOY_ADAPTER", "")
 	t.Setenv("TWINE_ADDRESS", "127.0.0.1:8080")
 	t.Setenv("TWINE_DATABASE_DSN", "受控注入")
 	t.Setenv("TWINE_REPOSITORY_ROOTS", `["/tmp/repos"]`)

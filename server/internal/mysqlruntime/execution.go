@@ -181,7 +181,7 @@ func (work *execution) container(ctx context.Context) (string, error) {
 		return "", failure("RUNTIME_RESOURCE_MISSING", "先前核实的网络或数据卷已缺失", false, false)
 	}
 	if work.state.container == nil {
-		if _, err := work.driver.execute(ctx, work.driver.composeArguments(resource, "up", "--detach", "--no-build", "--no-deps", "--no-recreate", "--pull", "never", "mysql")...); err != nil {
+		if _, err := work.driver.composeCommand(ctx, resource, "up", "--detach", "--no-build", "--no-deps", "--no-recreate", "--pull", "never", "mysql"); err != nil {
 			return "", err
 		}
 	} else if err := work.startExisting(ctx); err != nil {

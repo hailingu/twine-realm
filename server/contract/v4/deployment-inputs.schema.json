@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twine-realm.local/contract/v4/deployment-inputs.schema.json",
+  "title": "部署输入与策略",
+  "type": "object",
+  "$defs": {
+    "DeployPreviewRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseRevision",
+        "baseGeneration",
+        "candidateId",
+        "bindingId",
+        "hostPort",
+        "configuration"
+      ],
+      "properties": {
+        "baseRevision": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "baseGeneration": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "candidateId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "bindingId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "hostPort": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 65535
+        },
+        "configuration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {}
+        }
+      }
+    },
+    "DeployCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mutationId",
+        "preview",
+        "planDigest"
+      ],
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "preview": {
+          "$ref": "https://twine-realm.local/contract/v4/deployment-inputs.schema.json#/$defs/DeployPreviewRequest"
+        },
+        "planDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "retryOf": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        }
+      }
+    },
+    "DeployEnvironment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "context",
+        "daemonId",
+        "dockerVersion",
+        "composeVersion",
+        "architecture",
+        "bindSourceMode",
+        "uid",
+        "gid",
+        "buildInstallationId",
+        "runtimeInstallationId"
+      ],
+      "properties": {
+        "context": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "daemonId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "dockerVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "composeVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "architecture": {
+          "enum": [
+            "amd64",
+            "arm64"
+          ]
+        },
+        "bindSourceMode": {
+          "enum": [
+            "native",
+            "desktop-host-mnt-v1"
+          ]
+        },
+        "uid": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "gid": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "buildInstallationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "runtimeInstallationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        }
+      }
+    },
+    "DeployPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "totalSeconds",
+        "migrationSeconds",
+        "readinessSeconds",
+        "commandSeconds",
+        "leaseSeconds",
+        "memoryMiB",
+        "tmpfsMiB",
+        "pids",
+        "cpus"
+      ],
+      "properties": {
+        "id": {
+          "const": "go-mysql-compose-v1"
+        },
+        "version": {
+          "const": 1
+        },
+        "totalSeconds": {
+          "const": 360
+        },
+        "migrationSeconds": {
+          "const": 120
+        },
+        "readinessSeconds": {
+          "const": 120
+        },
+        "commandSeconds": {
+          "const": 45
+        },
+        "leaseSeconds": {
+          "const": 420
+        },
+        "memoryMiB": {
+          "const": 512
+        },
+        "tmpfsMiB": {
+          "const": 64
+        },
+        "pids": {
+          "const": 128
+        },
+        "cpus": {
+          "const": 1
+        }
+      }
+    }
+  }
+}

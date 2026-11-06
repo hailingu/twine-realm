@@ -1,6 +1,6 @@
 # 标准组件目录与 MySQL 配置草稿（Issue #6）
 
-本切片在 [Issue #1 / #2](local-project-slice.md) 上加入标准组件目录与配置持久化。[Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的实际验收以本次检查为准；MySQL 显式运行见[运行切片](mysql-runtime-slice.md)，业务工程包见[模板切片](service-profile-slice.md)，业务构建部署由后续任务交付；[Issue #8](service-bindings-slice.md) 已扩展服务自有契约与依赖声明，一期不接入用户账号权限。
+本切片在 [Issue #1 / #2](local-project-slice.md) 上加入标准组件目录与配置持久化。[Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的实际验收以本次检查为准；MySQL 显式运行见[运行切片](mysql-runtime-slice.md)，业务工程包见[模板切片](service-profile-slice.md)，业务构建与单服务部署分别见[构建切片](service-build-slice.md)和[部署切片](service-deployment-slice.md)；[Issue #8](service-bindings-slice.md) 已扩展服务自有契约与依赖声明，一期不接入用户账号权限。
 
 ## 单一目录与固定版本
 

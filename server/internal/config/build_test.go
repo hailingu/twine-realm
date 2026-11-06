@@ -5,6 +5,7 @@ import "testing"
 
 // TestExplicitBuildConfiguration 未配置时只保留画布；未知适配器与缺失根均阻止启动。
 func TestExplicitBuildConfiguration(t *testing.T) {
+	t.Setenv("TWINE_DEPLOY_ADAPTER", "")
 	t.Setenv("TWINE_DATABASE_DSN", "受控配置")
 	t.Setenv("TWINE_REPOSITORY_ROOTS", `["/tmp/repos"]`)
 	t.Setenv("TWINE_ADDRESS", "127.0.0.1:8080")

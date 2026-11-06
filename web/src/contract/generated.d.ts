@@ -133,6 +133,13 @@ export interface Contract {
   buildReceipt?: BuildReceipt
   buildSnapshot?: BuildSnapshot
   buildCapability?: BuildCapability
+  deployPreviewRequest?: DeployPreviewRequest
+  deployCommand?: DeployCommand
+  deployPlan?: DeployPlan
+  deployOperation?: DeployOperation
+  deployReceipt?: DeployReceipt
+  deploySnapshot?: DeploySnapshot
+  deployCapability?: DeployCapability
 }
 /**
  * 版本一Position契约
@@ -904,4 +911,154 @@ export interface BuildCapability {
   profile: BuildIdentity
   imageReference: string
   policy: BuildPolicy
+}
+export interface DeployPreviewRequest {
+  baseRevision: string
+  baseGeneration: string
+  candidateId: string
+  bindingId: string
+  hostPort: number
+  configuration: {}
+}
+export interface DeployCommand {
+  mutationId: string
+  preview: DeployPreviewRequest
+  planDigest: string
+  retryOf?: string
+}
+export interface DeployPlan {
+  schemaVersion: 1
+  projectId: string
+  serviceId: string
+  serviceName: string
+  request: DeployPreviewRequest
+  contract: DefinitionRef
+  binding: DatabaseBinding
+  candidate: BuildCandidate
+  database: DeployDatabase
+  environment: DeployEnvironment
+  policy: DeployPolicy
+  resources: DeployResources
+  runtimeDigest: string
+  digest: string
+}
+export interface DeployDatabase {
+  resourceId: string
+  installationId: string
+  daemonId: string
+  componentId: string
+  generation: string
+  resourceDigest: string
+  configurationHash: string
+  serverUuid: string
+  network: string
+  networkCidr: string
+  volume: string
+  container: string
+  image: string
+}
+export interface DeployEnvironment {
+  context: string
+  daemonId: string
+  dockerVersion: string
+  composeVersion: string
+  architecture: 'amd64' | 'arm64'
+  bindSourceMode: 'native' | 'desktop-host-mnt-v1'
+  uid: number
+  gid: number
+  buildInstallationId: string
+  runtimeInstallationId: string
+}
+export interface DeployPolicy {
+  id: 'go-mysql-compose-v1'
+  version: 1
+  totalSeconds: 360
+  migrationSeconds: 120
+  readinessSeconds: 120
+  commandSeconds: 45
+  leaseSeconds: 420
+  memoryMiB: 512
+  tmpfsMiB: 64
+  pids: 128
+  cpus: 1
+}
+export interface DeployResources {
+  composeProject: string
+  application: string
+  migration: string
+  applicationUser: string
+  ingressNetwork: string
+  migrationUser: string
+  accountHost: string
+}
+export interface DeployOperation {
+  id: string
+  targetId: string
+  projectId: string
+  serviceId: string
+  version: string
+  state: 'accepted' | 'executing' | 'succeeded' | 'failed' | 'needs_attention'
+  code: string
+  message: string
+  /**
+   * @maxItems 16
+   */
+  steps: DeployStep[]
+  createdAt: string
+  updatedAt: string
+}
+export interface DeployStep {
+  name: 'preflight' | 'database' | 'material' | 'migration' | 'permissions' | 'container' | 'readiness'
+  state: 'executing' | 'succeeded' | 'unknown' | 'failed'
+  code: string
+  updatedAt: string
+}
+export interface DeployReceipt {
+  schemaVersion: 1
+  mutationId: string
+  operationId: string
+  target: DeployTarget
+  replayed: boolean
+}
+export interface DeployTarget {
+  id: string
+  projectId: string
+  serviceId: string
+  generation: string
+  plan: DeployPlan
+  createdAt: string
+}
+export interface DeploySnapshot {
+  schemaVersion: 1
+  projectId: string
+  serviceId: string
+  generation: string
+  sequence: string
+  target: DeployTarget | null
+  operation: DeployOperation | null
+  observation: DeployObservation | null
+  freshness: 'fresh' | 'stale' | 'unknown'
+  observationCode: string
+  lastAttemptAt: string | ''
+}
+export interface DeployObservation {
+  state: 'not_created' | 'stopped' | 'running' | 'ready' | 'drifted' | 'unknown'
+  running: boolean
+  healthy: boolean
+  ready: boolean
+  containerId: string
+  imageId: string
+  entryUrl: string
+  databaseUuid: string
+  migrationVersion: number
+  migrationIntegrity: 'missing' | 'dirty' | 'verified' | 'mismatch' | 'unknown'
+  observedAt: string
+}
+export interface DeployCapability {
+  schemaVersion: 1
+  enabled: boolean
+  adapter: string
+  code: string
+  message: string
+  policy: DeployPolicy
 }

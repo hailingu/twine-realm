@@ -69,6 +69,13 @@ func (store *Store) AcceptRuntime(ctx context.Context, input mysqlruntime.Accept
 		if err := lockRevision(ctx, tx, input.ProjectID, input.Command.BaseRevision); err != nil {
 			return mysqlruntime.Receipt{}, err
 		}
+		var deploying int
+		if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM deployment_instances i JOIN deployment_operations o ON i.current_operation_id=o.id WHERE i.project_id=? AND o.state IN ('accepted','executing')", input.ProjectID).Scan(&deploying); err != nil {
+			return mysqlruntime.Receipt{}, err
+		}
+		if deploying != 0 {
+			return mysqlruntime.Receipt{}, project.Failure("DEPLOY_BUSY", "业务部署仍在持有原MySQL，请先核实原操作再变更数据库运行目标")
+		}
 		value, err := acceptRuntimeTarget(ctx, tx, input)
 		if err != nil {
 			return value, err

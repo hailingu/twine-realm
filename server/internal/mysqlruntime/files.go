@@ -35,6 +35,7 @@ type Driver struct {
 	directory    string
 	installation installation
 	execute      dockerCommand
+	extensions   ComposeExtensions
 }
 
 // InitializeDirectory 只创建全新私有根，不接管已有目录或生成已有卷的新密码。

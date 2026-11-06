@@ -2,9 +2,9 @@
 
 本文定义平台的检查现状、计划接入的门禁与完成证据的口径。**核心原则：报告只列实际运行的命令与真实结果；未配置的检查如实说明，不得虚报、不得臆造命令、不得复用历史绿色结论。**
 
-## 当前状态（2026-11-05）
+## 当前状态（2026-11-06）
 
-已建立 Go / TypeScript 工程、平台元数据库 Compose，以及 [Issue #12 项目 MySQL 运行检查](mysql-runtime-slice.md)。根 `.nvmrc` 锁定 Node 26.13.0（npm 11）；`server/go.mod` 使用 Go 1.27。以下命令在根执行，模块单独命令见[本地切片](local-project-slice.md)和[运行说明](../../README.md)。检查存在不等于本次已经通过，交付时必须报告实际结果。
+已建立 Go / TypeScript 工程、平台元数据库 Compose、[Issue #12 项目 MySQL 运行检查](mysql-runtime-slice.md)、[固定源码构建](service-build-slice.md)及[单服务 MySQL 部署检查](service-deployment-slice.md)。根 `.nvmrc` 锁定 Node 26.13.0（npm 11）；`server/go.mod` 使用 Go 1.27。以下命令在根执行，模块单独命令见[本地切片](local-project-slice.md)和[运行说明](../../README.md)。检查存在不等于本次已经通过，交付时必须报告实际结果。
 
 | 范围 | 命令 | 说明 |
 | --- | --- | --- |
@@ -13,6 +13,7 @@
 | 单独 Sonar 复核 | `npm run sonar` | 只扫描与核对本次分析；不自动复用本地覆盖率报告，不替代完整门禁 |
 | 平台完整检查 | `npm run test:platform` | 临时平台库、全新运行安装、gofmt / build / vet、契约、TS / lint / Vitest / Vite、真实 Chromium、Compose / 认证 / 数据见证 / 创建响应丢失 / 重启、SQL 迁移 / 回滚 / 围栏与 Go `-race`；不接入开发数据 |
 | 固定源码隔离构建 | 完整 `test:platform` | 固定 commit / 原仓库指纹、真实断网 Go 检查及镜像摘要、SQL 原键 / 取消 / 旧租约围栏、浏览器草稿 / 重开 / 中断；见[构建切片](service-build-slice.md) |
+| 单服务 MySQL 部署 | 完整 `test:platform` | v4 预览 / 原键 / 目标围栏、用途秘密与最小权限、迁移内容核实、真实 Compose / 独立回环入口 / CRUD / 数据保留恢复及浏览器；见[部署切片](service-deployment-slice.md) |
 | Go 业务工程包 | `npm run profile:check`；完整 `test:platform` | 固定规范 / 模板摘要、实际导出、Go 版本 / 格式 / 模块 / vet / race / 构建、独立用途账号、真实迁移与 HTTP / SIGTERM / 重启；见[模板切片](service-profile-slice.md) |
 | 提交前门禁 | `npm run precommit`；`npm run hooks:install` | 全部代码告警和依赖漏洞清零；真实 Git hook 还核对索引前后一致，失败不提交；见[详细规则](warning-free-commits.md) |
 | 完整质量门禁 | `npm run quality:gate` | 同次脚本覆盖率、issue 校验、平台检查与真实 Sonar；失败立即停止，只清理归属已确认的临时资源，清理未知时保留绑定文件并失败 |
@@ -24,6 +25,8 @@
 项目标识为本地 SonarQube（社区版 26.8，`localhost:9000`）的 `twine-realm`，由根 `sonar-project.properties` 维护。扫描维护脚本、Go 服务和 TS 前端，单独分类测试与生成声明；Go / LCOV 只导入本次真实报告，Go 还合并浏览器平台进程的原生覆盖率，前端路径转换到仓库基准。平台无 Java，扫描器不传字节码参数；保留适配器已有能力。
 
 Issue #10 的模板保留真实 Go 源文件，位于 `server/` 扫描范围；其独立导出模块及真实子进程的覆盖率同次合并回原模板路径。模板检查不继承模型、云端或外层 Git 凭据；本次测试管理身份只供受信内置模板集成夹具创建和清理自有对象，不交常驻应用或迁移子进程。模块完整性验证不等同于 Go 漏洞数据库审计。
+
+`server/internal/httpapi/testdata/` 的 Go 文件仅是集成测试导出到临时独立仓库的业务夹具，不属于平台路由或已发布工程包。它们在 `sonar.test.inclusions` 中归为测试代码；仍进入相应静态分析，不作为平台生产覆盖率分母。平台源码和已发布模板继续按生产代码采集覆盖率，不增加覆盖率排除项。源码与测试范围分离按 [Sonar 官方范围规则](https://docs.sonarsource.com/sonarqube-server/project-administration/adjusting-analysis/setting-analysis-scope/excluding-files-based-on-patterns)维护；交付须报告这一分类修正与实际新增测试，不能把分类变化全部称作测试覆盖增长。
 
 - 本地终端从 `~/.zshrc` 加载 `SONAR_HOST_URL` 与 `TWINE_REALM_SONAR_TOKEN`，也支持专用于本次运行的 `SONAR_TOKEN`。凭据只经扫描器环境与 API 认证头使用，不放入命令行、配置文件或报告；诊断输出自动脱敏。无凭据或服务不可达时门禁失败，不得输出 shell 配置全文。
 - 扫描器等待服务端 Quality Gate（默认 Sonar way），再按本次任务的 analysisId 确认结果为 `OK` 且项目全部未解决代码问题为 0；任务、项目、报告、HTTP、状态不明或扫描失败均返回非零。不采用项目上一次绿色结果，不放宽服务端门槛。默认等待 300 秒，`SONAR_GATE_TIMEOUT_SECONDS` 可设 1–3600 秒；扫描器可通过 `SONAR_SCANNER_BIN` 指定（本机 sonar-scanner CLI 7.3.0）。
@@ -40,14 +43,16 @@ Sonar 扫描与完整门禁不进 CI：Sonar 服务在本机，GitHub 托管 run
 
 ## 模块检查与后续门禁
 
-Go / TS 已接入根编排，compose 配置单独只读校验。项目 MySQL 有真实运行与恢复验证，业务服务构建部署仍未实现，不把数据库运行等同完整业务部署。
+Go / TS 已接入根编排，compose 配置单独只读校验。项目 MySQL、固定源码镜像候选及单个 Go 服务的真实部署均已接入对应检查；它们各自有独立受理、执行与验收边界，不把数据库就绪或镜像构建当成业务部署成功。SSE、项目聚合停止及运行版本替换仍由后续任务交付。
 
 | 范围 | 门禁 | 接入时机 |
 | --- | --- | --- |
 | Go（`server/**`） | 根 `gofmt -l server` 零差异；模块内 build、`go vet -tags=integration ./...`、`go test ./...`；完整检查含真实 MySQL 和 `-race -tags=integration` | 已接入 |
 | TS（`web/**`） | `contract:check`、`typecheck`、`lint`、`test`、`build`；根平台检查含真实 Playwright | 已接入 |
-| 项目空间编排 | 真实 Compose、认证 / 数据见证、未知结果、重启、归属冲突及保留数据停止恢复 | MySQL 运行已接入；业务服务部署另行扩展 |
-| compose / 部署文件 | `docker compose --env-file .env -f deploy/compose.yaml config --quiet` | 已建立平台库配置；业务部署待后续 |
+| 项目空间编排 | 真实 Compose、认证 / 数据见证、未知结果、重启、归属冲突及保留数据恢复 | MySQL 与单服务部署已接入；项目聚合停止待后续 |
+| compose / 部署文件 | `docker compose --env-file .env -f deploy/compose.yaml config --quiet`；完整平台检查中的受控业务 Compose | 平台库配置只读校验；业务实际隔离、配置、入口与归属另经真实运行核实 |
+
+部署检查结束后，先按本次随机运行安装、构建安装和 daemon 身份核实业务容器及入口网络，再清理本次构建和 MySQL 资源。只有完整标签、确定名称、实际镜像和用途配置均属于本次测试才删除；未知时保留材料并失败，不清理用户服务、源仓库或既有数据。新增清理脚本行为测试同时进入根 `test:quality` 和完整门禁的覆盖率清单，避免只有独立命令覆盖而提交路径遗漏。
 
 ## 证据与报告口径
 

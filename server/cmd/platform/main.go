@@ -61,18 +61,16 @@ func run(logger *slog.Logger) (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, building.close()) }()
+	deploying, err := configureDeployment(configuration, database, running, building, logger)
+	if err != nil {
+		return err
+	}
 	cancel()
 	service := project.NewService(database, database, database, inspector, definitions)
-	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger, httpapi.Features{Runtime: running.service, Build: building.service})
+	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger, httpapi.Features{Runtime: running.service, Build: building.service, Deploy: deploying.service})
 	if err != nil {
 		return fmt.Errorf("装配 HTTP 契约失败")
 	}
-	tasks := &backgroundTasks{}
-	if running.worker != nil {
-		tasks.values = append(tasks.values, running.worker)
-	}
-	if building.worker != nil {
-		tasks.values = append(tasks.values, building.worker)
-	}
+	tasks := platformTasks(running, building, deploying)
 	return listenAndServe(ctx, configuration.Address, handler, tasks, logger)
 }

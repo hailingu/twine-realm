@@ -1,0 +1,379 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twine-realm.local/contract/v4/deployment.schema.json",
+  "title": "持久部署状态与回执",
+  "type": "object",
+  "$defs": {
+    "DeployStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "state",
+        "code",
+        "updatedAt"
+      ],
+      "properties": {
+        "name": {
+          "enum": [
+            "preflight",
+            "database",
+            "material",
+            "migration",
+            "permissions",
+            "container",
+            "readiness"
+          ]
+        },
+        "state": {
+          "enum": [
+            "executing",
+            "succeeded",
+            "unknown",
+            "failed"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^(|[A-Z][A-Z0-9_]{0,95})$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "DeployOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "targetId",
+        "projectId",
+        "serviceId",
+        "version",
+        "state",
+        "code",
+        "message",
+        "steps",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "targetId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "serviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "state": {
+          "enum": [
+            "accepted",
+            "executing",
+            "succeeded",
+            "failed",
+            "needs_attention"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,95}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "https://twine-realm.local/contract/v4/deployment.schema.json#/$defs/DeployStep"
+          },
+          "maxItems": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "DeployReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "mutationId",
+        "operationId",
+        "target",
+        "replayed"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "mutationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "target": {
+          "$ref": "https://twine-realm.local/contract/v4/deployment-plan.schema.json#/$defs/DeployTarget"
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "DeployObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "running",
+        "healthy",
+        "ready",
+        "containerId",
+        "imageId",
+        "entryUrl",
+        "databaseUuid",
+        "migrationVersion",
+        "migrationIntegrity",
+        "observedAt"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "not_created",
+            "stopped",
+            "running",
+            "ready",
+            "drifted",
+            "unknown"
+          ]
+        },
+        "running": {
+          "type": "boolean"
+        },
+        "healthy": {
+          "type": "boolean"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "containerId": {
+          "type": "string",
+          "pattern": "^(|[0-9a-f]{64})$"
+        },
+        "imageId": {
+          "type": "string",
+          "pattern": "^(|sha256:[0-9a-f]{64})$"
+        },
+        "entryUrl": {
+          "type": "string",
+          "pattern": "^(|http://127\\.0\\.0\\.1:[0-9]{1,5})$"
+        },
+        "databaseUuid": {
+          "type": "string",
+          "pattern": "^(|[0-9a-f-]{36})$"
+        },
+        "migrationVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "migrationIntegrity": {
+          "enum": [
+            "missing",
+            "dirty",
+            "verified",
+            "mismatch",
+            "unknown"
+          ]
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "DeploySnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "projectId",
+        "serviceId",
+        "generation",
+        "sequence",
+        "target",
+        "operation",
+        "observation",
+        "freshness",
+        "observationCode",
+        "lastAttemptAt"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "serviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v4/deployment-plan.schema.json#/$defs/DeployTarget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operation": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v4/deployment.schema.json#/$defs/DeployOperation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observation": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v4/deployment.schema.json#/$defs/DeployObservation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "freshness": {
+          "enum": [
+            "fresh",
+            "stale",
+            "unknown"
+          ]
+        },
+        "observationCode": {
+          "type": "string",
+          "pattern": "^(|[A-Z][A-Z0-9_]{0,95})$"
+        },
+        "lastAttemptAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "const": ""
+            }
+          ]
+        }
+      }
+    },
+    "DeployCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "enabled",
+        "adapter",
+        "code",
+        "message",
+        "policy"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "adapter": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,95}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "policy": {
+          "$ref": "https://twine-realm.local/contract/v4/deployment-inputs.schema.json#/$defs/DeployPolicy"
+        }
+      }
+    }
+  },
+  "properties": {
+    "deployPreviewRequest": {
+      "$ref": "https://twine-realm.local/contract/v4/deployment-inputs.schema.json#/$defs/DeployPreviewRequest"
+    },
+    "deployCommand": {
+      "$ref": "https://twine-realm.local/contract/v4/deployment-inputs.schema.json#/$defs/DeployCommand"
+    },
+    "deployPlan": {
+      "$ref": "https://twine-realm.local/contract/v4/deployment-plan.schema.json#/$defs/DeployPlan"
+    },
+    "deployOperation": {
+      "$ref": "https://twine-realm.local/contract/v4/deployment.schema.json#/$defs/DeployOperation"
+    },
+    "deployReceipt": {
+      "$ref": "https://twine-realm.local/contract/v4/deployment.schema.json#/$defs/DeployReceipt"
+    },
+    "deploySnapshot": {
+      "$ref": "https://twine-realm.local/contract/v4/deployment.schema.json#/$defs/DeploySnapshot"
+    },
+    "deployCapability": {
+      "$ref": "https://twine-realm.local/contract/v4/deployment.schema.json#/$defs/DeployCapability"
+    }
+  }
+}

@@ -37,7 +37,7 @@ func migrationRunner(t *testing.T, dsn string) *migrate.Migrate {
 func ownedMigrationRunners(t *testing.T, dsn string) []*migrate.Migrate {
 	t.Helper()
 	runners := []*migrate.Migrate{}
-	for _, spec := range []struct{ directory, table string }{{"migrations", ""}, {"runtime-migrations", "runtime_schema_migrations"}, {"build-migrations", "build_schema_migrations"}} {
+	for _, spec := range []struct{ directory, table string }{{"migrations", ""}, {"runtime-migrations", "runtime_schema_migrations"}, {"build-migrations", "build_schema_migrations"}, {"deployment-migrations", "deployment_schema_migrations"}} {
 		runner, err := newMigrationRunner(dsn, spec.directory, spec.table)
 		if err != nil {
 			closeMigrationRunners(t, runners)

@@ -2,7 +2,7 @@
 
 本地服务画布。当前实现 [Issue #1](https://github.com/hailingu/twine-realm/issues/1) 的本机项目、只读仓库登记与布局恢复，[Issue #2](https://github.com/hailingu/twine-realm/issues/2) 的明确固定 commit 与恢复，以及 [Issue #6](https://github.com/hailingu/twine-realm/issues/6) 的版本化 MySQL 目录、配置草稿和混合节点布局，以及 [Issue #8](https://github.com/hailingu/twine-realm/issues/8) 的服务接口声明、具名端口与 MySQL 依赖连线。 [Issue #12](https://github.com/hailingu/twine-realm/issues/12) 另提供显式本机 MySQL 运行、持久操作与数据保留恢复。
 
-服务节点保持待配置草稿。用户已选择首个业务工程组合为 Go + 标准库 `net/http`；[Issue #10](https://github.com/hailingu/twine-realm/issues/10) 提供离线工程包与最小服务模板，使用见[工程模板切片](docs/development/service-profile-slice.md)。不包含账号 / 登录 / 配对 / RBAC、AI、GitHub 同步、业务部署或代码编辑器。项目与仓库关联只保存在本机，导入不修改源码、`AGENTS.md`、索引、分支或 Git 配置。
+服务节点先保存为草稿。用户已选择首个业务工程组合为 Go + 标准库 `net/http`；[Issue #10](https://github.com/hailingu/twine-realm/issues/10) 提供离线工程包与最小服务模板，[Issue #14](https://github.com/hailingu/twine-realm/issues/14) 提供固定源码构建，[Issue #16](https://github.com/hailingu/twine-realm/issues/16) 提供单服务绑定 MySQL 的显式部署、迁移和业务就绪核实。Todo 只是独立验收仓库。不包含平台账号 / 登录 / 配对 / RBAC、AI、GitHub 同步或代码编辑器。项目与仓库关联只保存在本机，导入、构建和部署不修改源码、`AGENTS.md`、索引、分支或 Git 配置。
 
 ## 运行
 
@@ -32,7 +32,9 @@
 
 固定源码构建默认禁用。按[构建切片](docs/development/service-build-slice.md)准备固定 Go 镜像、在仓库及运行根之外执行 `build-init`，明确配置 `TWINE_BUILD_ADAPTER=local-go-container-v1` 和 `TWINE_BUILD_DIRECTORY` 后，可在服务源码详情检查并构建已保存的 commit。未知请求保留原键核实 / 重试，成功只产生本地不可变镜像候选；可以明确取消原构建，未自动部署。
 
-项目 MySQL 运行默认禁用。按[运行切片](docs/development/mysql-runtime-slice.md)在仓库范围外初始化全新私有根，明确设置 `TWINE_RUNTIME_ADAPTER=file-secrets-v1` 与 `TWINE_RUNTIME_DIRECTORY` 后启动控制面。该适配器以 0700 / 0600 文件权限保护本机明文秘密，不是加密凭据库；不自动安装工具或拉取镜像。在 MySQL 详情点击「确认运行 MySQL」，才接受独立的持久目标；202 或容器运行不等于认证就绪。每项目固定一个实例、私网与持久卷，不发布数据库宿主端口；关闭页面或平台不会停止它。需要停止时在详情确认「确认停止 MySQL」，保留数据和秘密。配置升级、删除卷、业务连线 / 账号 / 迁移 / 部署仍待后续。
+项目 MySQL 运行默认禁用。按[运行切片](docs/development/mysql-runtime-slice.md)在仓库范围外初始化全新私有根，明确设置 `TWINE_RUNTIME_ADAPTER=file-secrets-v1` 与 `TWINE_RUNTIME_DIRECTORY` 后启动控制面。该适配器以 0700 / 0600 文件权限保护本机明文秘密，不是加密凭据库；不自动安装工具或拉取镜像。在 MySQL 详情点击「确认运行 MySQL」，才接受独立的持久目标；202 或容器运行不等于认证就绪。每项目固定一个实例、私网与持久卷，不发布数据库宿主端口；关闭页面或平台不会停止它。需要停止时在详情确认「确认停止 MySQL」，保留数据和秘密。配置升级、删除卷、SSE 与项目聚合停止由后续切片处理。
+
+业务部署也默认禁用。在原构建与运行配置之上显式设置 `TWINE_DEPLOY_ADAPTER=go-mysql-compose-v1`，复用原运行私有根。先为服务保存接口与一条 MySQL 依赖、启动原 MySQL、固定源码并完成构建；在服务详情填写业务端口，点击「审阅部署」，核对候选与数据库后再「确认部署到本机」。后台先建立用途独立的业务库和账号、执行固定迁移，再启动原应用并核实只读探针。成功后提供独立 `127.0.0.1` 业务入口；应用使用本服务入口网络，MySQL 与迁移仍只使用 internal 私网。未知受理保持原键核实；失败保留原任务、数据与秘密，不换库、换端口、重置密码或清 dirty。首版只支持原候选 / 原配置恢复，不自动替换运行中版本。支持范围与故障边界见[部署切片](docs/development/service-deployment-slice.md)。
 
 `Ctrl-C` 正常停止平台；重新运行同一配置即可恢复。数据库停止使用 `docker compose --env-file .env -f deploy/compose.yaml stop`，不删除卷。`down -v` 会删除项目元数据，不属于普通停止。
 

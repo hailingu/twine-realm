@@ -31,7 +31,7 @@ Issue 的 Open / Closed 及关闭理由是工作是否结束的事实来源；Pr
 
 2026-11-04 创建 [Issue #1：将已有本地服务 Git 仓库加入画布并持久化](https://github.com/hailingu/twine-realm/issues/1)，对应 [Project item](https://github.com/users/hailingu/projects/4/views/1?pane=issue&itemId=293222657)。创建时为 Open / Backlog；现已有[本地切片实现](local-project-slice.md)，具体交付状态以 Issue、PR 和 Project 的实时读取为准，不把创建时快照继续当作当前事实。本地不再建立同名 `ISSUE-0001`；后续 Todo / MySQL 部署仍在该任务范围之外。
 
-下一任务为 [Issue #2：固定已登记服务的 Git 提交并追溯源码版本](https://github.com/hailingu/twine-realm/issues/2)，已关联同一 Project，依赖 #1 合入 develop。它将明确区分登记快照、当前 Git 观察和用户固定的 commit，为后续构建提供追溯；当前仅为计划，尚未实现，不替用户选择业务技术栈，也不包含生成 / 运行 Todo。
+当时接续任务为 [Issue #2：固定已登记服务的 Git 提交并追溯源码版本](https://github.com/hailingu/twine-realm/issues/2)，关联同一 Project，依赖 #1 合入 develop。该能力现已建立，明确区分登记快照、当前 Git 观察和用户固定的 commit；后续固定源码构建与单服务部署分别由 #14 / #16 承接。每项交付状态仍读取原 Issue、PR 与 Project，不将这段创建历史当作实时状态。用户后续已选择 Go + 标准库 net/http；独立 Todo 验收不是产品内置业务。
 
 ## 状态与验收门槛
 

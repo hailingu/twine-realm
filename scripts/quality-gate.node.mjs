@@ -48,7 +48,7 @@ test('门禁执行一次脚本测试与 issue 校验并传递本次脚本覆盖�
   const [native] = commands
   assert.equal(native.command, process.execPath)
   assert.ok(native.args.includes('--experimental-test-coverage'))
-  for (const file of ['sonar-gate', 'quality-gate', 'issue-status']) {
+  for (const file of ['sonar-gate', 'quality-gate', 'issue-status', 'deployment-check']) {
     assert.ok(native.args.includes(`scripts/${file}.node.mjs`))
   }
   const [issueCheck] = commands.slice(1)

@@ -4,8 +4,6 @@ package localdocker
 import (
 	"bytes"
 	"context"
-	"os"
-	"os/exec"
 	"strings"
 	"time"
 )
@@ -55,31 +53,16 @@ func (buffer *boundedBuffer) Write(value []byte) (int, error) {
 
 // Run 只继承固定工具位置与显式元数据策略，不继承业务凭据或执行用户shell。
 func Run(ctx context.Context, policy Policy, args ...string) ([]byte, error) {
-	if policy.Timeout <= 0 || policy.Timeout > 10*time.Minute {
-		return nil, failure("DOCKER_POLICY_INVALID", "Docker命令必须具有不超过十分钟的明确期限", false, false)
-	}
-	for _, key := range []string{"DOCKER_HOST", "DOCKER_CONTEXT", "DOCKER_CONFIG"} {
-		if os.Getenv(key) != "" {
-			return nil, failure("DOCKER_OVERRIDE_UNSUPPORTED", "本切片不接受Docker环境覆盖，请用本地context明确初始化", false, false)
-		}
-	}
 	ctx, cancel := context.WithTimeout(ctx, policy.Timeout)
 	defer cancel()
-	command := exec.CommandContext(ctx, "docker", args...)
-	command.Env = []string{}
-	for _, key := range []string{"PATH", "HOME", "TMPDIR"} {
-		if value, present := os.LookupEnv(key); present {
-			command.Env = append(command.Env, key+"="+value)
-		}
-	}
-	if policy.BuildMetadata {
-		command.Env = append(command.Env, "BUILDX_METADATA_WARNINGS=true", "BUILDX_METADATA_PROVENANCE=min")
+	command, err := dockerProcess(ctx, policy, args)
+	if err != nil {
+		return nil, err
 	}
 	command.Stdin = nil
-	command.WaitDelay = 2 * time.Second
 	var stdout, stderr boundedBuffer
 	command.Stdout, command.Stderr = &stdout, &stderr
-	err := command.Run()
+	err = command.Run()
 	if stdout.exceeded || stderr.exceeded {
 		return nil, failure("DOCKER_OUTPUT_INVALID", "Docker 返回超过受控输出上限", false, true)
 	}
