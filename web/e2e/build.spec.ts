@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 import { parseContract } from '../src/project/api'
 import type { BuildCommand, BuildSnapshot } from '../src/contract/generated'
 import { test, type Platform } from './platformFixture'
+import { expectBuiltCandidate } from './failureEvidence'
 
 const execute = promisify(execFile)
 
@@ -52,7 +53,7 @@ test('原键恢复真实构建，布局草稿与脏源码保持；重开/重启�
   await expect.poll(() => commands.length).toBe(2)
   expect(commands[1]).toEqual(commands[0])
   const x = page.getByRole('spinbutton', { name: /构建服务 X/ }); await x.fill('777')
-  await expect(page.getByText('当前固定输入已通过构建')).toBeVisible({ timeout: 180000 })
+  await expectBuiltCandidate(page, request, route)
   await expect(x).toHaveValue('777'); await expect(page.getByLabel('画布保存状态')).toContainText('未保存')
   const value = parseContract<BuildSnapshot>('BuildSnapshot', await (await request.get(route + '/build')).json())
   expect(value.candidateCurrent).toBe(true); expect(value.candidate?.source.pinnedCommit).toBe(source.commit)

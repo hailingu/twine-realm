@@ -2,6 +2,7 @@
 import { expect } from '@playwright/test'
 import { test } from './platformFixture'
 import { declarePorts, prepareBinding, prepareBindingProject } from './bindingFixture'
+import { expectRestoredEdge } from './failureEvidence'
 
 test('显式接口、具名拖线、失败重连、删除与平台重启恢复稳定关系身份', async ({ page, platform, browser }) => {
   const projectName = `具名端口持久化项目-${crypto.randomUUID()}`
@@ -46,9 +47,9 @@ test('显式接口、具名拖线、失败重连、删除与平台重启恢复�
   const context = await browser.newContext(); const reopened = await context.newPage()
   try {
     await reopened.goto(platform.url); await reopened.getByRole('button', { name: projectName }).click()
-    await expect(reopened.locator('.react-flow__edge')).toHaveAttribute('data-id', binding.id)
+    await expectRestoredEdge(reopened, binding.id)
     await reopened.getByRole('button', { name: '查看显式服务源码版本' }).click()
-    await expect(reopened.locator('.react-flow__edge')).toHaveAttribute('data-id', binding.id)
+    await expectRestoredEdge(reopened, binding.id)
     await expect(reopened.locator('.react-flow__edge-text')).toContainText('app_changed')
     await expect(reopened.locator('.react-flow__node-service .react-flow__handle')).toHaveCount(3)
     const acceptedDialog = reopened.waitForEvent('dialog').then(dialog => dialog.accept())
