@@ -119,9 +119,10 @@ test('未送达保存用原请求重试；版本冲突显式重放草稿', async
   await expect(page.getByRole('status', { name: '画布保存状态' })).toContainText('已保存到本机 · 版本 2')
   const context = await browser.newContext(); const other = await context.newPage()
   await other.goto(platform.url); await other.getByRole('button', { name: /重试与冲突项目/ }).click()
+  // 先保留真实本地草稿，再让其他窗口保存；干净窗口现在会通过状态流自动恢复。
+  await other.getByRole('spinbutton', { name: /并发服务 X/ }).fill('820')
   await input.fill('710'); await page.getByRole('button', { name: '保存布局' }).click()
   await expect(page.getByRole('status', { name: '画布保存状态' })).toContainText('版本 3')
-  await other.getByRole('spinbutton', { name: /并发服务 X/ }).fill('820')
   await other.getByRole('button', { name: '保存布局' }).click()
   await expect(other.getByRole('alert')).toContainText('其他窗口更新')
   await expect(other.getByRole('spinbutton', { name: /并发服务 X/ })).toHaveValue('820')

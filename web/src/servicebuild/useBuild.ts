@@ -1,6 +1,9 @@
 /** 独立构建会话拥有轮询和原键恢复，卸载只取消客户端请求。 */
 import { useEffect, useReducer, useRef } from 'react'
 import type { BuildIntent } from './model'
+import type { BuildSnapshot } from '../contract/generated'
+import { useStateProjection } from '../projectstate/Projection'
+import { checkedBuild } from '../projectstate/model'
 import { buildReducer, initialBuild } from './model'
 import { intentReceipt, type BuildAPI } from './api'
 import { RequestError } from '../project/api'
@@ -12,11 +15,20 @@ function rejected(error: unknown): boolean { return error instanceof RequestErro
 
 /** @param api 受控端口 @param projectId 项目会话 @param serviceId 服务会话 @param revision 已保存画布版本 @returns 构建状态与同步命令入口。 */
 export function useBuild(api: BuildAPI | undefined, projectId: string, serviceId: string, revision: string) {
+  const projection = useStateProjection()
+  const managed = projection?.managed === true
+  const metadata = projection?.snapshot?.builds.find(value => value.serviceId === serviceId && value.projectId === projectId)
+  const metadataRef = useRef<BuildSnapshot | null>(null)
+  const checkedRef = useRef<BuildSnapshot | null>(null)
   const [state, dispatch] = useReducer(buildReducer, undefined, initialBuild)
   const lifetime = useRef<AbortController | null>(null)
   const active = useRef<BuildIntent | null>(null)
   const inFlight = useRef(false)
   const refresh = useRef<(() => Promise<void>) | null>(null)
+  useEffect(() => {
+    metadataRef.current = metadata ?? null
+    if (managed && metadata) dispatch({ type: 'snapshot', value: checkedBuild(metadata, checkedRef.current ?? metadata) })
+  }, [metadata, managed])
   useEffect(() => {
     if (!api) return
     const controller = new AbortController(); lifetime.current = controller
@@ -31,7 +43,10 @@ export function useBuild(api: BuildAPI | undefined, projectId: string, serviceId
         if (!controller.signal.aborted) {
           if (value.projectId !== projectId || value.serviceId !== serviceId) { throw new Error('构建投影归属不一致') }
           dispatch({ type: 'capability', value: capability })
-          dispatch({ type: 'snapshot', value })
+          checkedRef.current = value
+          const current = metadataRef.current
+          if (!managed) dispatch({ type: 'snapshot', value })
+          else if (current) dispatch({ type: 'snapshot', value: checkedBuild(current, value) })
         }
       } catch (error) { if (!controller.signal.aborted) dispatch({ type: 'readFailed', message: message(error) }) }
       finally { reading = false; if (!controller.signal.aborted) timer = window.setTimeout(() => { void poll() }, 2000) }
@@ -39,7 +54,7 @@ export function useBuild(api: BuildAPI | undefined, projectId: string, serviceId
     refresh.current = poll
     void poll()
     return () => { controller.abort(); refresh.current = null; if (timer !== undefined) window.clearTimeout(timer) }
-  }, [api, projectId, serviceId])
+  }, [api, projectId, serviceId, managed])
   useEffect(() => { if (refresh.current) void refresh.current() }, [revision])
 
   const failIntent = (error: unknown, verify: boolean, intent: BuildIntent, signal: AbortSignal) => {
@@ -65,10 +80,10 @@ export function useBuild(api: BuildAPI | undefined, projectId: string, serviceId
     void submit(intent, false)
   }
   return {
-    state,
+    state: managed ? { ...state, readError: projection.error || state.readError } : state,
     build() {
       const value = state.snapshot; const capability = state.capability
-      if (!value?.currentSource.pinnedCommit || !capability?.enabled || state.readError || value.currentSource.projectRevision !== revision) return
+      if (!value?.currentSource.pinnedCommit || !capability?.enabled || state.readError || managed && projection.error || value.currentSource.projectRevision !== revision) return
       begin({ kind: 'build', command: { mutationId: crypto.randomUUID(), baseRevision: revision, baseGeneration: value.generation, commit: value.currentSource.pinnedCommit, profile: capability.profile, ...(value.operation ? { retryOf: value.operation.id } : {}) } })
     },
     cancel() { const operation = state.snapshot?.operation; if (operation) begin({ kind: 'cancelBuild', operationId: operation.id, command: { mutationId: crypto.randomUUID(), baseVersion: operation.version } }) },

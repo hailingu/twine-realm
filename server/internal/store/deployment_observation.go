@@ -74,12 +74,18 @@ func saveDeploymentObservation(ctx context.Context, tx *sql.Tx, target servicede
 			code = "DEPLOY_OBSERVATION_UNKNOWN"
 		}
 		_, err := tx.ExecContext(ctx, "UPDATE deployment_instances SET observation_code=?,last_attempt_at=? WHERE project_id=?", code, at, target.ProjectID)
-		return err
+		if err != nil {
+			return err
+		}
+		return appendDomainStateEvent(ctx, tx, target.ProjectID, "deployment", instance.operationID)
 	}
 	data, err := json.Marshal(fact)
 	if err != nil {
 		return err
 	}
 	_, err = tx.ExecContext(ctx, "UPDATE deployment_instances SET observation_json=?,observation_code=?,last_attempt_at=?,ever_ready=ever_ready OR ? WHERE project_id=?", data, code, at, fact.Ready, target.ProjectID)
-	return err
+	if err != nil {
+		return err
+	}
+	return appendDomainStateEvent(ctx, tx, target.ProjectID, "deployment", instance.operationID)
 }

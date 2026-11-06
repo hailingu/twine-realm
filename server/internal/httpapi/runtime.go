@@ -82,7 +82,7 @@ func (api *API) runtimeOperation(w http.ResponseWriter, r *http.Request) {
 	api.write(w, http.StatusOK, value)
 }
 
-// runtimeEvents 使用独立项目事件游标，最多返回100条而不暗示SSE已经实现。
+// runtimeEvents 保留MySQL领域审计页，不把它的游标混成v5全项目SSE序号。
 func (api *API) runtimeEvents(w http.ResponseWriter, r *http.Request) {
 	service := api.requireRuntime(w)
 	if service == nil {

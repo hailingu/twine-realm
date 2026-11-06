@@ -45,7 +45,36 @@ func TestRealDeploymentBeforeMaterialDoesNotBlockDatabase(t *testing.T) {
 		t.Fatal("原数据库恢复后无法按原计划继续部署", err)
 	}
 	assertTodoCRUD(t, "http://127.0.0.1:"+strconv.Itoa(plan.Request.HostPort))
+	assertStateRetentionKeepsMaterial(t, f)
 	assertCompletedMaterialLoss(t, f, resumed)
+}
+
+// assertStateRetentionKeepsMaterial 真实项目通知裁剪后，永久材料证明及既有服务状态仍可读取。
+func assertStateRetentionKeepsMaterial(t *testing.T, f *deploymentFixture) {
+	t.Helper()
+	base := f.runtime.base
+	db := stateSQL(t, base)
+	before, err := base.database.ProjectState(context.Background(), f.project.ID)
+	if err != nil || len(before.Builds) != 1 || before.Builds[0].Candidate == nil || len(before.Deployments) != 1 || before.Deployments[0].Observation == nil || !before.Deployments[0].Observation.Ready {
+		t.Fatal("真实构建部署未进入一致信封", err)
+	}
+	var count int
+	if err := db.QueryRow("SELECT COUNT(*) FROM deployment_events WHERE project_id=?", f.project.ID).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec("UPDATE project_state_events SET created_at=? WHERE project_id=?", time.Now().UTC().Add(-25*time.Hour), f.project.ID); err != nil {
+		t.Fatal(err)
+	}
+	f.refreshDatabase(t)
+	after, err := base.database.ProjectState(context.Background(), f.project.ID)
+	if err != nil || after.Cursor == before.Cursor || after.ReplayFloor != before.Cursor {
+		t.Fatal("项目通知未真实裁剪连续旧窗口", err)
+	}
+	var remaining int
+	if err := db.QueryRow("SELECT COUNT(*) FROM deployment_events WHERE project_id=?", f.project.ID).Scan(&remaining); err != nil || remaining != count {
+		t.Fatal("短期重放裁剪了永久部署事件", err)
+	}
+	assertMaterialCompletionProof(t, f, true)
 }
 
 // assertMaterialCompletionProof 原目标和不可变事件在同一读屏障内核实，不能从本次pending猜测旧材料不存在。

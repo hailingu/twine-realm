@@ -6,8 +6,10 @@ import type { CanvasPosition, GraphState, Position, Project, ServicePort } from 
 import { runtimeLabel, type RuntimeState } from '../runtime/model'
 import { MYSQL_PORTS } from '../contract/graph.generated'
 import { missingPorts, servicePorts } from './graphModel'
+import { useStateProjection, type StateProjection } from '../projectstate/Projection'
+import { deploymentLabel } from '../projectstate/runtimeLabel'
 
-type ServiceCanvasNode = Node<{ label: string; path: string; commit: string | null; ports: ServicePort[]; missing: string[]; declared: boolean }, 'service'>
+type ServiceCanvasNode = Node<{ label: string; path: string; commit: string | null; ports: ServicePort[]; missing: string[]; declared: boolean; runtime: { text: string; tone: string } | null }, 'service'>
 type MiddlewareCanvasNode = Node<{ label: string; version: string; reasons: string[]; runtime: { text: string; tone: string } }, 'mysql'>
 type CanvasNode = ServiceCanvasNode | MiddlewareCanvasNode
 
@@ -20,7 +22,7 @@ function ServiceCard({ id, data, isConnectable }: NodeProps<ServiceCanvasNode>) 
   if (!data.declared) status = '待配置 · 未定义契约'
   else if (data.missing.length) status = '待配置 · 缺少依赖绑定'
   return <div className="service-card"><div className="service-card-top"><span className="service-symbol" aria-hidden="true">⌘</span><span className="draft-tag">{status}</span></div><strong>{data.label}</strong><span className="service-path" title={data.path}>{data.path}</span><div className="service-card-foot"><span className="git-dot" />{data.commit ? `登记快照 ${data.commit.slice(0, 7)}` : '暂无源提交'}<span>Git</span></div>
-    <div className="semantic-ports">{data.ports.map((port, index) => <div className={`semantic-port ${port.role}`} key={port.id}>
+    {data.runtime && <p className={`runtime-fact ${data.runtime.tone}`}>{data.runtime.text}</p>}<div className="semantic-ports">{data.ports.map((port, index) => <div className={`semantic-port ${port.role}`} key={port.id}>
       <Handle id={port.id} type={port.role === 'consume' ? 'source' : 'target'} position={port.role === 'consume' ? HandlePosition.Right : HandlePosition.Left} isConnectable={isConnectable} style={{ top: 175 + index * 28 }} aria-label={`${data.label} ${port.role === 'consume' ? '消费' : '提供'}端口 ${port.id}`} />
       <span>{port.role === 'consume' ? '消费 →' : '← 提供'} {port.id}</span><small>{port.protocol} / {port.contract}</small>
     </div>)}</div>
@@ -48,8 +50,8 @@ function MeasuredPorts({ identities }: Readonly<{ identities: string }>) {
 }
 
 /** @param project 服务身份 @param graph 完整确认图 @param draft 本地位置 @param runtime 独立运行观测 @returns 不赋予 React Flow 领域状态所有权的节点投影。 */
-function projectNodes(project: Project, graph: GraphState, draft: CanvasPosition[], runtime?: RuntimeState): CanvasNode[] {
-  const services: ServiceCanvasNode[] = project.nodes.map(node => ({ id: node.id, type: 'service', position: draft.find(item => item.componentId === node.id) ?? node.position, data: { label: node.displayName, path: node.repository.path, commit: node.repository.headCommit, ports: servicePorts(graph, node.id), missing: missingPorts(graph, node.id), declared: graph.serviceContracts.some(value => value.serviceId === node.id) } }))
+function projectNodes(project: Project, graph: GraphState, draft: CanvasPosition[], runtime?: RuntimeState, projection?: StateProjection | null): CanvasNode[] {
+  const services: ServiceCanvasNode[] = project.nodes.map(node => ({ id: node.id, type: 'service', position: draft.find(item => item.componentId === node.id) ?? node.position, data: { label: node.displayName, path: node.repository.path, commit: node.repository.headCommit, ports: servicePorts(graph, node.id), missing: missingPorts(graph, node.id), declared: graph.serviceContracts.some(value => value.serviceId === node.id), runtime: projection?.managed ? deploymentLabel(projection.snapshot?.deployments.find(value => value.serviceId === node.id), projection.error, projection.now) : null } }))
   const middlewares: MiddlewareCanvasNode[] = graph.middlewares.map(node => ({ id: node.id, type: 'mysql', position: draft.find(item => item.componentId === node.id) ?? node.position, data: { label: node.displayName, version: node.definition.version, reasons: node.notReadyReasons, runtime: runtime ? runtimeLabel(runtime, node.id, runtime.now) : { text: '运行事实未读取', tone: 'unknown' } } }))
   return [...services, ...middlewares]
 }
@@ -59,7 +61,8 @@ export function Canvas({ project, canvas, draft, blocked, connectionBlocked, onM
   // 受控节点重新投影时必须保留 measured，否则图库会清空已测量的具名端口边界。
   // 尺寸只属于当前画布的渲染会话，不进入领域快照、位置草稿或保存命令。
   const [measurements, setMeasurements] = useState<Record<string, Dimensions>>({})
-  const nodes = projectNodes(project, canvas, draft, runtime).map(node => {
+  const projection = useStateProjection()
+  const nodes = projectNodes(project, canvas, draft, runtime, projection).map(node => {
     const measured = measurements[node.id]
     return measured ? { ...node, measured } : node
   })

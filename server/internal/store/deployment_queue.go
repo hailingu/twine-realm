@@ -175,7 +175,7 @@ func saveDeploymentOperation(ctx context.Context, tx *sql.Tx, op *servicedeploy.
 	return appendDeploymentEvent(ctx, tx, *op, kind, data)
 }
 
-// appendDeploymentEvent 在项目独立单调序列上追加，后续SSE仍须显式游标协议。
+// appendDeploymentEvent 保存永久部署证明，短期项目SSE另用同事务独立序号。
 func appendDeploymentEvent(ctx context.Context, tx *sql.Tx, op servicedeploy.Operation, kind string, data []byte) error {
 	if len(data) > 65536 {
 		return fmt.Errorf("部署事件超过固定上限")
@@ -191,5 +191,8 @@ func appendDeploymentEvent(ctx context.Context, tx *sql.Tx, op servicedeploy.Ope
 		return err
 	}
 	_, err := tx.ExecContext(ctx, "INSERT INTO deployment_events(project_id,sequence,operation_id,kind,payload,created_at) VALUES(?,?,?,?,?,?)", op.ProjectID, sequence+1, op.ID, kind, data, time.Now().UTC())
-	return err
+	if err != nil {
+		return err
+	}
+	return appendDomainStateEvent(ctx, tx, op.ProjectID, "deployment", op.ID)
 }

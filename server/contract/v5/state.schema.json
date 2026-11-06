@@ -1,0 +1,290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twine-realm.local/contract/v5/state.schema.json",
+  "title": "一致项目状态与有序通知",
+  "type": "object",
+  "$defs": {
+    "StatePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "heartbeatSeconds",
+        "idleSeconds",
+        "staleSeconds",
+        "retentionSeconds",
+        "maxEvents",
+        "pageSize",
+        "maxFrameBytes",
+        "maxSnapshotBytes",
+        "maxConnections",
+        "maxProjectConnections",
+        "retrySeconds"
+      ],
+      "properties": {
+        "heartbeatSeconds": {
+          "const": 15
+        },
+        "idleSeconds": {
+          "const": 45
+        },
+        "staleSeconds": {
+          "const": 20
+        },
+        "retentionSeconds": {
+          "const": 86400
+        },
+        "maxEvents": {
+          "const": 100000
+        },
+        "pageSize": {
+          "const": 200
+        },
+        "maxFrameBytes": {
+          "const": 4096
+        },
+        "maxSnapshotBytes": {
+          "const": 67108864
+        },
+        "maxConnections": {
+          "const": 16
+        },
+        "maxProjectConnections": {
+          "const": 4
+        },
+        "retrySeconds": {
+          "const": 2
+        }
+      }
+    },
+    "StateReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generation",
+        "operationId",
+        "operationVersion",
+        "execution"
+      ],
+      "properties": {
+        "serviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationVersion": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "execution": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        }
+      }
+    },
+    "StateBuildSnapshot": {
+      "description": "仅同库元数据，不声明外部Git/Docker仍可用；另经v3精确匹配核实。",
+      "allOf": [
+        {
+          "$ref": "https://twine-realm.local/contract/v3/build.schema.json#/$defs/BuildSnapshot"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "candidateCurrent": {
+              "const": false
+            }
+          }
+        }
+      ]
+    },
+    "StateSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "project",
+        "graph",
+        "runtime",
+        "builds",
+        "deployments",
+        "cursor",
+        "replayFloor",
+        "capturedAt",
+        "policy"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "project": {
+          "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/Project"
+        },
+        "graph": {
+          "$ref": "https://twine-realm.local/contract/v2/graph.schema.json#/$defs/GraphState"
+        },
+        "runtime": {
+          "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/RuntimeSnapshot"
+        },
+        "builds": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "$ref": "https://twine-realm.local/contract/v5/state.schema.json#/$defs/StateBuildSnapshot"
+          }
+        },
+        "deployments": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "$ref": "https://twine-realm.local/contract/v4/deployment.schema.json#/$defs/DeploySnapshot"
+          }
+        },
+        "cursor": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "replayFloor": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "capturedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "policy": {
+          "$ref": "https://twine-realm.local/contract/v5/state.schema.json#/$defs/StatePolicy"
+        }
+      }
+    },
+    "StateEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "projectId",
+        "sequence",
+        "scope",
+        "revision",
+        "reference",
+        "occurredAt"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f-]{36}:[1-9][0-9]{0,19}$"
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "scope": {
+          "enum": [
+            "project",
+            "runtime",
+            "build",
+            "deployment"
+          ]
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v5/state.schema.json#/$defs/StateReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "StateCaughtUp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "projectId",
+        "cursor"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "cursor": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        }
+      }
+    },
+    "StateResync": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "projectId",
+        "code"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "code": {
+          "enum": [
+            "STATE_CURSOR_EXPIRED",
+            "STATE_CURSOR_AHEAD",
+            "STATE_EVENT_GAP"
+          ]
+        }
+      }
+    }
+  },
+  "properties": {
+    "stateSnapshot": {
+      "$ref": "https://twine-realm.local/contract/v5/state.schema.json#/$defs/StateSnapshot"
+    },
+    "stateEvent": {
+      "$ref": "https://twine-realm.local/contract/v5/state.schema.json#/$defs/StateEvent"
+    },
+    "stateCaughtUp": {
+      "$ref": "https://twine-realm.local/contract/v5/state.schema.json#/$defs/StateCaughtUp"
+    },
+    "stateResync": {
+      "$ref": "https://twine-realm.local/contract/v5/state.schema.json#/$defs/StateResync"
+    }
+  }
+}

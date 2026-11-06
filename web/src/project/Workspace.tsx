@@ -1,5 +1,5 @@
 /** 工作台展示明确保存状态，并为失败、未知结果和版本冲突提供恢复入口。 */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Connection } from '@xyflow/react'
 import type { CanvasPosition, CanvasState, GraphState, MiddlewareNode, Position, Project } from '../contract/generated'
 import type { ProjectAPI } from './api'
@@ -16,17 +16,33 @@ import type { BuildAPI } from '../servicebuild/api'
 import { BuildPanel } from '../servicebuild/BuildPanel'
 import { DeploymentPanel } from '../servicedeploy/DeploymentPanel'
 import type { DeploymentAPI } from '../servicedeploy/api'
+import type { StateAPI } from '../projectstate/api'
+import { useProjectState } from '../projectstate/useProjectState'
+import { ProjectionContext, useStateProjection } from '../projectstate/Projection'
+import { StateNotice, RemoteStateNotice } from '../projectstate/StateNotice'
+
+/** 独立状态读取可省略于组件测试，不影响已有命令边界。 */
+interface WorkspaceProps { initial: Project; initialCanvas?: CanvasState; initialGraph?: GraphState; api: ProjectAPI; runtimeApi?: RuntimeAPI; buildApi?: BuildAPI; deploymentApi?: DeploymentAPI; stateApi?: StateAPI | null; onClose: () => void }
 
 /** @param props 初始确认项目、HTTP 端口与退出命令 @returns 服务登记和布局工作区。 */
-export function Workspace({ initial, initialCanvas, initialGraph, api, runtimeApi, buildApi, deploymentApi, onClose }: Readonly<{ initial: Project; initialCanvas?: CanvasState; initialGraph?: GraphState; api: ProjectAPI; runtimeApi?: RuntimeAPI; buildApi?: BuildAPI; deploymentApi?: DeploymentAPI; onClose: () => void }>) {
-  const workspace = useWorkspace(initial, api, initialCanvas, initialGraph)
-  const runtime = useRuntime(runtimeApi, initial.id)
+export function Workspace(props: Readonly<WorkspaceProps>) {
+  const feed = useProjectState(props.stateApi, props.initial.id)
+  const projection = useMemo(() => ({ managed: feed.managed, snapshot: feed.snapshot, error: feed.message, now: feed.now }), [feed.managed, feed.snapshot, feed.message, feed.now])
+  return <ProjectionContext.Provider value={projection}><WorkspaceBody {...props} />{feed.managed && <StateNotice phase={feed.phase} cursor={feed.snapshot?.cursor} capturedAt={feed.snapshot?.capturedAt} message={feed.message} reconnect={feed.reconnect} />}</ProjectionContext.Provider>
+}
+
+/** @param props 编辑与命令端口 @returns 由独立读取投影驱动且保留本地候选的工作台。 */
+function WorkspaceBody({ initial, initialCanvas, initialGraph, api, runtimeApi, buildApi, deploymentApi, onClose }: Readonly<WorkspaceProps>) {
+  const projection = useStateProjection()
   const [path, setPath] = useState('')
   const [name, setName] = useState('')
   const [sourceId, setSourceId] = useState<string | null>(null)
   const [mysqlSelection, setMysqlSelection] = useState<string | null | false>(false)
   const [contractId, setContractId] = useState<string | null>(null)
   const [candidate, setCandidate] = useState<BindingCandidate | null>(null)
+  const protectedForm = Boolean(path || name || sourceId || mysqlSelection !== false || contractId || candidate)
+  const workspace = useWorkspace(initial, api, initialCanvas, initialGraph, projection?.snapshot, protectedForm)
+  const runtime = useRuntime(runtimeApi, initial.id)
   const { snapshot, canvas, draft, dirty, blocked, saveState: save } = workspace
   const selected = snapshot.nodes.find(node => node.id === sourceId)
   const selectedMySQL = canvas.middlewares.find(node => node.id === mysqlSelection)
@@ -44,6 +60,7 @@ export function Workspace({ initial, initialCanvas, initialGraph, api, runtimeAp
       <div className="boundary-note"><span aria-hidden="true">◈</span><p>只读登记已有仓库。<br />节点保持待配置状态，仓库内容由你管理。</p></div>
       {save.kind === 'rejected' && <div className="notice error" role="alert"><strong>本次请求未保存</strong><p>{save.message}</p>{save.conflict && <button type="button" onClick={workspace.rebase}>载入最新版本并保留我的位置</button>}</div>}
       {save.kind === 'unknown' && <div className="recovery" role="alert"><strong>请先核实原请求</strong><p>{save.message}</p><button type="button" onClick={workspace.verify}>核实保存结果</button><button type="button" onClick={workspace.retry}>重试原请求</button><small>核实期间保留草稿与相同请求身份。</small></div>}
+      {workspace.remote && <RemoteStateNotice remote={workspace.remote} blocked={blocked} apply={workspace.applyRemote} />}
       <CoordinateList project={snapshot} draft={draft} blocked={blocked} onMove={workspace.move} onSource={setSourceId} />
       <MiddlewareList nodes={canvas.middlewares} draft={draft} blocked={blocked} onMove={workspace.move} onSelect={setMysqlSelection} />
       {mysqlSelection !== false && <MySQLPanel key={mysqlSelection ?? 'new-mysql'} api={api} node={selectedMySQL} blocked={blocked || dirty} onSave={input => { workspace.middleware(selectedMySQL?.id ?? null, input) }} />}

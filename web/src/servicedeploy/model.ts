@@ -4,6 +4,11 @@ import type { DeploySnapshot } from '../contract/generated'
 /** @param state 持久操作状态 @returns 是否仍需后台执行。 */
 export function terminalDeployment(state: string): boolean { return state === 'succeeded' || state === 'failed' || state === 'needs_attention' }
 
+/** @param snapshot 最后已知事实 @param now 本机时钟 @returns 仅近期观测可参与就绪显示。 */
+export function recentDeployment(snapshot: DeploySnapshot | null, now: number): boolean {
+  return !!snapshot?.observation && now - Date.parse(snapshot.observation.observedAt) <= 20000
+}
+
 /** @param current 已应用投影 @param incoming 新投影 @returns 不回退已观察事实的投影。 */
 export function newerSnapshot(current: DeploySnapshot | null, incoming: DeploySnapshot): DeploySnapshot {
   if (!current) return incoming

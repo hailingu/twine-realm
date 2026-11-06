@@ -7,12 +7,13 @@ import { Workspace } from './Workspace'
 import { RUNTIME_API, type RuntimeAPI } from '../runtime/api'
 import { BUILD_API, type BuildAPI } from '../servicebuild/api'
 import { DEPLOYMENT_API, type DeploymentAPI } from '../servicedeploy/api'
+import { STATE_API, type StateAPI } from '../projectstate/api'
 
 /** @param props 可注入真实边界的测试端口 @returns 本地项目工作台。 */
-export function App({ api = PROJECT_API, runtimeApi = RUNTIME_API, buildApi = BUILD_API, deploymentApi = DEPLOYMENT_API }: Readonly<{ api?: ProjectAPI; runtimeApi?: RuntimeAPI; buildApi?: BuildAPI; deploymentApi?: DeploymentAPI }>) {
+export function App({ api = PROJECT_API, runtimeApi = RUNTIME_API, buildApi = BUILD_API, deploymentApi = DEPLOYMENT_API, stateApi = STATE_API }: Readonly<{ api?: ProjectAPI; runtimeApi?: RuntimeAPI; buildApi?: BuildAPI; deploymentApi?: DeploymentAPI; stateApi?: StateAPI | null }>) {
   const [project, setProject] = useState<GraphSnapshot | null>(null)
   return <div className="app-shell">
     <header className="app-header"><a className="brand" href="/" aria-label="Twine Realm 首页"><span className="brand-mark">t<span>r</span></span>twine realm<span className="brand-divider" />本地工作台</a><div className="local-badge"><span />仅在本机</div></header>
-    {project ? <Workspace key={project.project.id} initial={project.project} initialGraph={project.graph} api={api} runtimeApi={runtimeApi} buildApi={buildApi} deploymentApi={deploymentApi} onClose={() => { setProject(null) }} /> : <ProjectPicker api={api} onOpen={setProject} />}
+    {project ? <Workspace key={project.project.id} initial={project.project} initialGraph={project.graph} api={api} runtimeApi={runtimeApi} buildApi={buildApi} deploymentApi={deploymentApi} stateApi={stateApi} onClose={() => { setProject(null) }} /> : <ProjectPicker api={api} onOpen={setProject} />}
   </div>
 }

@@ -145,6 +145,9 @@ func (store *Store) atomicReceipt(ctx context.Context, id string, hash [32]byte,
 	if err != nil {
 		return receipt, err
 	}
+	if err := appendStateEvent(ctx, tx, receipt.Project.ID, "project", nil); err != nil {
+		return project.Receipt{}, err
+	}
 	receipt.MutationID, receipt.Kind, receipt.Replayed = id, kind, false
 	data, err := json.Marshal(receipt)
 	if err != nil {

@@ -273,5 +273,5 @@ func appendRuntimeEvent(ctx context.Context, tx *sql.Tx, id, operationID, kind, 
 	if err != nil || count != 1 {
 		return errors.Join(fmt.Errorf("运行事件缺少匹配的原操作"), err)
 	}
-	return nil
+	return appendDomainStateEvent(ctx, tx, id, "runtime", operationID)
 }

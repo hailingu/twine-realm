@@ -16,6 +16,7 @@ import (
 	"github.com/hailingu/twine-realm/server/internal/gitworkspace"
 	"github.com/hailingu/twine-realm/server/internal/httpapi"
 	"github.com/hailingu/twine-realm/server/internal/project"
+	"github.com/hailingu/twine-realm/server/internal/projectstate"
 	"github.com/hailingu/twine-realm/server/internal/store"
 )
 
@@ -67,7 +68,7 @@ func run(logger *slog.Logger) (err error) {
 	}
 	cancel()
 	service := project.NewService(database, database, database, inspector, definitions)
-	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger, httpapi.Features{Runtime: running.service, Build: building.service, Deploy: deploying.service})
+	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger, httpapi.Features{Runtime: running.service, Build: building.service, Deploy: deploying.service, State: projectstate.NewService(database)})
 	if err != nil {
 		return fmt.Errorf("装配 HTTP 契约失败")
 	}

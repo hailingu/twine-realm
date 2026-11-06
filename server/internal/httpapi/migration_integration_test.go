@@ -37,7 +37,7 @@ func migrationRunner(t *testing.T, dsn string) *migrate.Migrate {
 func ownedMigrationRunners(t *testing.T, dsn string) []*migrate.Migrate {
 	t.Helper()
 	runners := []*migrate.Migrate{}
-	for _, spec := range []struct{ directory, table string }{{"migrations", ""}, {"runtime-migrations", "runtime_schema_migrations"}, {"build-migrations", "build_schema_migrations"}, {"deployment-migrations", "deployment_schema_migrations"}} {
+	for _, spec := range []struct{ directory, table string }{{"migrations", ""}, {"runtime-migrations", "runtime_schema_migrations"}, {"build-migrations", "build_schema_migrations"}, {"deployment-migrations", "deployment_schema_migrations"}, {"state-migrations", "state_schema_migrations"}} {
 		runner, err := newMigrationRunner(dsn, spec.directory, spec.table)
 		if err != nil {
 			closeMigrationRunners(t, runners)
@@ -132,7 +132,7 @@ func TestLegacyProjectMigration(t *testing.T) {
 // legacyRegistration 直接生成 v1 真实行和回执，避免用新代码假装历史版本行为。
 func legacyRegistration(t *testing.T, f *fixture) project.Receipt {
 	t.Helper()
-	current := create(t, f)
+	current := legacyProject(t, f)
 	path, err := filepath.EvalSymlinks(repository(t, f.root, "legacy"))
 	if err != nil {
 		t.Fatal(err)
@@ -184,7 +184,7 @@ func TestPinnedSourceMigration(t *testing.T) {
 	}
 	registered := legacyRegistration(t, f)
 	command := project.PinSourceCommand{MutationID: id(t), BaseRevision: "1", Commit: *registered.Project.Nodes[0].Repository.HeadCommit}
-	saved := decode[project.Receipt](t, call(t, f.handler, "PUT", sourceURL(registered.Project), command), 200, "SourceReceipt")
+	saved := legacyPinSource(t, f, registered.Project, command)
 	if err := runner.Up(); err != nil {
 		t.Fatal(err)
 	}

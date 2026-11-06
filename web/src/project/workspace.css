@@ -362,3 +362,11 @@
 .binding-item { border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin: 12px 0; }
 .binding-item strong, .binding-item span, .binding-item small, .binding-item code { display: block; margin-bottom: 6px; font-size: 10px; overflow-wrap: anywhere; }
 .binding-item button { margin: 4px 4px 0 0; font-size: 10px; }
+.state-notice { position: fixed; bottom: 22px; left: 84px; z-index: 6; max-width: min(430px, calc(100vw - 110px)); padding: 9px 13px; border: 1px solid var(--line); border-radius: 8px; background: #fffefa; box-shadow: 0 3px 12px #18251a12; font-size: 11px; }
+.state-notice output { display: block; font-weight: 600; }
+.state-notice small { color: #62665b; }
+.state-notice p { margin: 6px 0 0; }
+.state-notice.live { border-color: #a4b79b; }
+.state-notice.disconnected, .state-notice.failed { border-color: #b6965d; }
+.remote-change pre { max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; }
+.remote-change button { margin: 5px 0; }

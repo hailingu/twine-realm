@@ -4,6 +4,7 @@ import type { RuntimeCommand, RuntimeReceipt } from '../contract/generated'
 import { RequestError } from '../project/api'
 import type { RuntimeAPI } from './api'
 import { initialRuntime, runtimeReducer } from './model'
+import { useStateProjection } from '../projectstate/Projection'
 
 /** 客户端只保存原路由和命令；后台操作由服务端持久拥有。 */
 interface Pending { componentId: string; command: RuntimeCommand }
@@ -16,6 +17,9 @@ function rejected(error: unknown): boolean { return error instanceof RequestErro
 
 /** @param api 可选的独立运行端口 @param projectId 会话项目 @returns 同一份运行投影和同步事件入口。 */
 export function useRuntime(api: RuntimeAPI | undefined, projectId: string) {
+  const projection = useStateProjection()
+  const managed = projection?.managed === true
+  const projected = projection?.snapshot
   const [state, dispatch] = useReducer(runtimeReducer, undefined, initialRuntime)
   const lifetime = useRef<AbortController | null>(null)
   const active = useRef<Pending | null>(null)
@@ -27,10 +31,10 @@ export function useRuntime(api: RuntimeAPI | undefined, projectId: string) {
     let timer: number | undefined
     const poll = async () => {
       try {
-        const [capability, value] = await Promise.all([api.capability(controller.signal), api.snapshot(projectId, controller.signal)])
+        const [capability, value] = await Promise.all([api.capability(controller.signal), managed ? Promise.resolve(null) : api.snapshot(projectId, controller.signal)])
         if (!controller.signal.aborted) {
-          if (value.projectId !== projectId) throw new Error('项目投影归属不一致')
-          dispatch({ type: 'capability', value: capability }); dispatch({ type: 'snapshot', value })
+          if (value && value.projectId !== projectId) throw new Error('项目投影归属不一致')
+          dispatch({ type: 'capability', value: capability }); if (value) dispatch({ type: 'snapshot', value })
         }
       } catch (error) { if (!controller.signal.aborted) dispatch({ type: 'readFailed', message: message(error) }) }
       finally { if (!controller.signal.aborted) { dispatch({ type: 'clock', now: Date.now() }); timer = window.setTimeout(() => { void poll() }, 2000) } }
@@ -38,7 +42,8 @@ export function useRuntime(api: RuntimeAPI | undefined, projectId: string) {
     // poll 自己持有拒绝通道和计时器，卸载只终止客户端读取，不发送取消或停止目标。
     void poll()
     return () => { controller.abort(); if (timer !== undefined) window.clearTimeout(timer) }
-  }, [api, projectId])
+  }, [api, projectId, managed])
+  useEffect(() => { if (managed && projected?.project.id === projectId) dispatch({ type: 'snapshot', value: projected.runtime }) }, [managed, projected, projectId])
   useEffect(() => {
     const id = active.current?.command.mutationId
     if (state.submission.kind === 'rejected' && state.submission.id === id) active.current = null
@@ -67,7 +72,7 @@ export function useRuntime(api: RuntimeAPI | undefined, projectId: string) {
     finally { if (lifetime.current?.signal === signal) inFlight.current = false }
   }
   return {
-    state,
+    state: managed ? { ...state, now: projection.now, readError: projection.error || state.readError } : state,
     run(componentId: string, revision: string, desired: 'running' | 'stopped') {
       if (!api || active.current || !state.snapshot || !state.capability?.enabled) return
       const command: RuntimeCommand = { mutationId: crypto.randomUUID(), baseRevision: revision, baseGeneration: state.snapshot.generation, desired, ...(state.snapshot.operation ? { retryOf: state.snapshot.operation.id } : {}) }

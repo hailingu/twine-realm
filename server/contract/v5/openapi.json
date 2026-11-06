@@ -1,0 +1,183 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Twine Realm 项目状态读取与 SSE",
+    "version": "5.0.0"
+  },
+  "paths": {
+    "/api/v5/projects/{id}/state": {
+      "get": {
+        "operationId": "readProjectState",
+        "description": "同一平台数据库 RR 完整信封；运行观测仍携带独立采集时间，不承诺 Docker/业务库跨系统原子性。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-f-]{36}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "完整信封，最多64MiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://twine-realm.local/contract/v5/state.schema.json#/$defs/StateSnapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "安全的显式失败，不能当作部分成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "安全的显式失败，不能当作部分成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "安全的显式失败，不能当作部分成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "安全的显式失败，不能当作部分成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v5/projects/{id}/state/events": {
+      "get": {
+        "operationId": "streamProjectState",
+        "description": "先读取完整信封，再以 after 或 Last-Event-ID 订阅；二者同时给出须一致。UTF-8 SSE：state 帧含十进制 id 和 StateEvent；caught_up 控制无id且含 StateCaughtUp；resync 控制无id且含 StateResync并关闭；15秒注释心跳不增序号。每帧最多4096字节，连接总16/每项目4，页200，重放24小时或最多100000条，任一先到。409须完整恢复；头已发出后的过期/跳号发送resync；存储失败安全断流，后台操作继续。事件只通知核实，HTTP回执/原键查询仍是唯一编辑确认。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-f-]{36}$"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$"
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "有界连续通知与独立控制帧",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "安全的显式失败，不能当作部分成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "安全的显式失败，不能当作部分成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "安全的显式失败，不能当作部分成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "安全的显式失败，不能当作部分成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "固定2秒后重试",
+                "schema": {
+                  "const": "2"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "安全的显式失败，不能当作部分成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://twine-realm.local/contract/v1/schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"testing"
+	"time"
 )
 
 // TestDisabledRuntimeHTTPShutdown 不启用工作器或启动时已经取消也必须收回HTTP监听和goroutine。
@@ -18,6 +19,79 @@ func TestDisabledRuntimeHTTPShutdown(t *testing.T) {
 	cancel()
 	if err := listenAndServe(ctx, "127.0.0.1:0", http.NewServeMux(), nil, slog.New(slog.NewTextHandler(io.Discard, nil))); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestLiveStateRequestCancelledOnShutdown 控制面退出必须取消长连接，不能等10秒强制关闭才结束。
+func TestLiveStateRequestCancelledOnShutdown(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	finished := make(chan error, 1)
+	entered := make(chan struct{}, 1)
+	released := make(chan struct{}, 1)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		if _, err := w.Write([]byte(": connected\n\n")); err != nil {
+			return
+		}
+		if err := http.NewResponseController(w).Flush(); err != nil {
+			return
+		}
+		entered <- struct{}{}
+		<-r.Context().Done()
+		released <- struct{}{}
+	})
+	go func() {
+		finished <- listenAndServe(ctx, address, handler, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}()
+	defer func() {
+		cancel()
+		select {
+		case err := <-finished:
+			if err != nil {
+				t.Error(err)
+			}
+		case <-time.After(12 * time.Second):
+			t.Error("本次HTTP拥有者未回收")
+		}
+	}()
+	client := &http.Client{Timeout: 5 * time.Second}
+	var response *http.Response
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		value, err := client.Get("http://" + address)
+		if err == nil {
+			response = value
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if response == nil {
+		t.Fatal("本次长连接未建立")
+	}
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	select {
+	case <-entered:
+	case <-time.After(time.Second):
+		t.Fatal("长连接未进入拥有者")
+	}
+	cancel()
+	select {
+	case <-released:
+	case <-time.After(2 * time.Second):
+		t.Fatal("控制面取消没有传播到在途长连接")
 	}
 }
 

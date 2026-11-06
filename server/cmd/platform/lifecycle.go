@@ -17,9 +17,9 @@ func listenAndServe(ctx context.Context, address string, handler http.Handler, w
 	if err != nil {
 		return fmt.Errorf("本机监听失败，请检查端口是否占用")
 	}
-	server := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 * 1024}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	server := &http.Server{Handler: handler, BaseContext: func(net.Listener) context.Context { return ctx }, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 * 1024}
 	stopped := make(chan error, 1)
 	go func() { stopped <- serveHTTP(server, listener) }()
 	var workerStopped chan error

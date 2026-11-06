@@ -1,6 +1,6 @@
 # 组件、连线、接口与状态契约
 
-> **状态：工程原则已接受；本地项目 / 源码、标准组件草稿、v2 服务契约 / 数据库依赖声明，以及固定 MySQL 运行 v1 已发布；单服务部署 v4 已接入，SSE 待后续。** 用户确认参考本机 Infinity Canvas 的现有方案。已落地字段见[本地切片](../development/local-project-slice.md)、[组件目录](../development/component-catalog-slice.md)、[服务连线](../development/service-bindings-slice.md)、[运行切片](../development/mysql-runtime-slice.md)及[部署切片](../development/service-deployment-slice.md)，其余逻辑字段与操作在对应切片固定为机器契约。推荐默认值与待决事项分别标明。
+> **状态：工程原则已接受；本地项目 / 源码、标准组件草稿、v2 服务契约 / 数据库依赖声明，以及固定 MySQL 运行 v1 已发布；单服务部署 v4 与一致状态 / SSE v5 已接入，见[状态切片](../development/project-state-slice.md)。** 用户确认参考本机 Infinity Canvas 的现有方案。已落地字段见[本地切片](../development/local-project-slice.md)、[组件目录](../development/component-catalog-slice.md)、[服务连线](../development/service-bindings-slice.md)、[运行切片](../development/mysql-runtime-slice.md)及[部署切片](../development/service-deployment-slice.md)，其余逻辑字段与操作在对应切片固定为机器契约。推荐默认值与待决事项分别标明。
 
 ## 参考依据与适配结论
 
@@ -72,7 +72,7 @@
 
 ## 首批机器契约与交付屏障
 
-已采用 schema 先行：`server/contract/v1/` 发布本地项目、源码与标准组件草稿的 JSON Schema / OpenAPI；MySQL 定义包在 `server/internal/catalog/definitions/`，生成 TS / 独立 Ajv 校验器，Go 使用同一材料。`server/contract/v2/` 已发布自有服务契约与数据库依赖的完整图 / 原子编辑；独立事件、其他关系、构建与运行契约仍在对应后续切片固定，不把下表全部视为已实现。
+已采用 schema 先行：`server/contract/v1/` 发布本地项目、源码与标准组件草稿的 JSON Schema / OpenAPI；MySQL 定义包在 `server/internal/catalog/definitions/`，生成 TS / 独立 Ajv 校验器，Go 使用同一材料。`server/contract/v2/` 已发布自有服务契约与数据库依赖的完整图 / 原子编辑；固定构建 v3、单服务部署 v4 及[项目状态 / 事件 v5](../development/project-state-slice.md)已独立发布，其他关系仍在后续切片固定，不把下表全部视为已实现。
 
 | 首批契约 | 必须固定的最小内容 |
 | --- | --- |
@@ -125,7 +125,7 @@ SSE 是持久状态的通知与投影通道，执行器从数据库中的待处�
 - 心跳不递增业务序号，追平控制帧不冒充业务事件；只有游标连续追平后才显示状态流已恢复。断流期间可做有界、退避且遵循 Retry-After 的状态查询，界面显示最后采集时间与过期状态。
 - 一期订阅与重放校验本机请求与项目边界，不新增账号会话；未来身份接入后再校验当前身份与权限，不把长期 token 放入 URL。切换项目、页面销毁或未来身份失效释放流、轮询与请求，迟到结果需通过页面会话代次校验。
 
-重放窗口、心跳与观测过期阈值采用[建议初值](operations-and-recovery.md#建议默认参数)做首个真实切片验证，再固定为公开配置；连接 / 帧 / 快照大小随机器契约明确，不照搬参考项目数值。事件回执与 HTTP 回执必须进入同一确认协调器，避免重复应用；推荐首版编辑确认以 HTTP 回执 / 原键查询为唯一入口，事件仅触发版本核对与恢复。
+当前本机 v5 的窗口、心跳、帧 / 快照 / 连接上限已由[状态切片](../development/project-state-slice.md)固定并验证；其他组合的重放窗口、心跳与观测过期阈值采用[建议初值](operations-and-recovery.md#建议默认参数)做首个真实切片验证，再固定为公开配置；连接 / 帧 / 快照大小随机器契约明确，不照搬参考项目数值。事件回执与 HTTP 回执必须进入同一确认协调器，避免重复应用；推荐首版编辑确认以 HTTP 回执 / 原键查询为唯一入口，事件仅触发版本核对与恢复。
 
 ## 后续验收与待定实现项
 
