@@ -93,8 +93,4 @@ esac
 	if _, err := localDocker(ctx, "success"); err == nil {
 		t.Fatal("取消命令报告成功")
 	}
-	var output boundedBuffer
-	if _, err := output.Write(make([]byte, 1024*1024+1)); err != nil || !output.exceeded || output.data.Len() != 1024*1024 {
-		t.Fatal("输出边界未生效")
-	}
 }

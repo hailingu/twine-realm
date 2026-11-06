@@ -1,6 +1,6 @@
 # 标准中间件 Schema 与服务运行契约
 
-> **状态：MySQL 1.0.0 配置 / 端口目录与草稿、v2 服务自有契约和依赖声明已实现；运行仍为设计。** 2026-11-04 用户明确标准中间件可以提供 schema；本设计将其固定为目录内预定义、版本化、可校验的契约。已发布字段和边界见[组件目录](../development/component-catalog-slice.md)与[服务依赖声明](../development/service-bindings-slice.md)。以下运行 / 注入方案、相关数值仍属于首版建议，待真实适配验证后发布，不表示已创建业务数据库或凭据。
+> **状态：MySQL 1.0.0 配置 / 端口目录与草稿、v2 服务自有契约和依赖声明已实现；固定 MySQL 的显式运行和认证就绪已实现，业务账号 / 注入 / 迁移仍为设计。** 2026-11-04 用户明确标准中间件可以提供 schema；本设计将其固定为目录内预定义、版本化、可校验的契约。已发布字段和边界见[组件目录](../development/component-catalog-slice.md)与[服务依赖声明](../development/service-bindings-slice.md)。已发布运行边界见[MySQL 运行切片](../development/mysql-runtime-slice.md)；以下业务注入方案与未由切片发布的数值仍属建议，不表示已创建业务数据库或应用凭据。
 
 ## Schema 的范围与所有者
 

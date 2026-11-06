@@ -86,6 +86,13 @@ export interface Contract {
   graphOperation?: GraphOperation
   graphEditCommand?: GraphEditCommand
   graphReceipt?: GraphReceipt
+  buildCommand?: BuildCommand
+  buildCancelCommand?: BuildCancelCommand
+  buildStep?: BuildStep
+  buildOperation?: BuildOperation
+  buildReceipt?: BuildReceipt
+  buildSnapshot?: BuildSnapshot
+  buildCapability?: BuildCapability
 }
 /**
  * 版本一Position契约
@@ -700,4 +707,168 @@ export interface GraphReceipt {
   project: Project
   replayed: boolean
   graph: GraphState
+}
+export interface BuildCommand {
+  mutationId: string
+  baseRevision: string
+  baseGeneration: string
+  commit: string
+  profile: BuildIdentity
+  retryOf?: string
+}
+export interface BuildIdentity {
+  id: string
+  version: string
+  digest: string
+}
+export interface BuildCancelCommand {
+  mutationId: string
+  baseVersion: string
+}
+export interface BuildStep {
+  name: string
+  state: 'pending' | 'executing' | 'succeeded' | 'failed' | 'needs_attention' | 'cancelled'
+  code: string
+  updatedAt: string
+}
+export interface BuildOperation {
+  id: string
+  targetId: string
+  projectId: string
+  serviceId: string
+  version: string
+  state: 'accepted' | 'executing' | 'cancelling' | 'succeeded' | 'cancelled' | 'failed' | 'needs_attention'
+  code: string
+  message: string
+  cancelRequested: boolean
+  /**
+   * @maxItems 32
+   */
+  steps: BuildStep[]
+  createdAt: string
+  updatedAt: string
+  candidate: BuildCandidate | null
+}
+export interface BuildCandidate {
+  id: string
+  targetId: string
+  operationId: string
+  inputDigest: string
+  sourceDigest: string
+  profile: BuildIdentity
+  template: BuildIdentity
+  environment: BuildEnvironment
+  /**
+   * @maxItems 32
+   */
+  checks: BuildCheck[]
+  /**
+   * @maxItems 512
+   */
+  migrations: BuildMigration[]
+  migrationDigest: string
+  image: BuildImage
+  createdAt: string
+  source: BuildSource
+  policy: BuildPolicy
+}
+export interface BuildEnvironment {
+  context: string
+  daemonId: string
+  dockerVersion: string
+  buildxVersion: string
+  builderName: string
+  buildkitVersion: string
+  imageId: string
+  imageReference: string
+  architecture: 'amd64' | 'arm64'
+  operatingSystem: 'linux'
+  bindSourceMode: 'canonical' | 'desktop-host-mnt-v1'
+  uid: number
+  gid: number
+  endpointDigest: string
+}
+export interface BuildCheck {
+  name: string
+  state: 'succeeded'
+  toolVersion: string
+  outputDigest: string
+  completedAt: string
+}
+export interface BuildMigration {
+  path: string
+  digest: string
+}
+export interface BuildImage {
+  id: string
+  manifestDigest: string
+  configDigest: string
+  tag: string
+  binaryDigest: string
+}
+export interface BuildSource {
+  projectId: string
+  projectRevision: string
+  serviceId: string
+  repositoryId: string
+  repositoryPath: string
+  pinnedCommit: string
+}
+export interface BuildPolicy {
+  id: 'go-container-local-v1'
+  version: 1
+  totalSeconds: 480
+  commandSeconds: 180
+  sourceBytes: 67108864
+  sourceFiles: 4096
+  binaryBytes: 134217728
+  memoryMiB: 4096
+  tmpfsMiB: 3072
+  pids: 256
+  cpus: 2
+}
+export interface BuildReceipt {
+  schemaVersion: 1
+  mutationId: string
+  kind: 'build' | 'cancelBuild'
+  operationId: string
+  target: BuildTarget
+  version: string
+  replayed: boolean
+}
+export interface BuildTarget {
+  id: string
+  projectId: string
+  serviceId: string
+  generation: string
+  canvasRevision: string
+  installationId: string
+  source: BuildSource
+  profile: BuildIdentity
+  environment: BuildEnvironment
+  policy: BuildPolicy
+  inputDigest: string
+  createdAt: string
+}
+export interface BuildSnapshot {
+  schemaVersion: 1
+  projectId: string
+  serviceId: string
+  generation: string
+  target: BuildTarget | null
+  operation: BuildOperation | null
+  candidate: BuildCandidate | null
+  candidateCurrent: boolean
+  candidateCode: string
+  currentSource: SourceVersion
+}
+export interface BuildCapability {
+  schemaVersion: 1
+  enabled: boolean
+  adapter: string
+  code: string
+  message: string
+  profile: BuildIdentity
+  imageReference: string
+  policy: BuildPolicy
 }

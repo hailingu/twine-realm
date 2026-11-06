@@ -11,6 +11,15 @@ const schema = JSON.parse(await readFile(input, 'utf8'))
 const components = JSON.parse(await readFile(new URL('../../server/contract/v1/components.schema.json', import.meta.url), 'utf8'))
 const runtime = JSON.parse(await readFile(new URL('../../server/contract/v1/runtime.schema.json', import.meta.url), 'utf8'))
 const graph = JSON.parse(await readFile(new URL('../../server/contract/v2/graph.schema.json', import.meta.url), 'utf8'))
+const buildFiles = ['build-inputs.schema.json', 'build-artifacts.schema.json', 'build.schema.json']
+const builds = await Promise.all(buildFiles.map(async filename => JSON.parse(await readFile(new URL(`../../server/contract/v3/${filename}`, import.meta.url), 'utf8'))))
+
+/** 在内存展开已发布构建分片，禁止从任意外部URL补全类型。 */
+function expandBuild(value) {
+  let data = JSON.stringify(value).replaceAll('../v1/schema.json#/$defs/', '#/$defs/')
+  for (const filename of buildFiles) data = data.replaceAll(`https://twine-realm.local/contract/v3/${filename}#/$defs/`, '#/$defs/')
+  return JSON.parse(data)
+}
 // 类型生成只在内存展开已知离线分片；磁盘上的 schema 仍为唯一字段权威。
 const typeSchema = globalThis.structuredClone(schema)
 for (const [filename, fragment] of [['components.schema.json', components], ['runtime.schema.json', runtime]]) {
@@ -24,6 +33,11 @@ for (const [name, value] of Object.entries(graph.$defs)) {
   typeSchema.$defs[name] = JSON.parse(JSON.stringify(value).replaceAll('../v1/schema.json#/$defs/', '#/$defs/'))
 }
 Object.assign(typeSchema.properties, graph.properties)
+for (const fragment of builds) for (const [name, value] of Object.entries(fragment.$defs)) {
+  if (Object.hasOwn(typeSchema.$defs, name)) throw new Error(`重复的构建类型 ${name}`)
+  typeSchema.$defs[name] = expandBuild(value)
+}
+Object.assign(typeSchema.properties, expandBuild(builds[2].properties))
 const definitionData = await readFile(new URL('../../server/internal/catalog/definitions/mysql-v1.json', import.meta.url), 'utf8')
 const definition = JSON.parse(definitionData)
 const digest = 'sha256:' + createHash('sha256').update(definitionData).digest('hex')
@@ -43,10 +57,12 @@ validator.addSchema(schema)
 validator.addSchema(components)
 validator.addSchema(runtime)
 validator.addSchema(graph)
+for (const fragment of builds) validator.addSchema(fragment)
 validator.addSchema(definition.configurationSchema)
 const references = Object.fromEntries(['Project', 'ProjectList', 'Receipt', 'ErrorResponse', 'SourceObservation', 'SourceReceipt', 'DefinitionCatalog', 'CanvasSnapshot', 'CanvasReceipt', 'RuntimeCommand', 'RuntimeReceipt', 'RuntimeSnapshot', 'RuntimeOperation', 'RuntimeCapability', 'RuntimeEventPage'].map(name => [name, `${schema.$id}#/$defs/${name}`]))
 references.MySQLConfiguration = definition.configurationSchema.$id
 for (const name of ['ServiceContractDocument', 'GraphOperation', 'GraphEditCommand', 'GraphSnapshot', 'GraphReceipt']) references[name] = `${graph.$id}#/$defs/${name}`
+for (const name of ['BuildCommand', 'BuildCancelCommand', 'BuildOperation', 'BuildReceipt', 'BuildSnapshot', 'BuildCapability']) references[name] = `${builds[2].$id}#/$defs/${name}`
 const validators = '/** 由共享 JSON Schema 构建生成；浏览器不执行动态代码编译。 */\n' + standaloneCode(validator, references)
 const declaration = '/** 生成校验器的边界声明；运行时执行同一 schema 生成的检查。 */\nimport type { ValidateFunction } from "ajv"\ndeclare const validators: Record<string, ValidateFunction<unknown>>\nexport = validators\n'
 const configuration = await compile(definition.configurationSchema, 'MySQLConfiguration', { bannerComment: '/** 由离线 MySQL 定义生成，禁止手工修改。 */', style: { singleQuote: true, semi: false } })

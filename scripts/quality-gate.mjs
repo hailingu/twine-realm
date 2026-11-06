@@ -34,7 +34,7 @@ export async function runQualityGate({
       '--test', '--experimental-test-coverage', '--test-coverage-include=scripts/**/*.mjs',
       '--test-coverage-exclude=**/*.node.mjs', '--test-reporter=spec', '--test-reporter-destination=stdout',
       '--test-reporter=lcov', `--test-reporter-destination=${scriptCoverage}`,
-      'scripts/sonar-gate.node.mjs', 'scripts/quality-gate.node.mjs', 'scripts/issue-status.node.mjs', 'scripts/platform-check.node.mjs', 'scripts/check-command.node.mjs', 'scripts/precommit.node.mjs', 'scripts/runtime-check.node.mjs', 'scripts/service-profile.node.mjs'
+      'scripts/sonar-gate.node.mjs', 'scripts/quality-gate.node.mjs', 'scripts/issue-status.node.mjs', 'scripts/platform-check.node.mjs', 'scripts/check-command.node.mjs', 'scripts/precommit.node.mjs', 'scripts/runtime-check.node.mjs', 'scripts/service-profile.node.mjs', 'scripts/build-check.node.mjs'
     ])
     await check(process.execPath, ['scripts/issue-status.mjs'])
     await check('npm', ['audit', '--audit-level=low'])

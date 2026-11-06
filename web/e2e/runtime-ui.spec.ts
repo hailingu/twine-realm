@@ -12,7 +12,8 @@ async function confirmAction(page: Page, label: string): Promise<void> {
 
 test('具名连线与运行事实共存，原键重试和重开保留声明，轮询不覆盖位置草稿', async ({ page, platform, browser, request }) => {
   test.setTimeout(180000)
-  const project = await prepareBindingProject(page, platform, '界面运行恢复项目')
+  const projectName = `界面运行恢复项目-${crypto.randomUUID()}`
+  const project = await prepareBindingProject(page, platform, projectName)
   await declarePorts(page)
   await prepareBinding(page, await project.graph(), 'app_runtime')
   await page.getByRole('button', { name: '确认保存依赖' }).click()
@@ -45,7 +46,7 @@ test('具名连线与运行事实共存，原键重试和重开保留声明，�
   const reopened = await context.newPage()
   try {
     await reopened.goto(platform.url)
-    await reopened.getByRole('button', { name: /界面运行恢复项目/ }).click()
+    await reopened.getByRole('button', { name: projectName }).click()
     await reopened.getByRole('button', { name: '配置声明数据库' }).click()
     await expect(reopened.getByRole('status', { name: 'MySQL运行事实' })).toHaveText('实际运行 · 认证就绪', { timeout: 140000 })
     await expect(reopened.locator('.react-flow__edge')).toHaveCount(1)
@@ -59,6 +60,7 @@ test('具名连线与运行事实共存，原键重试和重开保留声明，�
     await expect(reopened.getByRole('status', { name: '画布保存状态' })).toContainText('布局有未保存的修改')
     const polled = await reopened.waitForResponse(response => response.url() === `${platform.url}/api/v1/projects/${project.id}/runtime` && response.request().method() === 'GET' && response.ok())
     await polled.finished()
+    await expect(reopened.locator('.react-flow__edge')).toHaveCount(1)
     await expect(coordinate).toHaveValue('710')
     await expect(reopened.getByRole('status', { name: '画布保存状态' })).toContainText('布局有未保存的修改')
     await reopened.getByRole('button', { name: '还原布局' }).click()
@@ -73,7 +75,7 @@ test('具名连线与运行事实共存，原键重试和重开保留声明，�
     await expect(reopened.getByRole('status', { name: 'MySQL运行事实' })).toHaveText('实际已停止', { timeout: 30000 })
     await platform.restart()
     await reopened.reload()
-    await reopened.getByRole('button', { name: /界面运行恢复项目/ }).click()
+    await reopened.getByRole('button', { name: projectName }).click()
     await reopened.getByRole('button', { name: '配置声明数据库' }).click()
     await expect(reopened.getByRole('status', { name: 'MySQL运行事实' })).toHaveText('实际已停止')
     await expect(reopened.locator('.react-flow__edge')).toHaveCount(1)

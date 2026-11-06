@@ -13,7 +13,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
-//go:embed v1/schema.json v1/*.schema.json v2/*.schema.json
+//go:embed v1/schema.json v1/*.schema.json v2/*.schema.json v3/*.schema.json
 var files embed.FS
 
 // Load 编译当前公开请求定义；失败会阻止应用启动。
@@ -34,6 +34,7 @@ func Load() (map[string]*jsonschema.Schema, error) {
 	}{
 		{"v1/schema.json", []string{"CreateCommand", "RegisterCommand", "LayoutCommand", "Project", "ProjectList", "Receipt", "ErrorResponse", "PinSourceCommand", "SourceObservation", "SourceReceipt", "MiddlewareCommand", "CanvasLayoutCommand", "DefinitionCatalog", "CanvasSnapshot", "CanvasReceipt", "RuntimeCommand", "RuntimeReceipt", "RuntimeSnapshot", "RuntimeOperation", "RuntimeCapability", "RuntimeEventPage"}},
 		{"v2/graph.schema.json", []string{"ServiceContractDocument", "GraphEditCommand", "GraphSnapshot", "GraphReceipt"}},
+		{"v3/build.schema.json", []string{"BuildCommand", "BuildCancelCommand", "BuildOperation", "BuildReceipt", "BuildSnapshot", "BuildCapability"}},
 	} {
 		for _, name := range group.names {
 			schema, err := compiler.Compile("https://twine-realm.local/contract/" + group.location + "#/$defs/" + name)

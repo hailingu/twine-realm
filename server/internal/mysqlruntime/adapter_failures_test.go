@@ -166,7 +166,7 @@ func TestCanonicalPathCannotIntroduceInterpolation(t *testing.T) {
 	if err := os.Symlink(parent, alias); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := newDirectoryPath(filepath.Join(alias, "runtime"), nil); err == nil {
+	if err := InitializeDirectory(filepath.Join(alias, "runtime"), nil, testEnvironment()); err == nil {
 		t.Fatal("规范路径插值字符被接受")
 	}
 	if _, err := os.Stat(filepath.Join(parent, "runtime")); !os.IsNotExist(err) {

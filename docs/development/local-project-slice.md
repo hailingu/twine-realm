@@ -8,7 +8,7 @@
 
 ## 当前范围
 
-Go 标准 HTTP + `database/sql`，MySQL 9.7.4 LTS 平台元数据库，golang-migrate 版本迁移；React 19 / TypeScript / React Flow 12 投影。用户另已确认首个业务工程组合为 Go + 标准库 `net/http`；其模板待后续切片。不创建或改写导入仓库。
+Go 标准 HTTP + `database/sql`，MySQL 9.7.4 LTS 平台元数据库，golang-migrate 版本迁移；React 19 / TypeScript / React Flow 12 投影。用户另已确认首个业务工程组合为 Go + 标准库 `net/http`；工程包见[模板切片](service-profile-slice.md)，固定源码检查与本地镜像见[构建切片](service-build-slice.md)。不创建或改写导入仓库。
 
 `server/internal/project` 拥有身份、输入和用例规则。它消费的 `Writer` 是**用例明确选择的原子命令端口**：每次 Create / Register / SaveLayout 明确要求聚合与回执共用一个 MySQL 事务；并非行级仓储方法隐式扩展事务。Git 检查在事务前，只读、无数据库锁；没有跨 Git / 元数据库的大事务。
 

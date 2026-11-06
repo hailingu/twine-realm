@@ -4,7 +4,8 @@ import { test } from './platformFixture'
 import { declarePorts, prepareBinding, prepareBindingProject } from './bindingFixture'
 
 test('显式接口、具名拖线、失败重连、删除与平台重启恢复稳定关系身份', async ({ page, platform, browser }) => {
-  const project = await prepareBindingProject(page, platform, '具名端口持久化项目')
+  const projectName = `具名端口持久化项目-${crypto.randomUUID()}`
+  const project = await prepareBindingProject(page, platform, projectName)
   await expect(page.locator('.react-flow__node-service')).toContainText('未定义契约')
   await expect(page.locator('.react-flow__node-service .react-flow__handle')).toHaveCount(0)
   await declarePorts(page)
@@ -44,7 +45,9 @@ test('显式接口、具名拖线、失败重连、删除与平台重启恢复�
   await platform.restart()
   const context = await browser.newContext(); const reopened = await context.newPage()
   try {
-    await reopened.goto(platform.url); await reopened.getByRole('button', { name: /具名端口持久化项目/ }).click()
+    await reopened.goto(platform.url); await reopened.getByRole('button', { name: projectName }).click()
+    await expect(reopened.locator('.react-flow__edge')).toHaveAttribute('data-id', binding.id)
+    await reopened.getByRole('button', { name: '查看显式服务源码版本' }).click()
     await expect(reopened.locator('.react-flow__edge')).toHaveAttribute('data-id', binding.id)
     await expect(reopened.locator('.react-flow__edge-text')).toContainText('app_changed')
     await expect(reopened.locator('.react-flow__node-service .react-flow__handle')).toHaveCount(3)
