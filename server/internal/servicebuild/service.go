@@ -37,7 +37,7 @@ func NewService(commands Commands, queries Queries, sources SourceReader, verifi
 
 // Capability 如实报告显式配置和固定支持组合，不把配置当成构建已通过。
 func (service *Service) Capability() Capability {
-	value := Capability{SchemaVersion: 1, Code: "BUILD_DISABLED", Message: "未启用本机隔离构建适配器，源码与画布仍可使用", Profile: service.catalog.Identity(), ImageReference: ToolchainImage, Policy: DefaultPolicy()}
+	value := Capability{SchemaVersion: 1, Adapter: "disabled", Code: "BUILD_DISABLED", Message: "未启用本机隔离构建适配器，源码、画布与历史构建仍可查询", Profile: service.catalog.Identity(), ImageReference: ToolchainImage, Policy: DefaultPolicy()}
 	if service.driver != nil {
 		value.Enabled, value.Adapter, value.Code, value.Message = true, "local-go-container-v1", "CONFIGURED", "已配置固定Go工具链；每次构建另核实实际环境与检查结果"
 	}

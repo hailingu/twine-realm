@@ -2,6 +2,8 @@
 
 Issue #14 在已保存的服务仓库关联与固定 commit 上建立本地镜像候选。它不生成服务源码、不提交原仓库、不推送镜像或部署业务。Todo 仍只是可替换示例。一期不接入账号、登录或 RBAC。
 
+执行器默认禁用时，能力响应仍符合发布契约（`enabled=false`、`adapter=disabled`、`code=BUILD_DISABLED`），前端仍可查询原操作与历史候选；历史成功不冒充当前可用，也不为查看历史隐式启用构建。
+
 ## 启用与本机边界
 
 默认不启用执行器。第一组合为已发布 `go-net-http-mysql/1.0.0` 工程包、Go 1.27.3 + 标准库 net/http；控制面宿主须为 Mac/Linux 的非 root 可信 OS 用户，Docker 使用明确的本地 Unix socket、Linux daemon 与同 context 的单节点 docker-driver Buildx builder。初始化只核实工具和缓存，不创建业务资源、不自动安装或拉取。

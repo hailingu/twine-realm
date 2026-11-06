@@ -161,6 +161,11 @@ func TestBuildAdmissionAndOriginalReceipt(t *testing.T) {
 	}
 	f.base.reopen(t)
 	attachBuild(t, f.base, nil)
+	capability = decode[servicebuild.Capability](t, call(t, f.base.handler, "GET", "/api/v3/build/capabilities", nil), 200, "BuildCapability")
+	history := f.snapshot(t)
+	if capability.Enabled || capability.Adapter != "disabled" || history.Operation == nil || history.Operation.ID != operationID {
+		t.Fatal("执行器关闭后无法按发布契约查看原操作")
+	}
 	receipt := decode[servicebuild.Receipt](t, call(t, f.base.handler, "GET", "/api/v3/build-mutations/"+f.command.MutationID, nil), 200, "BuildReceipt")
 	if receipt.OperationID != operationID || !receipt.Replayed || f.accept(t, f.command).OperationID != operationID {
 		t.Fatal("重开或禁用导致重复受理")

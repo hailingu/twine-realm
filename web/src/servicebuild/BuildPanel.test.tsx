@@ -1,12 +1,28 @@
 /** 面板只展示当前确认输入，历史候选、未保存草稿和未知提交各自有明确保护。 */
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, expect, it } from 'vitest'
-import { BUILD_CANDIDATE, EMPTY_BUILD, READY_BUILD, RUNNING_BUILD, fakeBuildAPI } from '../testing/buildFixtures'
+import { afterEach, expect, it, vi } from 'vitest'
+import { BUILD_CANDIDATE, BUILD_CAPABILITY, EMPTY_BUILD, READY_BUILD, RUNNING_BUILD, fakeBuildAPI } from '../testing/buildFixtures'
 import { RequestError } from '../project/api'
+import { BUILD_API } from './api'
 import { BuildPanel } from './BuildPanel'
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+
+it('真实客户端校验禁用能力仍显示历史候选，禁用新构建且不误报当前可用', async () => {
+  const disabled = { ...BUILD_CAPABILITY, enabled: false, adapter: 'disabled', code: 'BUILD_DISABLED', message: '未启用执行器，仍可查询历史' }
+  const history = { ...READY_BUILD, candidateCurrent: false, candidateCode: 'BUILD_DISABLED' }
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(input => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+    return Promise.resolve(new Response(JSON.stringify(url.endsWith('/build/capabilities') ? disabled : history)))
+  }))
+  render(<BuildPanel api={BUILD_API} projectId={EMPTY_BUILD.projectId} serviceId={EMPTY_BUILD.serviceId} revision="1" blocked={false} />)
+  expect(await screen.findByText('未启用执行器，仍可查询历史')).toBeVisible()
+  expect(await screen.findByText('历史镜像候选 · 当前尚未确认可用')).toBeVisible()
+  expect(screen.getByRole('button', { name: '检查并构建固定 commit' })).toBeDisabled()
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(screen.queryByText('当前固定输入已通过构建')).toBeNull()
+})
 
 it('配置单证据只显示真实本地内容，不冒称缺失的manifest', async () => {
   const image = BUILD_CANDIDATE.image
