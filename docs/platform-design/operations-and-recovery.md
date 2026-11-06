@@ -1,6 +1,6 @@
 # 运行、授权、资源生命周期与恢复
 
-> **状态：长期原则 + 有界本机实现。** 本地 / 源码 / 组件与依赖声明 / 离线工程模板切片之外，[Issue #12 运行切片](../development/mysql-runtime-slice.md)提供固定 MySQL 的同库受理、执行围栏、实际认证、观测与保留数据恢复。[Issue #14 构建切片](../development/service-build-slice.md)提供固定源码、受限 Go 检查、本地不可变候选及取消 / 失联恢复。其余服务部署、SSE、AI、备份和物理清理仍为目标；本文推荐值由各实现组合验证固定，不能据设计文字直接授权运维。
+> **状态：长期原则 + 有界本机实现。** 本地 / 源码 / 组件与依赖声明 / 离线工程模板切片之外，[Issue #12 运行切片](../development/mysql-runtime-slice.md)提供固定 MySQL 的同库受理、执行围栏、实际认证、观测与保留数据恢复。[Issue #14 构建切片](../development/service-build-slice.md)提供固定源码、受限 Go 检查、本地不可变候选及取消 / 失联恢复。[Issue #16 部署切片](../development/service-deployment-slice.md)提供单个 Go 服务绑定原 MySQL、独立用途秘密 / 迁移 / HTTP 就绪及原计划恢复。SSE、项目聚合停止、版本替换、AI、备份和物理清理仍为目标；本文推荐值由各实现组合验证固定，不能据设计文字直接授权运维。
 
 ## 期望态、实际态与持久操作
 

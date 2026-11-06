@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 1,
+  "projectId": "528773fd-df41-409f-be61-5ccd98c35a83",
+  "serviceId": "3f045001-1c4c-44e0-8454-ab44abd7d6ba",
+  "serviceName": "独立Todo示例",
+  "request": {
+    "baseRevision": "4",
+    "baseGeneration": "0",
+    "candidateId": "18e533a3-3a38-4eed-a720-f7627b5323e9",
+    "bindingId": "347b2f9a-5ef2-4865-8ad4-670e3eb67549",
+    "hostPort": 55892,
+    "configuration": {}
+  },
+  "contract": {
+    "id": "example.service",
+    "version": "1.0.0",
+    "digest": "sha256:baabead8c79a5b03148336f7f1c395f686a99e55e23fe8aa6d15b3962ee3a2be"
+  },
+  "binding": {
+    "id": "347b2f9a-5ef2-4865-8ad4-670e3eb67549",
+    "kind": "databaseDependency",
+    "source": {
+      "componentId": "3f045001-1c4c-44e0-8454-ab44abd7d6ba",
+      "portId": "database"
+    },
+    "target": {
+      "componentId": "9ec5db9f-22dd-46e3-acab-00bf44aeb65d",
+      "portId": "mysql"
+    },
+    "sourceDefinition": {
+      "id": "example.service",
+      "version": "1.0.0",
+      "digest": "sha256:baabead8c79a5b03148336f7f1c395f686a99e55e23fe8aa6d15b3962ee3a2be"
+    },
+    "targetDefinition": {
+      "id": "twine.mysql",
+      "version": "1.0.0",
+      "digest": "sha256:69a8bde84e662836f71d354593de532f4702c6ae5771c022fa37d18b678c255c"
+    },
+    "protocol": "mysql",
+    "contract": "mysql-wire/10",
+    "databaseId": "4f153b87-ca6c-4f36-b1b4-109bd58dc78f",
+    "databaseName": "todo_example",
+    "purpose": "readWrite",
+    "credential": {
+      "id": "5324caa9-35b4-44f7-9a8e-e2e55e0ce438",
+      "version": "1"
+    }
+  },
+  "candidate": {
+    "id": "18e533a3-3a38-4eed-a720-f7627b5323e9",
+    "targetId": "c0adc2b3-ae86-45f4-869f-fc2c1a5b700f",
+    "operationId": "163c1827-8708-4f31-b396-bb078eb268ab",
+    "inputDigest": "sha256:592be98dd220e074effc72e670be1088277a6141b681015a5a46f8c94e72841f",
+    "sourceDigest": "sha256:dedb28ab4e5c0d9f402f5b0a3fd890352cccc9decec7f8c153ef1ffc0ce39a1a",
+    "source": {
+      "projectId": "528773fd-df41-409f-be61-5ccd98c35a83",
+      "projectRevision": "4",
+      "serviceId": "3f045001-1c4c-44e0-8454-ab44abd7d6ba",
+      "repositoryId": "c4635faf-044d-402b-ab70-eff4e619711f",
+      "repositoryPath": "/private/var/folders/fp/9tvpjj394wgbwtcdmtmcl8080000gn/T/TestRealServiceDeploymentCRUDAndRecovery2483822879/001/todo-service",
+      "pinnedCommit": "3943fe57991a6e141c4a657e361d6d90581817ac"
+    },
+    "profile": {
+      "id": "go-net-http-mysql",
+      "version": "1.0.0",
+      "digest": "sha256:695ce86db92c25ff04e85613dd6042445e6340ffc09beab6243b57773bc1c329"
+    },
+    "template": {
+      "id": "minimal-identity",
+      "version": "1.0.0",
+      "digest": "sha256:aa0f6af07d9a52fab1e7521d723a56feb7115db750d89fcc280d272e50c89ab0"
+    },
+    "environment": {
+      "context": "desktop-linux",
+      "daemonId": "2689ef19-7ad5-4995-ab85-c35b71c72632",
+      "dockerVersion": "29.9.2",
+      "buildxVersion": "v0.38.1 0dbe87f36ed472fe36b6796c3f70b4210a731fc5",
+      "builderName": "desktop-linux",
+      "buildkitVersion": "v0.34.0",
+      "imageId": "sha256:b1aac4162249d8364f3e5911ea705fa70c227d0485ef55813c8ff0fe2563311c",
+      "imageReference": "golang:1.27.3@sha256:0c050feb47802ae436b9030833694a0b80160d08e3b3049ad30bf7c9e724e09d",
+      "architecture": "arm64",
+      "operatingSystem": "linux",
+      "bindSourceMode": "desktop-host-mnt-v1",
+      "uid": 501,
+      "gid": 20,
+      "endpointDigest": "sha256:6427f2c7b4bdd5c64328e4406d66a7377b7f0a3de40df383923350d158ba68a8"
+    },
+    "policy": {
+      "id": "go-container-local-v1",
+      "version": 1,
+      "totalSeconds": 480,
+      "commandSeconds": 180,
+      "sourceBytes": 67108864,
+      "sourceFiles": 4096,
+      "binaryBytes": 134217728,
+      "memoryMiB": 4096,
+      "tmpfsMiB": 3072,
+      "pids": 256,
+      "cpus": 2
+    },
+    "checks": [
+      {
+        "name": "preflight",
+        "state": "succeeded",
+        "toolVersion": "docker 29.9.2",
+        "outputDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "completedAt": "2026-11-06T07:25:56.155548Z"
+      },
+      {
+        "name": "source",
+        "state": "succeeded",
+        "toolVersion": "git version 2.54.0 (Apple Git-157)",
+        "outputDigest": "sha256:7e58ed47258d94af6271f0851835e1ae5a3d196c5f7be9a67c1b281c2c4bcfbc",
+        "completedAt": "2026-11-06T07:25:56.447947Z"
+      },
+      {
+        "name": "documents",
+        "state": "succeeded",
+        "toolVersion": "go-net-http-mysql/1.0.0",
+        "outputDigest": "sha256:34e7b034d9f26836782a2a466fe1da4185eccfc92e8f6ff30e187c1077fd335a",
+        "completedAt": "2026-11-06T07:25:56.468344Z"
+      },
+      {
+        "name": "sandbox",
+        "state": "succeeded",
+        "toolVersion": "docker 29.9.2",
+        "outputDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "completedAt": "2026-11-06T07:25:58.246369Z"
+      },
+      {
+        "name": "dependencies",
+        "state": "succeeded",
+        "toolVersion": "go1.27.3",
+        "outputDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "completedAt": "2026-11-06T07:26:00.444275Z"
+      },
+      {
+        "name": "offline",
+        "state": "succeeded",
+        "toolVersion": "docker 29.9.2",
+        "outputDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "completedAt": "2026-11-06T07:26:01.299006Z"
+      },
+      {
+        "name": "toolchain",
+        "state": "succeeded",
+        "toolVersion": "go1.27.3",
+        "outputDigest": "sha256:89097cdf07b76b2c4ea6ce2879fb9d849449c537c82b2b6422cbe1254f8e984c",
+        "completedAt": "2026-11-06T07:26:01.43973Z"
+      },
+      {
+        "name": "format",
+        "state": "succeeded",
+        "toolVersion": "go1.27.3",
+        "outputDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "completedAt": "2026-11-06T07:26:01.580061Z"
+      },
+      {
+        "name": "module",
+        "state": "succeeded",
+        "toolVersion": "go1.27.3",
+        "outputDigest": "sha256:b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+        "completedAt": "2026-11-06T07:26:01.72568Z"
+      },
+      {
+        "name": "vet",
+        "state": "succeeded",
+        "toolVersion": "go1.27.3",
+        "outputDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "completedAt": "2026-11-06T07:26:09.739191Z"
+      },
+      {
+        "name": "test",
+        "state": "succeeded",
+        "toolVersion": "go1.27.3",
+        "outputDigest": "sha256:ae33a19b4610f1cc9079811a6b4a983d0723dcb24198ff5d71d7c29a9c0ddbe7",
+        "completedAt": "2026-11-06T07:26:22.467534Z"
+      },
+      {
+        "name": "build",
+        "state": "succeeded",
+        "toolVersion": "go1.27.3",
+        "outputDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "completedAt": "2026-11-06T07:26:29.194826Z"
+      },
+      {
+        "name": "image",
+        "state": "succeeded",
+        "toolVersion": "v0.38.1 0dbe87f36ed472fe36b6796c3f70b4210a731fc5 / v0.34.0",
+        "outputDigest": "sha256:b12e5a50fc68c9469e597f803ae5aab3c43756da3a9f5ec7a4680d2742c91589",
+        "completedAt": "2026-11-06T07:26:30.816594Z"
+      }
+    ],
+    "migrations": [
+      {
+        "path": "internal/schema/migrations/000001_identity.down.sql",
+        "digest": "sha256:9b84e338e24a3ef4ee191c6d8b7b0d4ae07c6fdf49ef9694973da589f733003f"
+      },
+      {
+        "path": "internal/schema/migrations/000001_identity.up.sql",
+        "digest": "sha256:d7664420c0281731be2a77a3c166fbc8fe06d2edc88f2b627237592dae31e437"
+      },
+      {
+        "path": "internal/schema/migrations/000002_todos.down.sql",
+        "digest": "sha256:4815da9af849c87851dc2cef4820f277b9f37b7e6ad50a928a342c735a40cce5"
+      },
+      {
+        "path": "internal/schema/migrations/000002_todos.up.sql",
+        "digest": "sha256:e521ec2c76e7c50e8b449de73d8469e246a46dea2c561b624982d2fe308b3bf4"
+      }
+    ],
+    "migrationDigest": "sha256:edfe06059e3d99b425120b788d28f7751336fee1b05340f927ac5ad159ba56a5",
+    "image": {
+      "id": "sha256:70d5fb35027b90118d1b02cdb7b15469a07e5e092cd684c7d7f4226bccfdb471",
+      "idKind": "config",
+      "exportDigest": "sha256:70d5fb35027b90118d1b02cdb7b15469a07e5e092cd684c7d7f4226bccfdb471",
+      "configDigest": "sha256:70d5fb35027b90118d1b02cdb7b15469a07e5e092cd684c7d7f4226bccfdb471",
+      "tag": "tr-build-23a7a1670ee0c079b3d4f9e097a3204d-candidate:local",
+      "binaryDigest": "sha256:fd805172c094a54d6a4b312c667abb0bbf3436c1920d3fc4682db15992e6462d"
+    },
+    "createdAt": "2026-11-06T07:26:30.821618Z"
+  },
+  "database": {
+    "resourceId": "4a67fcf0-7ffe-4d1c-a9ed-f31c5a3664f4",
+    "installationId": "4c45e733-46a1-4067-a4a8-82847ec5dbdf",
+    "daemonId": "2689ef19-7ad5-4995-ab85-c35b71c72632",
+    "componentId": "9ec5db9f-22dd-46e3-acab-00bf44aeb65d",
+    "generation": "1",
+    "resourceDigest": "sha256:49c2d79bd5f25f3c723d5e4220aaa18891b26657411338c8bbeaba3c69aef327",
+    "configurationHash": "sha256:a916f439414fb43585940e5a5c909b8e5e77bad6d60c184c1437714e0b26af5b",
+    "serverUuid": "4b7cad94-d9b3-11f1-be91-b2554f42cb99",
+    "network": "tr-c2ecf9e72f184c8a55d858d74545a97c-net",
+    "networkCidr": "172.21.0.0/16",
+    "volume": "tr-c2ecf9e72f184c8a55d858d74545a97c-data",
+    "container": "tr-c2ecf9e72f184c8a55d858d74545a97c-mysql",
+    "image": "mysql:9.7.4@sha256:df90258da46f6e7ff8574ff84f17618aba0765cac749928299c69fd4e7cb8ad8"
+  },
+  "environment": {
+    "context": "desktop-linux",
+    "daemonId": "2689ef19-7ad5-4995-ab85-c35b71c72632",
+    "dockerVersion": "29.9.2",
+    "composeVersion": "5.6.1",
+    "architecture": "arm64",
+    "bindSourceMode": "desktop-host-mnt-v1",
+    "uid": 501,
+    "gid": 20,
+    "buildInstallationId": "adb40251-2dcf-4cae-b468-0aaaa97087af",
+    "runtimeInstallationId": "4c45e733-46a1-4067-a4a8-82847ec5dbdf"
+  },
+  "policy": {
+    "id": "go-mysql-compose-v1",
+    "version": 1,
+    "totalSeconds": 360,
+    "migrationSeconds": 120,
+    "readinessSeconds": 120,
+    "commandSeconds": 45,
+    "leaseSeconds": 420,
+    "memoryMiB": 512,
+    "tmpfsMiB": 64,
+    "pids": 128,
+    "cpus": 1
+  },
+  "resources": {
+    "composeProject": "tr-c2ecf9e72f184c8a55d858d74545a97c-mysql",
+    "application": "tr-c7ddbce227445fc94dc56113-service",
+    "migration": "tr-c7ddbce227445fc94dc56113-migration",
+    "ingressNetwork": "tr-c7ddbce227445fc94dc56113-http",
+    "applicationUser": "tra_3558a0908bae419051eeeafa",
+    "migrationUser": "trm_3558a0908bae419051eeeafa",
+    "accountHost": "172.21.0.0/255.255.0.0"
+  },
+  "runtimeDigest": "sha256:7aba057222ead0d2431b02e4fd2bab30fcb2dc4ec083a2e0cce7307e47a7128a",
+  "digest": "sha256:453ed34ad57bcf6b2bb4b05dba1cfabafd5ebbdfdc5ea50ac7bb0e1a4c182455"
+}

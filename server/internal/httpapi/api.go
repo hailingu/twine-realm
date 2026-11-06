@@ -17,6 +17,7 @@ import (
 	"github.com/hailingu/twine-realm/server/internal/mysqlruntime"
 	"github.com/hailingu/twine-realm/server/internal/project"
 	"github.com/hailingu/twine-realm/server/internal/servicebuild"
+	"github.com/hailingu/twine-realm/server/internal/servicedeploy"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
@@ -27,12 +28,14 @@ type API struct {
 	logger  *slog.Logger
 	runtime *mysqlruntime.Service
 	build   *servicebuild.Service
+	deploy  *servicedeploy.Service
 }
 
 // Features 显式装配独立能力，未启用的执行器不会隐式产生本机副作用。
 type Features struct {
 	Runtime *mysqlruntime.Service
 	Build   *servicebuild.Service
+	Deploy  *servicedeploy.Service
 }
 
 // New 装配路由和最小本机防护，Host/Origin 来源必须由启动配置确定。
@@ -47,6 +50,7 @@ func New(service *project.Service, host string, origins []string, webDirectory s
 	api := &API{service: service, schemas: schemas, logger: logger}
 	if len(features) == 1 {
 		api.runtime, api.build = features[0].Runtime, features[0].Build
+		api.deploy = features[0].Deploy
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +76,7 @@ func New(service *project.Service, host string, origins []string, webDirectory s
 	mux.HandleFunc("GET /api/v1/mutations/{id}", api.receipt)
 	api.runtimeRoutes(mux)
 	api.buildRoutes(mux)
+	api.deploymentRoutes(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		api.failure(w, project.Failure("NOT_FOUND", "接口不存在"))
 	})
@@ -163,7 +168,7 @@ func (api *API) decode(w http.ResponseWriter, r *http.Request, name string, targ
 		return project.Failure("INVALID_REQUEST", "请求必须为有效 JSON")
 	}
 	if err := api.schemas[name].Validate(unknown); err != nil {
-		return project.Failure("INVALID_REQUEST", "请求不符合版本一契约，请检查必填字段与取值")
+		return project.Failure("INVALID_REQUEST", "请求不符合已发布契约，请检查必填字段与取值")
 	}
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
@@ -199,7 +204,7 @@ func (api *API) failure(w http.ResponseWriter, err error) {
 	if errors.As(err, &domain) {
 		failure = domain
 		switch domain.Code {
-		case "PROJECT_NOT_FOUND", "SERVICE_NOT_FOUND", "COMPONENT_NOT_FOUND", "BINDING_NOT_FOUND", "MUTATION_NOT_FOUND", "NOT_FOUND", "RUNTIME_OPERATION_NOT_FOUND", "BUILD_OPERATION_NOT_FOUND":
+		case "PROJECT_NOT_FOUND", "SERVICE_NOT_FOUND", "COMPONENT_NOT_FOUND", "BINDING_NOT_FOUND", "MUTATION_NOT_FOUND", "NOT_FOUND", "RUNTIME_OPERATION_NOT_FOUND", "BUILD_OPERATION_NOT_FOUND", "DEPLOY_OPERATION_NOT_FOUND":
 			status = http.StatusNotFound
 		case "DUPLICATE_REPOSITORY", "DUPLICATE_BINDING", "CONTRACT_VERSION_CONFLICT", "REVISION_CONFLICT", "IDEMPOTENCY_CONFLICT", "DEFINITION_CONFLICT", "RUNTIME_GENERATION_CONFLICT", "RUNTIME_COMPONENT_CONFLICT", "RUNTIME_CONFIGURATION_LOCKED", "RUNTIME_RETRY_CONFLICT", "RUNTIME_BUSY", "RUNTIME_INSTALLATION_CONFLICT":
 			status = http.StatusConflict
@@ -207,7 +212,9 @@ func (api *API) failure(w http.ResponseWriter, err error) {
 			status = http.StatusServiceUnavailable
 		case "BUILD_GENERATION_CONFLICT", "BUILD_INSTALLATION_CONFLICT", "BUILD_OPERATION_CONFLICT", "BUILD_VERSION_CONFLICT", "BUILD_BUSY", "BUILD_RETRY_CONFLICT", "BUILD_RECOVERY_REQUIRED", "BUILD_SOURCE_CHANGED":
 			status = http.StatusConflict
-		case "RUNTIME_DISABLED", "BUILD_DISABLED":
+		case "DEPLOY_BUSY", "DEPLOY_PLAN_CHANGED", "DEPLOY_GENERATION_CONFLICT", "DEPLOY_RETRY_CONFLICT", "DEPLOY_DATABASE_CHANGED", "DEPLOY_SOURCE_CHANGED", "DEPLOY_REPLACEMENT_UNSUPPORTED", "DEPLOY_SERVICE_LIMIT":
+			status = http.StatusConflict
+		case "RUNTIME_DISABLED", "BUILD_DISABLED", "DEPLOY_DISABLED":
 			status = http.StatusServiceUnavailable
 		case "FORBIDDEN":
 			status = http.StatusForbidden

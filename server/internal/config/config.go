@@ -21,6 +21,7 @@ type Config struct {
 	RuntimeDirectory string
 	BuildAdapter     string
 	BuildDirectory   string
+	DeployAdapter    string
 }
 
 // Load 拒绝外部监听和泛化来源，不读取或建立用户账号。
@@ -28,6 +29,7 @@ func Load() (Config, error) {
 	value := Config{Address: os.Getenv("TWINE_ADDRESS"), DSN: os.Getenv("TWINE_DATABASE_DSN"), WebDirectory: os.Getenv("TWINE_WEB_DIRECTORY")}
 	value.RuntimeAdapter, value.RuntimeDirectory = os.Getenv("TWINE_RUNTIME_ADAPTER"), os.Getenv("TWINE_RUNTIME_DIRECTORY")
 	value.BuildAdapter, value.BuildDirectory = os.Getenv("TWINE_BUILD_ADAPTER"), os.Getenv("TWINE_BUILD_DIRECTORY")
+	value.DeployAdapter = os.Getenv("TWINE_DEPLOY_ADAPTER")
 	if err := validateAdapters(value); err != nil {
 		return value, err
 	}
@@ -70,6 +72,9 @@ func loopback(address string) bool {
 
 // validateAdapters 把运行与构建显式启用规则集中校验，不改变缺省禁用语义。
 func validateAdapters(value Config) error {
+	if value.DeployAdapter != "" && (value.DeployAdapter != "go-mysql-compose-v1" || value.BuildAdapter != "local-go-container-v1" || value.RuntimeAdapter != "file-secrets-v1") {
+		return fmt.Errorf("业务部署必须显式选择go-mysql-compose-v1并启用原构建和MySQL运行适配器")
+	}
 	if value.BuildAdapter != "" || value.BuildDirectory != "" {
 		if value.BuildAdapter != "local-go-container-v1" || value.BuildDirectory == "" {
 			return fmt.Errorf("构建仅接受显式local-go-container-v1与独立私有构建目录组合")

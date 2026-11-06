@@ -106,7 +106,7 @@ func (driver *Driver) prepareCompose(ctx context.Context, resource Resource) err
 	if err := driver.ensureMaterial(prefix+"compose.env", []byte{}); err != nil {
 		return err
 	}
-	_, err = driver.execute(ctx, driver.composeArguments(resource, "config", "--quiet")...)
+	_, err = driver.composeCommand(ctx, resource, "config", "--quiet")
 	return err
 }
 

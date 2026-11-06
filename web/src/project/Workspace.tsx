@@ -14,9 +14,11 @@ import { GraphInspector } from './GraphInspector'
 import { bindingCandidate, type BindingCandidate } from './graphModel'
 import type { BuildAPI } from '../servicebuild/api'
 import { BuildPanel } from '../servicebuild/BuildPanel'
+import { DeploymentPanel } from '../servicedeploy/DeploymentPanel'
+import type { DeploymentAPI } from '../servicedeploy/api'
 
 /** @param props 初始确认项目、HTTP 端口与退出命令 @returns 服务登记和布局工作区。 */
-export function Workspace({ initial, initialCanvas, initialGraph, api, runtimeApi, buildApi, onClose }: Readonly<{ initial: Project; initialCanvas?: CanvasState; initialGraph?: GraphState; api: ProjectAPI; runtimeApi?: RuntimeAPI; buildApi?: BuildAPI; onClose: () => void }>) {
+export function Workspace({ initial, initialCanvas, initialGraph, api, runtimeApi, buildApi, deploymentApi, onClose }: Readonly<{ initial: Project; initialCanvas?: CanvasState; initialGraph?: GraphState; api: ProjectAPI; runtimeApi?: RuntimeAPI; buildApi?: BuildAPI; deploymentApi?: DeploymentAPI; onClose: () => void }>) {
   const workspace = useWorkspace(initial, api, initialCanvas, initialGraph)
   const runtime = useRuntime(runtimeApi, initial.id)
   const [path, setPath] = useState('')
@@ -48,6 +50,7 @@ export function Workspace({ initial, initialCanvas, initialGraph, api, runtimeAp
       {selectedMySQL && <RuntimePanel key={`runtime-${selectedMySQL.id}`} projectId={snapshot.id} revision={snapshot.revision} node={selectedMySQL} runtime={runtime} api={runtimeApi} blocked={blocked || dirty} />}
       {selected && <SourceVersionPanel key={selected.id} projectId={snapshot.id} revision={snapshot.revision} node={selected} api={api} saved={workspace.sources[selected.id]} blocked={blocked} dirty={dirty} onPin={commit => { workspace.pin(selected.id, commit) }} />}
       {selected && <BuildPanel key={`build-${selected.id}`} api={buildApi} projectId={snapshot.id} serviceId={selected.id} revision={snapshot.revision} blocked={blocked || dirty} />}
+      {selected && <DeploymentPanel key={`deployment-${selected.id}`} api={deploymentApi} buildApi={buildApi} projectId={snapshot.id} serviceId={selected.id} revision={snapshot.revision} bindings={canvas.bindings} blocked={blocked || dirty} />}
       <GraphInspector project={snapshot} graph={canvas} blocked={blocked || dirty} selectedId={contractId} candidate={candidate} onSelect={setContractId} onCandidate={setCandidate} onEdit={workspace.editGraph} />
       <footer className="inspector-foot">项目 ID <code>{snapshot.id}</code></footer>
     </aside></div>
