@@ -1,5 +1,5 @@
 /** 工作区拥有持久运行的轮询与原请求恢复，所有异步完成都检查会话和请求归属。 */
-import { useEffect, useReducer, useRef } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import type { RuntimeCommand, RuntimeReceipt } from '../contract/generated'
 import { RequestError } from '../project/api'
 import type { RuntimeAPI } from './api'
@@ -21,6 +21,7 @@ export function useRuntime(api: RuntimeAPI | undefined, projectId: string) {
   const managed = projection?.managed === true
   const projected = projection?.snapshot
   const [state, dispatch] = useReducer(runtimeReducer, undefined, initialRuntime)
+  const [capabilityError, setCapabilityError] = useState<string | null>(null)
   const lifetime = useRef<AbortController | null>(null)
   const active = useRef<Pending | null>(null)
   const inFlight = useRef(false)
@@ -34,9 +35,13 @@ export function useRuntime(api: RuntimeAPI | undefined, projectId: string) {
         const [capability, value] = await Promise.all([api.capability(controller.signal), managed ? Promise.resolve(null) : api.snapshot(projectId, controller.signal)])
         if (!controller.signal.aborted) {
           if (value && value.projectId !== projectId) throw new Error('项目投影归属不一致')
+          setCapabilityError(null)
           dispatch({ type: 'capability', value: capability }); if (value) dispatch({ type: 'snapshot', value })
         }
-      } catch (error) { if (!controller.signal.aborted) dispatch({ type: 'readFailed', message: message(error) }) }
+      } catch (error) { if (!controller.signal.aborted) {
+        if (managed) setCapabilityError(message(error))
+        else dispatch({ type: 'readFailed', message: message(error) })
+      } }
       finally { if (!controller.signal.aborted) { dispatch({ type: 'clock', now: Date.now() }); timer = window.setTimeout(() => { void poll() }, 2000) } }
     }
     // poll 自己持有拒绝通道和计时器，卸载只终止客户端读取，不发送取消或停止目标。
@@ -72,7 +77,7 @@ export function useRuntime(api: RuntimeAPI | undefined, projectId: string) {
     finally { if (lifetime.current?.signal === signal) inFlight.current = false }
   }
   return {
-    state: managed ? { ...state, now: projection.now, readError: projection.error || state.readError } : state,
+    state: managed ? { ...state, now: projection.now, readError: projection.error || capabilityError || state.readError } : state,
     run(componentId: string, revision: string, desired: 'running' | 'stopped') {
       if (!api || active.current || !state.snapshot || !state.capability?.enabled) return
       const command: RuntimeCommand = { mutationId: crypto.randomUUID(), baseRevision: revision, baseGeneration: state.snapshot.generation, desired, ...(state.snapshot.operation ? { retryOf: state.snapshot.operation.id } : {}) }
