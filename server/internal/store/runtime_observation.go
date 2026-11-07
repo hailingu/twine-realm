@@ -115,6 +115,8 @@ func recordRuntimeObservation(ctx context.Context, tx *sql.Tx, instance *runtime
 		if err := appendRuntimeEvent(ctx, tx, instance.projectID, instance.operationID, "observed", change.code, now); err != nil {
 			return false, err
 		}
+	} else if err := appendDomainStateEvent(ctx, tx, instance.projectID, "runtime", instance.operationID); err != nil {
+		return false, err
 	}
 	return change.conflict, nil
 }

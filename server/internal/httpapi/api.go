@@ -16,6 +16,7 @@ import (
 	"github.com/hailingu/twine-realm/server/contract"
 	"github.com/hailingu/twine-realm/server/internal/mysqlruntime"
 	"github.com/hailingu/twine-realm/server/internal/project"
+	"github.com/hailingu/twine-realm/server/internal/projectstate"
 	"github.com/hailingu/twine-realm/server/internal/servicebuild"
 	"github.com/hailingu/twine-realm/server/internal/servicedeploy"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -29,6 +30,8 @@ type API struct {
 	runtime *mysqlruntime.Service
 	build   *servicebuild.Service
 	deploy  *servicedeploy.Service
+	state   *projectstate.Service
+	streams *stateConnections
 }
 
 // Features 显式装配独立能力，未启用的执行器不会隐式产生本机副作用。
@@ -36,6 +39,7 @@ type Features struct {
 	Runtime *mysqlruntime.Service
 	Build   *servicebuild.Service
 	Deploy  *servicedeploy.Service
+	State   *projectstate.Service
 }
 
 // New 装配路由和最小本机防护，Host/Origin 来源必须由启动配置确定。
@@ -47,10 +51,11 @@ func New(service *project.Service, host string, origins []string, webDirectory s
 	if err != nil {
 		return nil, err
 	}
-	api := &API{service: service, schemas: schemas, logger: logger}
+	api := &API{service: service, schemas: schemas, logger: logger, streams: &stateConnections{projects: map[string]int{}}}
 	if len(features) == 1 {
 		api.runtime, api.build = features[0].Runtime, features[0].Build
 		api.deploy = features[0].Deploy
+		api.state = features[0].State
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +82,7 @@ func New(service *project.Service, host string, origins []string, webDirectory s
 	api.runtimeRoutes(mux)
 	api.buildRoutes(mux)
 	api.deploymentRoutes(mux)
+	api.stateRoutes(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		api.failure(w, project.Failure("NOT_FOUND", "接口不存在"))
 	})
@@ -214,8 +220,12 @@ func (api *API) failure(w http.ResponseWriter, err error) {
 			status = http.StatusConflict
 		case "DEPLOY_BUSY", "DEPLOY_PLAN_CHANGED", "DEPLOY_GENERATION_CONFLICT", "DEPLOY_RETRY_CONFLICT", "DEPLOY_DATABASE_CHANGED", "DEPLOY_SOURCE_CHANGED", "DEPLOY_REPLACEMENT_UNSUPPORTED", "DEPLOY_SERVICE_LIMIT":
 			status = http.StatusConflict
-		case "RUNTIME_DISABLED", "BUILD_DISABLED", "DEPLOY_DISABLED":
+		case "RUNTIME_DISABLED", "BUILD_DISABLED", "DEPLOY_DISABLED", "STATE_DISABLED":
 			status = http.StatusServiceUnavailable
+		case "STATE_CURSOR_EXPIRED", "STATE_CURSOR_AHEAD", "STATE_EVENT_GAP":
+			status = http.StatusConflict
+		case "STATE_SNAPSHOT_LIMIT":
+			status = http.StatusRequestEntityTooLarge
 		case "FORBIDDEN":
 			status = http.StatusForbidden
 		case "UNSUPPORTED_MEDIA_TYPE":

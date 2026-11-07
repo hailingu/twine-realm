@@ -3,13 +3,15 @@ import { useState } from 'react'
 import type { DatabaseBinding, DeployPlan } from '../contract/generated'
 import type { BuildAPI } from '../servicebuild/api'
 import type { DeploymentAPI } from './api'
-import { terminalDeployment } from './model'
+import { recentDeployment, terminalDeployment } from './model'
 import { useDeployment } from './useDeployment'
+import { useStateProjection } from '../projectstate/Projection'
 
 /** @param props 已保存声明与独立服务会话 @returns 部署审阅、进度、原键恢复和真实业务入口。 */
 export function DeploymentPanel({ api, buildApi, projectId, serviceId, revision, bindings, blocked }: Readonly<{ api: DeploymentAPI | undefined; buildApi: BuildAPI | undefined; projectId: string; serviceId: string; revision: string; bindings: DatabaseBinding[]; blocked: boolean }>) {
   const deployment = useDeployment(api, buildApi, projectId, serviceId)
   const [port, setPort] = useState('8081')
+  const projection = useStateProjection()
   const { snapshot, capability, preview, receipt, submission, readError } = deployment
   const binding = bindings.filter(value => value.source.componentId === serviceId)
   const operation = snapshot?.operation
@@ -17,7 +19,8 @@ export function DeploymentPanel({ api, buildApi, projectId, serviceId, revision,
   const busy = !!operation && !terminalDeployment(operation.state)
   const disabled = blocked || pending || busy || !capability?.enabled || !!readError
   const portNumber = Number(port)
-  const ready = snapshot?.freshness === 'fresh' && !readError && snapshot.observation?.ready
+  const recent = !projection?.managed || recentDeployment(snapshot, projection.now)
+  const ready = recent && snapshot?.freshness === 'fresh' && !readError && snapshot.observation?.ready
   const reviewCurrent = preview?.request.baseRevision === revision
   return <section className="source-panel" aria-label="单服务MySQL部署">
     <div className="section-heading"><h3>部署到本机</h3><span>服务 + MySQL</span></div>
@@ -36,7 +39,7 @@ export function DeploymentPanel({ api, buildApi, projectId, serviceId, revision,
       {operation && <><p>{operation.message}</p><ol aria-label="部署步骤">{operation.steps.map(step => <li key={step.name}>{stepLabel(step.name)}：{stateLabel(step.state)}{step.code ? ` · ${step.code}` : ''}</li>)}</ol><small>操作 <code>{operation.id}</code> · 版本 {operation.version}</small></>}
       {submission?.phase === 'sending' && <p>正在核实部署受理结果…</p>}
       {submission?.phase === 'unknown' && <div className="recovery" role="alert"><strong>请核实原部署请求</strong><p>{submission.message}</p><button type="button" onClick={() => { deployment.verify() }}>核实原部署请求</button><button type="button" onClick={() => { deployment.retry() }}>重试原部署请求</button><small>保持原计划和相同请求身份。</small></div>}
-      {snapshot?.observation && <p>运行 {snapshot.observation.running ? '是' : '否'} · 存活 {snapshot.observation.healthy ? '是' : '否'} · 就绪 {ready ? '已确认' : '未确认'} · {snapshot.freshness === 'fresh' && !readError ? '近期采集' : '状态需核实'}</p>}
+      {snapshot?.observation && <p>运行 {snapshot.observation.running ? '是' : '否'} · 存活 {snapshot.observation.healthy ? '是' : '否'} · 就绪 {ready ? '已确认' : '未确认'} · {recent && snapshot.freshness === 'fresh' && !readError ? '近期采集' : '状态需核实'} · 采集 {snapshot.observation.observedAt}</p>}
       {snapshot?.observationCode && <p role="alert">当前采集：{snapshot.observationCode}。上次事实保留。</p>}
       {ready && snapshot.observation && <a className="primary" href={snapshot.observation.entryUrl} target="_blank" rel="noopener noreferrer">打开业务入口 ↗</a>}
     </>}

@@ -68,6 +68,12 @@ export type BuildImage1 =
       manifestMediaType:
         'application/vnd.oci.image.index.v1+json' | 'application/vnd.docker.distribution.manifest.list.v2+json'
     }
+/**
+ * 仅同库元数据，不声明外部Git/Docker仍可用；另经v3精确匹配核实。
+ */
+export type StateBuildSnapshot = BuildSnapshot & {
+  candidateCurrent?: false
+}
 
 /**
  * 本地项目登记与增量源码追溯的权威契约；原 Project/Repository/Receipt 保持不变
@@ -140,6 +146,10 @@ export interface Contract {
   deployReceipt?: DeployReceipt
   deploySnapshot?: DeploySnapshot
   deployCapability?: DeployCapability
+  stateSnapshot?: StateSnapshot
+  stateEvent?: StateEvent
+  stateCaughtUp?: StateCaughtUp
+  stateResync?: StateResync
 }
 /**
  * 版本一Position契约
@@ -1061,4 +1071,62 @@ export interface DeployCapability {
   code: string
   message: string
   policy: DeployPolicy
+}
+export interface StateSnapshot {
+  schemaVersion: 1
+  project: Project
+  graph: GraphState
+  runtime: RuntimeSnapshot
+  /**
+   * @maxItems 500
+   */
+  builds: StateBuildSnapshot[]
+  /**
+   * @maxItems 500
+   */
+  deployments: DeploySnapshot[]
+  cursor: string
+  replayFloor: string
+  capturedAt: string
+  policy: StatePolicy
+}
+export interface StatePolicy {
+  heartbeatSeconds: 15
+  idleSeconds: 45
+  staleSeconds: 20
+  retentionSeconds: 86400
+  maxEvents: 100000
+  pageSize: 200
+  maxFrameBytes: 4096
+  maxSnapshotBytes: 67108864
+  maxConnections: 16
+  maxProjectConnections: 4
+  retrySeconds: 2
+}
+export interface StateEvent {
+  schemaVersion: 1
+  id: string
+  projectId: string
+  sequence: string
+  scope: 'project' | 'runtime' | 'build' | 'deployment'
+  revision: string
+  reference: StateReference | null
+  occurredAt: string
+}
+export interface StateReference {
+  serviceId?: string
+  generation: string
+  operationId: string
+  operationVersion: string
+  execution: string
+}
+export interface StateCaughtUp {
+  schemaVersion: 1
+  projectId: string
+  cursor: string
+}
+export interface StateResync {
+  schemaVersion: 1
+  projectId: string
+  code: 'STATE_CURSOR_EXPIRED' | 'STATE_CURSOR_AHEAD' | 'STATE_EVENT_GAP'
 }

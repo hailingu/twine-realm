@@ -24,6 +24,7 @@ import (
 	"github.com/hailingu/twine-realm/server/internal/gitworkspace"
 	"github.com/hailingu/twine-realm/server/internal/httpapi"
 	"github.com/hailingu/twine-realm/server/internal/project"
+	"github.com/hailingu/twine-realm/server/internal/projectstate"
 	"github.com/hailingu/twine-realm/server/internal/store"
 )
 
@@ -70,7 +71,7 @@ func (f *fixture) reopen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.handler, err = httpapi.New(project.NewService(database, database, database, inspector, definitions), host, []string{"http://" + host}, t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	f.handler, err = httpapi.New(project.NewService(database, database, database, inspector, definitions), host, []string{"http://" + host}, t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)), httpapi.Features{State: projectstate.NewService(database)})
 	if err != nil {
 		t.Fatal(err)
 	}

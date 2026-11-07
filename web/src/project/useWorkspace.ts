@@ -4,8 +4,8 @@ import type { CanvasReceipt, CanvasState, GraphOperation, GraphReceipt, GraphSna
 import { RequestError, type ProjectAPI } from './api'
 import { isDirty, movePosition, positionsOf, rebasePositions, type PendingRequest, type SaveState } from './model'
 
-interface WorkspaceState { snapshot: Project; canvas: GraphState; draft: ReturnType<typeof positionsOf>; save: SaveState; sources: Record<string, SourceVersion> }
-type Action = { kind: 'accepted'; value: Project; source: SourceVersion | null; canvas: CanvasState | null; graph: GraphState | null } | { kind: 'save'; value: SaveState } | { kind: 'move'; id: string; position: Position } | { kind: 'rebase'; value: GraphSnapshot } | { kind: 'discard' }
+interface WorkspaceState { snapshot: Project; canvas: GraphState; draft: ReturnType<typeof positionsOf>; save: SaveState; sources: Record<string, SourceVersion>; remote: GraphSnapshot | null }
+type Action = { kind: 'accepted'; value: Project; source: SourceVersion | null; canvas: CanvasState | null; graph: GraphState | null } | { kind: 'save'; value: SaveState } | { kind: 'move'; id: string; position: Position } | { kind: 'rebase'; value: GraphSnapshot } | { kind: 'discard' } | { kind: 'external'; value: GraphSnapshot; protect: boolean } | { kind: 'applyRemote' }
 type AcceptedReceipt = Receipt | SourceReceipt | CanvasReceipt | GraphReceipt
 /** 缺省集合只参与不可变状态初始化，不在参数默认表达式中创建可变对象。 */
 const EMPTY_GRAPH: GraphState = { schemaVersion: 2, middlewares: [], serviceContracts: [], bindings: [] }
@@ -20,14 +20,33 @@ function confirmedGraph(previous: GraphState, canvas: CanvasState | null, graph:
 function reduce(state: WorkspaceState, action: Action): WorkspaceState {
   switch (action.kind) {
     case 'accepted': {
+      if (BigInt(action.value.revision) < BigInt(state.snapshot.revision)) return { ...state, save: { kind: 'ready' } }
       const graph = confirmedGraph(state.canvas, action.canvas, action.graph)
-      return { snapshot: action.value, canvas: graph, draft: positionsOf(action.value, graph), save: { kind: 'ready' }, sources: action.source ? { ...state.sources, [action.source.serviceId]: action.source } : state.sources }
+      return { ...state, snapshot: action.value, canvas: graph, draft: positionsOf(action.value, graph), save: { kind: 'ready' }, sources: action.source ? { ...state.sources, [action.source.serviceId]: action.source } : state.sources, remote: state.remote && BigInt(state.remote.project.revision) > BigInt(action.value.revision) ? state.remote : null }
     }
     case 'save': return { ...state, save: action.value }
     case 'move': return { ...state, draft: movePosition(state.draft, action.id, action.position) }
-    case 'rebase': return { ...state, snapshot: action.value.project, canvas: action.value.graph, draft: rebasePositions([...action.value.project.nodes, ...action.value.graph.middlewares], state.draft), save: { kind: 'ready' } }
+    case 'rebase': return BigInt(action.value.project.revision) < BigInt(state.snapshot.revision) ? state : { ...state, snapshot: action.value.project, canvas: action.value.graph, draft: changedDraft(state, action.value), save: { kind: 'ready' }, remote: null, sources: {} }
     case 'discard': return { ...state, draft: positionsOf(state.snapshot, state.canvas), save: { kind: 'ready' } }
+    case 'external': return receiveExternal(state, action.value, action.protect)
+    case 'applyRemote': return state.remote && state.save.kind !== 'sending' && state.save.kind !== 'unknown' ? { ...state, snapshot: state.remote.project, canvas: state.remote.graph, draft: changedDraft(state, state.remote), remote: null, sources: {} } : state
   }
+}
+
+/** @param state 原确认位置和交互草稿 @param value 新确认图 @returns 只保留实际改动位置，其余节点采用远端位置。 */
+function changedDraft(state: WorkspaceState, value: GraphSnapshot): ReturnType<typeof positionsOf> {
+  const saved = positionsOf(state.snapshot, state.canvas)
+  const changes = state.draft.filter(item => { const original = saved.find(position => position.componentId === item.componentId); return original && (original.x !== item.x || original.y !== item.y) })
+  return rebasePositions([...value.project.nodes, ...value.graph.middlewares], changes)
+}
+
+/** @param state 原草稿与确认状态 @param value 远端一致图 @param protect 是否有打开的表单 @returns 不偷偷推进旧表单基准版本的状态。 */
+function receiveExternal(state: WorkspaceState, value: GraphSnapshot, protect: boolean): WorkspaceState {
+  if (value.project.id !== state.snapshot.id || BigInt(value.project.revision) <= BigInt(state.snapshot.revision)) return state
+  if (protect || isDirty(state.snapshot, state.draft, state.canvas) || state.save.kind === 'sending' || state.save.kind === 'unknown') {
+    return state.remote && BigInt(state.remote.project.revision) >= BigInt(value.project.revision) ? state : { ...state, remote: value }
+  }
+  return { ...state, snapshot: value.project, canvas: value.graph, draft: positionsOf(value.project, value.graph), remote: null, sources: {} }
 }
 
 /** @param api 副作用端口 @param pending 原请求 @param signal 会话生命周期 @returns 原请求的确认回执。 */
@@ -64,14 +83,15 @@ function failedSave(error: unknown, request: PendingRequest, verify: boolean): S
 }
 
 /** @param initial 首次确认快照 @param api HTTP 端口 @returns 当前会话和同步事件入口。 */
-export function useWorkspace(initial: Project, api: ProjectAPI, initialCanvas?: CanvasState, initialGraph?: GraphState) {
+export function useWorkspace(initial: Project, api: ProjectAPI, initialCanvas?: CanvasState, initialGraph?: GraphState, external?: GraphSnapshot | null, protect = false) {
   const graph = initialGraph ?? { ...EMPTY_GRAPH, middlewares: initialCanvas?.middlewares ?? EMPTY_GRAPH.middlewares }
-  const [state, dispatch] = useReducer(reduce, { snapshot: initial, canvas: graph, draft: positionsOf(initial, graph), save: { kind: 'ready' }, sources: {} })
+  const [state, dispatch] = useReducer(reduce, { snapshot: initial, canvas: graph, draft: positionsOf(initial, graph), save: { kind: 'ready' }, sources: {}, remote: null })
   const session = useRef(new AbortController())
   const inFlight = useRef(false)
   useEffect(() => { const controller = new AbortController(); session.current = controller; return () => { controller.abort() } }, [])
   const dirty = isDirty(state.snapshot, state.draft, state.canvas)
   const blocked = state.save.kind === 'sending' || state.save.kind === 'unknown'
+  useEffect(() => { if (external) dispatch({ kind: 'external', value: external, protect }) }, [external, protect, dirty, blocked, state.snapshot.revision])
   useEffect(() => {
     if (!dirty && !blocked) return
     const handleUnload = (event: BeforeUnloadEvent) => { event.preventDefault() }
@@ -115,6 +135,7 @@ export function useWorkspace(initial: Project, api: ProjectAPI, initialCanvas?: 
     retry: () => { if (state.save.kind === 'unknown') void run(state.save.request) },
     verify: () => { if (state.save.kind === 'unknown') void run(state.save.request, true) },
     rebase: () => { if (!blocked) void recover() },
+    applyRemote: () => { if (!blocked) dispatch({ kind: 'applyRemote' }) },
     discard: () => { if (!blocked) dispatch({ kind: 'discard' }) }
   }
 }

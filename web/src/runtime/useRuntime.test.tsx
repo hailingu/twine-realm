@@ -1,4 +1,7 @@
 /** Hook时序测试验证双击、原键恢复和卸载所有权；真实后台延续另由浏览器验收。 */
+import type { ReactNode } from 'react'
+import { ProjectionContext } from '../projectstate/Projection'
+import { stateSnapshot } from '../testing/stateFixtures'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { RuntimeReceipt } from '../contract/generated'
@@ -77,4 +80,20 @@ it('能力未读取或接口未配置时没有隐式运行操作，轮询失败�
   const disabled = renderHook(() => useRuntime(undefined, INITIAL_PROJECT.id))
   act(() => { disabled.result.current.run(MYSQL_NODE.id, '1', 'running') })
   expect(disabled.result.current.state.snapshot).toBeNull()
+})
+
+
+it.each(['', '信封读取失败'])('统一信封不变且没有运行目标时，能力轮询只恢复自己的错误（%s）', async (projectionError) => {
+  vi.useFakeTimers()
+  const api = fakeRuntimeAPI()
+  const snapshot = stateSnapshot()
+  const wrapper = ({ children }: { children: ReactNode }) => <ProjectionContext value={{ managed: true, snapshot, error: projectionError, now: 0 }}>{children}</ProjectionContext>
+  const { result } = renderHook(() => useRuntime(api, INITIAL_PROJECT.id), { wrapper })
+  await act(async () => { await Promise.resolve() })
+  api.capability.mockRejectedValueOnce(new Error('短暂失联'))
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
+  expect(result.current.state.readError).not.toBeNull()
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
+  expect(result.current.state.readError).toBe(projectionError || null)
+  expect(api.snapshot).not.toHaveBeenCalled()
 })

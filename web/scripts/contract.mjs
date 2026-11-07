@@ -15,11 +15,12 @@ const buildFiles = ['build-inputs.schema.json', 'build-artifacts.schema.json', '
 const builds = await Promise.all(buildFiles.map(async filename => JSON.parse(await readFile(new URL(`../../server/contract/v3/${filename}`, import.meta.url), 'utf8'))))
 const deployFiles = ['deployment-inputs.schema.json', 'deployment-plan.schema.json', 'deployment.schema.json']
 const deployments = await Promise.all(deployFiles.map(async filename => JSON.parse(await readFile(new URL(`../../server/contract/v4/${filename}`, import.meta.url), 'utf8'))))
+const state = JSON.parse(await readFile(new URL('../../server/contract/v5/state.schema.json', import.meta.url), 'utf8'))
 
 /** 在内存展开已登记构建/部署分片，禁止从任意外部URL补全类型。 */
 function expandFragments(value) {
   let data = JSON.stringify(value).replaceAll('../v1/schema.json#/$defs/', '#/$defs/')
-  for (const fragment of [schema, components, graph, ...builds, ...deployments]) data = data.replaceAll(`${fragment.$id}#/$defs/`, '#/$defs/')
+  for (const fragment of [schema, components, runtime, graph, ...builds, ...deployments, state]) data = data.replaceAll(`${fragment.$id}#/$defs/`, '#/$defs/')
   return JSON.parse(data)
 }
 // 类型生成只在内存展开已知离线分片；磁盘上的 schema 仍为唯一字段权威。
@@ -44,6 +45,11 @@ for (const fragment of deployments) for (const [name, value] of Object.entries(f
   typeSchema.$defs[name] = expandFragments(value)
 }
 Object.assign(typeSchema.properties, expandFragments(builds[2].properties), expandFragments(deployments[2].properties))
+for (const [name, value] of Object.entries(state.$defs)) {
+  if (Object.hasOwn(typeSchema.$defs, name)) throw new Error(`重复的状态类型 ${name}`)
+  typeSchema.$defs[name] = expandFragments(value)
+}
+Object.assign(typeSchema.properties, expandFragments(state.properties))
 const definitionData = await readFile(new URL('../../server/internal/catalog/definitions/mysql-v1.json', import.meta.url), 'utf8')
 const definition = JSON.parse(definitionData)
 const digest = 'sha256:' + createHash('sha256').update(definitionData).digest('hex')
@@ -65,12 +71,14 @@ validator.addSchema(runtime)
 validator.addSchema(graph)
 for (const fragment of builds) validator.addSchema(fragment)
 for (const fragment of deployments) validator.addSchema(fragment)
+validator.addSchema(state)
 validator.addSchema(definition.configurationSchema)
 const references = Object.fromEntries(['Project', 'ProjectList', 'Receipt', 'ErrorResponse', 'SourceObservation', 'SourceReceipt', 'DefinitionCatalog', 'CanvasSnapshot', 'CanvasReceipt', 'RuntimeCommand', 'RuntimeReceipt', 'RuntimeSnapshot', 'RuntimeOperation', 'RuntimeCapability', 'RuntimeEventPage'].map(name => [name, `${schema.$id}#/$defs/${name}`]))
 references.MySQLConfiguration = definition.configurationSchema.$id
 for (const name of ['ServiceContractDocument', 'GraphOperation', 'GraphEditCommand', 'GraphSnapshot', 'GraphReceipt']) references[name] = `${graph.$id}#/$defs/${name}`
 for (const name of ['BuildCommand', 'BuildCancelCommand', 'BuildOperation', 'BuildReceipt', 'BuildSnapshot', 'BuildCapability']) references[name] = `${builds[2].$id}#/$defs/${name}`
 for (const [index, names] of [['DeployPreviewRequest', 'DeployCommand'], ['DeployPlan'], ['DeployOperation', 'DeployReceipt', 'DeploySnapshot', 'DeployCapability']].entries()) for (const name of names) references[name] = `${deployments[index].$id}#/$defs/${name}`
+for (const name of ['StateSnapshot', 'StateEvent', 'StateCaughtUp', 'StateResync']) references[name] = `${state.$id}#/$defs/${name}`
 const validators = '/** 由共享 JSON Schema 构建生成；浏览器不执行动态代码编译。 */\n' + standaloneCode(validator, references)
 const declaration = '/** 生成校验器的边界声明；运行时执行同一 schema 生成的检查。 */\nimport type { ValidateFunction } from "ajv"\ndeclare const validators: Record<string, ValidateFunction<unknown>>\nexport = validators\n'
 const configuration = await compile(definition.configurationSchema, 'MySQLConfiguration', { bannerComment: '/** 由离线 MySQL 定义生成，禁止手工修改。 */', style: { singleQuote: true, semi: false } })

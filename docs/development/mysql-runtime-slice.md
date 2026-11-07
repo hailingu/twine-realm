@@ -53,7 +53,7 @@ export TWINE_RUNTIME_DIRECTORY='/Users/you/Library/Application Support/twine-rea
 | `POST /api/v1/projects/{id}/runtime/{componentId}/targets` | `{mutationId,baseRevision,baseGeneration,desired,retryOf?}`，202 仅表示持久受理 |
 | `GET /api/v1/runtime-mutations/{id}` | 原请求固定回执；不会重跑或重开终态操作 |
 | `GET /api/v1/projects/{id}/runtime/operations/{operationId}` | 原操作与步骤，被新目标替代后仍可查 |
-| `GET /api/v1/projects/{id}/runtime/events?after=0` | 每页最多 100 条，显式读取下一页；当前使用轮询，不提供 SSE |
+| `GET /api/v1/projects/{id}/runtime/events?after=0` | 每页最多 100 条的 MySQL 领域审计，显式读取下一页；全项目 SSE 独立使用 v5 游标 |
 
 原键同内容返回同一目标与操作，同键异内容冲突。前端未知结果只核实或重试原路由 / 原命令，双击不能产生第二个目标。只有收到原回执并读取至少对应代次的确认快照，才解除受理保护。刷新页面可从服务端快照及操作的原请求 ID 找回已受理目标；未送达请求的页面内身份不写浏览器长期存储，强制关闭页面后不能凭空证明是否送达。关闭浏览器不会取消后台已受理操作。
 
@@ -65,7 +65,7 @@ export TWINE_RUNTIME_DIRECTORY='/Users/you/Library/Application Support/twine-rea
 
 暂时错误初次加最多 5 次重试，1–30 秒退避并抖动，耗尽保留原错误码并进入 `needs_attention`。控制面退出将原执行结算为待恢复；来不及结算时，重启按过期租约检查原实例。`accepted` / `executing` / `waiting_retry` 是持续执行状态；`succeeded` / `needs_attention` / `failed` / `superseded` 不由同键重放重新执行。明确修复后接受新请求，`retryOf` 记录原操作。
 
-控制面每约 5 秒有界轮转采集，网页每约 2 秒轮询；多项目或工具阻塞时采集会延后，以新鲜度诚实呈现。采样失败不更新旧事实的采集时间，按实际时间比较不同小数精度的 RFC3339，迟到旧采样连同其诊断一起丢弃。原 `server_uuid` 只首次确认，外部替换不会覆盖它。成功结算必须有近期认证就绪或实际停止事实。
+控制面每约 5 秒有界轮转采集，网页经 [v5 一致状态与 SSE](project-state-slice.md)回显，能力和外部候选核实保留有界读取；多项目或工具阻塞时采集会延后，以新鲜度诚实呈现。采样失败不更新旧事实的采集时间，按实际时间比较不同小数精度的 RFC3339，迟到旧采样连同其诊断一起丢弃。原 `server_uuid` 只首次确认，外部替换不会覆盖它。成功结算必须有近期认证就绪或实际停止事实。
 
 已成功目标后，外部手动停止、删除、改名、改配置或换库只上报未知 / 漂移 / 需核实，不自动重建或重新启动。用户明确接受新的运行目标才可恢复原实例。平台 `Ctrl-C` 退出不会停止 MySQL；使用详情「确认停止 MySQL」接受独立停止目标。停止不会删除源码、卷、网络、秘密或数据。本切片没有物理删除 API。
 

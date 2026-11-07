@@ -29,6 +29,8 @@
 - [工作台与页面布局](platform-design/workbench.md)：项目入口、组件目录、React Flow 画布、配置 / 运行 / AI 面板、变更审阅与事件日志。
 - [设计语言](platform-design/design-language.md)：参考来源、独立语义 token、深浅主题、组件与画布规则、无障碍策略。
 
+当前一致信封、SSE 和草稿恢复的实现边界见[项目状态切片](development/project-state-slice.md)，长期设计与本机实现分别表述。
+
 ## 开发任务管理
 
 [GitHub Issues](https://github.com/hailingu/twine-realm/issues) 记录具体工作与验收结论，[twine-realm Project #4](https://github.com/users/hailingu/projects/4) 管规划、排序与执行阶段。创建、关联、当前自动化及状态冲突处理统一见[Projects 与 Issues 协作](development/project-tracking.md)；本地 `issues/` 只保留历史、离线草稿和明确链接的快照，不成为第二份独立任务状态。

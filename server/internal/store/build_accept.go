@@ -182,11 +182,14 @@ func insertBuild(ctx context.Context, tx *sql.Tx, target servicebuild.Target, op
 	return appendBuildEvent(ctx, tx, op, "accepted", data)
 }
 
-// appendBuildEvent 与操作版本同事务记录，将来SSE消费仍须独立游标协议。
+// appendBuildEvent 保存永久操作历史，再于同事务追加独立项目通知。
 func appendBuildEvent(ctx context.Context, tx *sql.Tx, op servicebuild.Operation, kind string, data []byte) error {
 	if len(data) > 65536 {
 		return fmt.Errorf("构建操作事件超出固定上限")
 	}
 	_, err := tx.ExecContext(ctx, "INSERT INTO build_events(operation_id,version,kind,payload,created_at) VALUES(?,?,?,?,?)", op.ID, op.Version, kind, data, time.Now().UTC())
-	return err
+	if err != nil {
+		return err
+	}
+	return appendDomainStateEvent(ctx, tx, op.ProjectID, "build", op.ID)
 }

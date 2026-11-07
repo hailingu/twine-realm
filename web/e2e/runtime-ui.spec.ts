@@ -10,7 +10,7 @@ async function confirmAction(page: Page, label: string): Promise<void> {
   await Promise.all([page.waitForEvent('dialog').then(dialog => dialog.accept()), page.getByRole('button', { name: label, exact: true }).click()])
 }
 
-test('具名连线与运行事实共存，原键重试和重开保留声明，轮询不覆盖位置草稿', async ({ page, platform, browser, request }) => {
+test('具名连线与运行事实共存，原键重试和重开保留声明，状态流不覆盖位置草稿', async ({ page, platform, browser, request }) => {
   test.setTimeout(180000)
   const projectName = `界面运行恢复项目-${crypto.randomUUID()}`
   const project = await prepareBindingProject(page, platform, projectName)
@@ -58,7 +58,7 @@ test('具名连线与运行事实共存，原键重试和重开保留声明，�
     const coordinate = reopened.getByRole('spinbutton', { name: /显式服务 X/ })
     await coordinate.fill('710')
     await expect(reopened.getByRole('status', { name: '画布保存状态' })).toContainText('布局有未保存的修改')
-    const polled = await reopened.waitForResponse(response => response.url() === `${platform.url}/api/v1/projects/${project.id}/runtime` && response.request().method() === 'GET' && response.ok())
+    const polled = await reopened.waitForResponse(response => response.url() === `${platform.url}/api/v5/projects/${project.id}/state` && response.request().method() === 'GET' && response.ok())
     await polled.finished()
     await expect(reopened.locator('.react-flow__edge')).toHaveCount(1)
     await expect(coordinate).toHaveValue('710')
