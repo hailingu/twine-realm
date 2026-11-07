@@ -113,7 +113,7 @@ func TestLegacyProjectMigration(t *testing.T) {
 	f.reopen(t)
 	opened := decode[project.Project](t, call(t, f.handler, "GET", "/api/v1/projects/"+registered.Project.ID, nil), 200, "Project")
 	if !reflect.DeepEqual(opened, registered.Project) {
-		t.Fatal("迁移改变了旧项目实体或坐标")
+		t.Fatalf("迁移改变了旧项目实体或坐标：createdAt=%q/%q updatedAt=%q/%q", opened.CreatedAt, registered.Project.CreatedAt, opened.UpdatedAt, registered.Project.UpdatedAt)
 	}
 	oldReceipt := decode[project.Receipt](t, call(t, f.handler, "GET", "/api/v1/mutations/"+registered.MutationID, nil), 200, "Receipt")
 	if !oldReceipt.Replayed || !reflect.DeepEqual(oldReceipt.Project, registered.Project) || oldReceipt.SourceVersion != nil {
