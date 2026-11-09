@@ -7,6 +7,7 @@ import (
 	"github.com/hailingu/twine-realm/server/internal/mysqlruntime"
 	"github.com/hailingu/twine-realm/server/internal/project"
 	"github.com/hailingu/twine-realm/server/internal/servicedeploy"
+	"strings"
 	"testing"
 )
 
@@ -151,5 +152,42 @@ func TestReceiptAndAcceptStorageFailures(t *testing.T) {
 	command.BaseRevision = "1"
 	if _, err := service.Accept(context.Background(), id, command); !errors.Is(err, failure) {
 		t.Fatal("准备失败被吞掉", err)
+	}
+}
+
+// failingFreezeAdapter 返回受信适配器分类或未分类外部错误，不执行资源动作。
+type failingFreezeAdapter struct {
+	Adapter
+	failure error
+}
+
+// Freeze 在主动检查边界返回指定错误用于诊断转换测试。
+func (a failingFreezeAdapter) Freeze(context.Context, mysqlruntime.Target, servicedeploy.Target) (Frozen, Facts, error) {
+	return Frozen{}, Facts{}, a.failure
+}
+
+// TestFreezeDiagnosticPreserved 适配器固定诊断必须跨HTTP领域边界保留，原始错误不得外泄。
+func TestFreezeDiagnosticPreserved(t *testing.T) {
+	cases := []struct {
+		name    string
+		failure error
+		code    string
+	}{
+		{"原项目锁冲突", &mysqlruntime.Fault{Code: "RUNTIME_PROJECT_BUSY", Message: "原项目正在核实", Retryable: true}, "RUNTIME_PROJECT_BUSY"},
+		{"原资源变化", servicedeploy.Failure("PROJECT_RESOURCE_CONFLICT", "原资源不一致", false), "PROJECT_RESOURCE_CONFLICT"},
+		{"未知外部错误", errors.New("sensitive raw output"), "PROJECT_RUN_ADMISSION_UNKNOWN"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			service := NewService(nil, readyErrorReader(), failingFreezeAdapter{failure: tc.failure})
+			_, _, err := service.prepare(context.Background(), "project", "stopped")
+			var fault *project.Error
+			if !errors.As(err, &fault) || fault.Code != tc.code {
+				t.Fatalf("丢失固定诊断，期望%s", tc.code)
+			}
+			if strings.Contains(fault.Message, "sensitive") {
+				t.Fatal("原始外部输出泄露")
+			}
+		})
 	}
 }

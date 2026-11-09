@@ -118,7 +118,11 @@ func (s *Service) prepare(ctx context.Context, id, desired string) (Frozen, Fact
 		return Frozen{}, Facts{}, err
 	}
 
-	return s.adapter.Freeze(ctx, *runtime.Target, *target)
+	frozen, proof, err := s.adapter.Freeze(ctx, *runtime.Target, *target)
+	if err != nil {
+		return Frozen{}, Facts{}, admissionDiagnostic(err)
+	}
+	return frozen, proof, nil
 }
 
 // Retry 显式续跑已知失败的原操作，不让回执读取隐式重启执行。
@@ -152,4 +156,13 @@ func (s *Service) originalDeployment(ctx context.Context, id string, graph proje
 		return nil, project.Failure("PROJECT_RUN_DEPLOYMENT_REQUIRED", "没有原业务部署")
 	}
 	return target, nil
+}
+
+// admissionDiagnostic 仅将受信固定诊断送至HTTP，不暴露底层工具输出或秘密。
+func admissionDiagnostic(err error) error {
+	code, message, unknown := servicedeploy.Diagnostic(err)
+	if unknown {
+		return project.Failure("PROJECT_RUN_ADMISSION_UNKNOWN", "原项目主动核实结果未知，未接受新目标，请保留原请求并核实")
+	}
+	return project.Failure(code, message)
 }

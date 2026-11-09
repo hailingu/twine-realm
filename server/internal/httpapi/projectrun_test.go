@@ -139,3 +139,18 @@ func TestLifecycleStateHTTP(t *testing.T) {
 		}
 	}
 }
+
+// TestLifecycleAdmissionErrorStatus 固定锁忙是冲突，未知核实是服务不可用，不能混为存储失败。
+func TestLifecycleAdmissionErrorStatus(t *testing.T) {
+	api, _ := lifecycleTestAPI(t, nil)
+	for _, tc := range []struct {
+		code   string
+		status int
+	}{{"RUNTIME_PROJECT_BUSY", 409}, {"PROJECT_RUN_ADMISSION_UNKNOWN", 503}} {
+		w := httptest.NewRecorder()
+		api.failure(w, project.Failure(tc.code, "受控诊断"))
+		if w.Code != tc.status || !strings.Contains(w.Body.String(), tc.code) {
+			t.Fatalf("诊断%s状态%d", tc.code, w.Code)
+		}
+	}
+}
