@@ -18,7 +18,7 @@ type existingState struct {
 
 // Freeze 仅接受原应用和数据库均经认证就绪的实际资源。
 func (driver *Driver) Freeze(ctx context.Context, runtime mysqlruntime.Target, deployment servicedeploy.Target) (frozen projectrun.Frozen, facts projectrun.Facts, err error) {
-	err = driver.runtime.WithExistingProject(ctx, runtime.ProjectID, func() error {
+	err = driver.runtime.WithExistingProjectRead(ctx, runtime.ProjectID, func() error {
 		state, err := driver.existing(ctx, runtime, deployment)
 		if err != nil {
 			return err

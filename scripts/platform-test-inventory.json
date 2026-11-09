@@ -1,0 +1,1552 @@
+[
+  {
+    "file": "server/cmd/build-init/main_test.go",
+    "name": "TestBuildInitializationArguments",
+    "isolated": false
+  },
+  {
+    "file": "server/cmd/platform/lifecycle_integration_test.go",
+    "name": "TestDisabledRuntimeHTTPShutdown",
+    "isolated": false
+  },
+  {
+    "file": "server/cmd/platform/lifecycle_integration_test.go",
+    "name": "TestLiveStateRequestCancelledOnShutdown",
+    "isolated": false
+  },
+  {
+    "file": "server/cmd/platform/lifecycle_integration_test.go",
+    "name": "TestPlatformPortConflictIsExplicit",
+    "isolated": false
+  },
+  {
+    "file": "server/cmd/platform/lifecycle_integration_test.go",
+    "name": "TestServePanicReturnsSafeError",
+    "isolated": false
+  },
+  {
+    "file": "server/cmd/platform/runtime_test.go",
+    "name": "TestDisabledRuntimeDoesNotCreateWorker",
+    "isolated": false
+  },
+  {
+    "file": "server/cmd/runtime-init/main_test.go",
+    "name": "TestInitializationProtocol",
+    "isolated": false
+  },
+  {
+    "file": "server/cmd/service-profile/main_test.go",
+    "name": "TestProfileCommands",
+    "isolated": false
+  },
+  {
+    "file": "server/contract/contract_test.go",
+    "name": "TestContractCompilation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/catalog/catalog_test.go",
+    "name": "TestConfigurationCases",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/catalog/catalog_test.go",
+    "name": "TestDefinitionIdentityAndReadiness",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/catalog/catalog_test.go",
+    "name": "TestExternalSchemaReferenceRejected",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/catalog/service_contracts_test.go",
+    "name": "TestVersionedServiceInterfaces",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/catalog/service_contracts_test.go",
+    "name": "TestServiceSchemaKeywordLocations",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/catalog/service_contracts_test.go",
+    "name": "TestServiceSchemaCompositions",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/catalog/service_contracts_test.go",
+    "name": "TestInvalidServiceDocuments",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/catalog/service_contracts_test.go",
+    "name": "TestServiceSchemaBoundsAndExternalFile",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/config/build_test.go",
+    "name": "TestExplicitBuildConfiguration",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/config/config_test.go",
+    "name": "TestLocalConfiguration",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/config/config_test.go",
+    "name": "TestExplicitRuntimeConfiguration",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/config/deployment_test.go",
+    "name": "TestExplicitDeploymentConfiguration",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/catalog_test.go",
+    "name": "TestExportAndCleanCheckout",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/catalog_test.go",
+    "name": "TestBlockedMaterial",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/catalog_test.go",
+    "name": "TestNamedPipeCannotBlockValidation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/catalog_test.go",
+    "name": "TestReleaseAndDecoderRejectCorruption",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/export_test.go",
+    "name": "TestExportUsesRawPinnedCommit",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/export_test.go",
+    "name": "TestExportRejectsLinksAndGitlinks",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/export_test.go",
+    "name": "TestExportProtectsOriginalAndExistingDestinations",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/inspect_test.go",
+    "name": "TestReadOnlyRepositoryInspection",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/inspect_test.go",
+    "name": "TestEmptyRepositoryAndPaths",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/inspect_test.go",
+    "name": "TestLinkedWorktreeBoundary",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/promisor_test.go",
+    "name": "TestMissingPromisorObjectsRemainReadOnly",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/promisor_test.go",
+    "name": "TestOldGitCannotSilentlyIgnoreReadOnlyPolicy",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/source_test.go",
+    "name": "TestSourceObservationReadOnly",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/source_test.go",
+    "name": "TestOnlyCompleteCommitObjects",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/source_test.go",
+    "name": "TestUnbornSourceHasNoInventedCommit",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/source_test.go",
+    "name": "TestConfiguredScriptsNeverRun",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/source_test.go",
+    "name": "TestSharedObjectsStayWithinAllowedRoots",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/gitworkspace/source_test.go",
+    "name": "TestBoundedGitOutput",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/build_integration_test.go",
+    "name": "TestBuildAdmissionAndOriginalReceipt",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/build_integration_test.go",
+    "name": "TestBuildCancellationAndFences",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/build_integration_test.go",
+    "name": "TestBuildExpiredLeaseRecovery",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/components_integration_test.go",
+    "name": "TestMiddlewareDraftPersistence",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/components_integration_test.go",
+    "name": "TestInvalidMiddlewareDoesNotWrite",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/components_integration_test.go",
+    "name": "TestMiddlewareReplayAndConcurrency",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/components_integration_test.go",
+    "name": "TestMixedCanvasLayoutAtomicity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/components_integration_test.go",
+    "name": "TestMiddlewareStorageRecovery",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/deployment_api_integration_test.go",
+    "name": "TestDeploymentDisabledAndMissingHTTP",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/deployment_failure_integration_test.go",
+    "name": "TestRealServiceMigrationFailureRetainsDirty",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/httpapi/deployment_integration_test.go",
+    "name": "TestRealServiceDeploymentCRUDAndRecovery",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/httpapi/deployment_material_integration_test.go",
+    "name": "TestRealDeploymentBeforeMaterialDoesNotBlockDatabase",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/httpapi/graph_integration_test.go",
+    "name": "TestGraphContractsAndRecovery",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/graph_integration_test.go",
+    "name": "TestGraphRejectsFinalInvalidity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/graph_integration_test.go",
+    "name": "TestGraphReconnectAndImmutableVersions",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/graph_integration_test.go",
+    "name": "TestGraphConcurrentReplay",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/graph_storage_integration_test.go",
+    "name": "TestGraphRejectsForeignEndpoints",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/graph_storage_integration_test.go",
+    "name": "TestGraphHistoricalVersionCannotChange",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/graph_storage_integration_test.go",
+    "name": "TestGraphSQLRollbackAndOriginalKeyRecovery",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/integration_test.go",
+    "name": "TestProjectPersistenceAndReceipts",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/integration_test.go",
+    "name": "TestConflictAtomicity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/integration_test.go",
+    "name": "TestConcurrentReplay",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/integration_test.go",
+    "name": "TestStorageFailureRecovery",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/integration_test.go",
+    "name": "TestLocalRequestBoundary",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/integration_test.go",
+    "name": "TestMalformedRequests",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/migration_integration_test.go",
+    "name": "TestLegacyProjectMigration",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/httpapi/migration_integration_test.go",
+    "name": "TestPinnedSourceMigration",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_external_integration_test.go",
+    "name": "TestRealProjectRunLateStopRemainsUnknown",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_external_integration_test.go",
+    "name": "TestRealProjectRunDeletedApplicationFailsClosed",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_failure_integration_test.go",
+    "name": "TestRealProjectRunPreservesDirty",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_physical_integration_test.go",
+    "name": "TestRealProjectRunPreservesCRUD",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_recovery_integration_test.go",
+    "name": "TestRealProjectRunRestartAndIsolation",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_store_integration_test.go",
+    "name": "TestProjectRunRuntimeObservationEpoch",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_store_integration_test.go",
+    "name": "TestProjectRunRuntimeQueueSkipsBlockedHead",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_test.go",
+    "name": "TestLifecycleDisabledRoutes",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_test.go",
+    "name": "TestLifecycleInvalidCommand",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_test.go",
+    "name": "TestLifecycleRetryRoute",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_test.go",
+    "name": "TestLifecycleHistoryHTTP",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_test.go",
+    "name": "TestLifecycleStateHTTP",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/projectrun_test.go",
+    "name": "TestLifecycleAdmissionErrorStatus",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_admission_integration_test.go",
+    "name": "TestRuntimeConcurrentAdmissionIsExactlyOneTarget",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_admission_integration_test.go",
+    "name": "TestRuntimeConfigurationLockDoesNotBlockStop",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_admission_integration_test.go",
+    "name": "TestCorruptRuntimeTargetCannotExecute",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_integration_test.go",
+    "name": "TestRuntimeAcceptanceAndOriginalRecovery",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_integration_test.go",
+    "name": "TestRuntimeOldExecutionCannotPublishNewTarget",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_integration_test.go",
+    "name": "TestRuntimeSQLFailureRollsBackWholeAdmission",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_integration_test.go",
+    "name": "TestRuntimeExpiredLeaseAndCheckpointRollback",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_integration_test.go",
+    "name": "TestRuntimeObservationOrdering",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_integration_test.go",
+    "name": "TestRuntimeDatabaseIdentityChangeRemainsVisible",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_recovery_integration_test.go",
+    "name": "TestRuntimeDisabledKeepsOriginalHistory",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_recovery_integration_test.go",
+    "name": "TestRuntimeEventPaginationAndDurableFailure",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/runtime_recovery_integration_test.go",
+    "name": "TestRuntimeCannotCommitStaleSuccess",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/source_integration_test.go",
+    "name": "TestPinnedSourceSurvivesChanges",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/source_integration_test.go",
+    "name": "TestSourceFailurePreservesPin",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/source_integration_test.go",
+    "name": "TestRejectedSourceKeepsPriorSelection",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/source_integration_test.go",
+    "name": "TestConcurrentSourcePins",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/source_integration_test.go",
+    "name": "TestSourceStorageFailureRecovery",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/source_integration_test.go",
+    "name": "TestEmptySourceRemainsDraft",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_integration_test.go",
+    "name": "TestProjectStateAtomicRecovery",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_integration_test.go",
+    "name": "TestProjectStateConcurrentBarrier",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_integration_test.go",
+    "name": "TestProjectStateNotificationRollback",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_integration_test.go",
+    "name": "TestProjectStateObservationRefresh",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_network_integration_test.go",
+    "name": "TestProjectStateStreamReplayAndOwnership",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_network_integration_test.go",
+    "name": "TestProjectStateStreamSurvivesHTTPWriteTimeout",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_network_integration_test.go",
+    "name": "TestProjectStateStreamExpiredAfterHeaders",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_stream_test.go",
+    "name": "TestStateCursorTransport",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_stream_test.go",
+    "name": "TestStateWriteDeadlineCleared",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_stream_test.go",
+    "name": "TestStateConnectionOwnership",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_window_integration_test.go",
+    "name": "TestProjectStateWindowAndPaging",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_window_integration_test.go",
+    "name": "TestProjectStateCountRetention",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/httpapi/state_window_integration_test.go",
+    "name": "TestProjectStateHTTPFailures",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/localdocker/command_test.go",
+    "name": "TestBoundedOutputKeepsFailure",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/localdocker/command_test.go",
+    "name": "TestExplicitTimeoutPolicy",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/localdocker/command_test.go",
+    "name": "TestWarningsStayFailures",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/localdocker/session_test.go",
+    "name": "TestSessionEnvironmentAndOwnership",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/localdocker/session_test.go",
+    "name": "TestSessionFailuresRemainPrivate",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/localdocker/session_test.go",
+    "name": "TestSessionInputAndOutputLimits",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/localdocker/session_test.go",
+    "name": "TestSessionExactOutputLimit",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/localdocker/session_test.go",
+    "name": "TestSessionCancellationAndPolicy",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/adapter_failures_test.go",
+    "name": "TestResourceLookupRequiresUnambiguousIdentity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/adapter_failures_test.go",
+    "name": "TestPreflightRefusesEnvironmentReplacement",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/adapter_failures_test.go",
+    "name": "TestMissingConfirmedVolumeNeverBecomesEmptyDatabase",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/adapter_failures_test.go",
+    "name": "TestRetryCannotUndoExternalStop",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/adapter_failures_test.go",
+    "name": "TestAuthenticationFailureAndIdentityMismatchStayUnready",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/adapter_failures_test.go",
+    "name": "TestCanonicalPathCannotIntroduceInterpolation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/binding_boundaries_integration_test.go",
+    "name": "TestRealBindingValidationBeforeEffects",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/mysqlruntime/binding_boundaries_integration_test.go",
+    "name": "TestRealBindingRegistryBoundaries",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/mysqlruntime/binding_drift_integration_test.go",
+    "name": "TestRealBindingDriftMatrix",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/mysqlruntime/binding_files_test.go",
+    "name": "TestBindingPrivateFilesRejectDamage",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/binding_files_test.go",
+    "name": "TestBindingPrivateCancellationAndMissingParent",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/binding_history_test.go",
+    "name": "TestMigrationHistoryIntegrity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/binding_integration_test.go",
+    "name": "TestRealBindingProvisionAndHistory",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/mysqlruntime/binding_permissions_test.go",
+    "name": "TestApplicationPrivilegesRespectPurpose",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/boundaries_test.go",
+    "name": "TestDesktopMountMapping",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/boundaries_test.go",
+    "name": "TestContainerOwnershipAndIsolation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/boundaries_test.go",
+    "name": "TestProjectLockAcrossDrivers",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/boundaries_test.go",
+    "name": "TestSamplingFailureDoesNotRefreshOldFacts",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/boundaries_test.go",
+    "name": "TestPersistentFencePrecedesExternalEffects",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/boundaries_test.go",
+    "name": "TestRecoveryClassification",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/command_process_test.go",
+    "name": "TestDockerCommandProcessBoundaries",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/command_process_test.go",
+    "name": "TestDockerCommandDoesNotInheritPrivateEnvironment",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/compose_extension_test.go",
+    "name": "TestComposeExtensionNeverCreatedAndStrictDefault",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/compose_extension_test.go",
+    "name": "TestComposeExtensionExistingBytesRemainStrict",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/compose_extension_test.go",
+    "name": "TestComposeExtensionUnsafeParentIsNotAbsence",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/environment_test.go",
+    "name": "TestDiscoveryPinAndTrustBoundary",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/environment_test.go",
+    "name": "TestCommandOutputAndIsolation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/existing_boundaries_test.go",
+    "name": "TestExistingRejectsInvalidIdentity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/existing_boundaries_test.go",
+    "name": "TestExistingProjectCancelled",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/existing_read_lock_test.go",
+    "name": "TestExistingReadLockReleased",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/existing_read_lock_test.go",
+    "name": "TestExistingReadLockDeadlineAndCancel",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/existing_read_lock_test.go",
+    "name": "TestExistingReadLockUnavailable",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/existing_read_lock_test.go",
+    "name": "TestExistingReadLockBound",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/existing_read_lock_test.go",
+    "name": "TestExistingReadExpiredTick",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/files_test.go",
+    "name": "TestPrivateRootBoundary",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/files_test.go",
+    "name": "TestSecretsKeepDataIdentity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/files_test.go",
+    "name": "TestPrivateSpecialFiles",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/forbidden_recovery_test.go",
+    "name": "TestFutureForbiddenDirectoryFollowsExistingParent",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/forbidden_recovery_test.go",
+    "name": "TestUnrelatedFutureDirectoryRemainsUsable",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/installation_recovery_test.go",
+    "name": "TestInvalidInstallationKeepsOriginalFile",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/installation_recovery_test.go",
+    "name": "TestChangedPrivateSubdirectoryCannotReopen",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/installation_recovery_test.go",
+    "name": "TestReplacedPrivateRootCannotUseStaleDescriptor",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/installation_recovery_test.go",
+    "name": "TestInitializationRejectsUnsafeLocations",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/network_test.go",
+    "name": "TestNetworkDefaultsRemainStrict",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/recovery_integration_test.go",
+    "name": "TestRealPartialCreationRecovery",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/mysqlruntime/recovery_integration_test.go",
+    "name": "TestRealForeignNetworkRemainsUntouched",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/mysqlruntime/secret_recovery_test.go",
+    "name": "TestSecretRecoveryPreservesDamagedEvidence",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/secret_recovery_test.go",
+    "name": "TestObservationNeverCreatesMissingSecrets",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/secret_recovery_test.go",
+    "name": "TestForeignSecretResourcesCannotCreateFiles",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/secret_recovery_test.go",
+    "name": "TestMaterialConflictNeverOverwrites",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/service_test.go",
+    "name": "TestRuntimeCandidateMustMatchCanvasRevision",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/service_test.go",
+    "name": "TestRuntimeOriginalReceiptSurvivesEnvironmentChange",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/service_test.go",
+    "name": "TestRuntimeRejectsMissingProfileAndUnknownComponent",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/service_test.go",
+    "name": "TestStopUsesOriginalResource",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/service_test.go",
+    "name": "TestRuntimeVersionAndQueryBoundary",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/sql_cancel_test.go",
+    "name": "TestSQLQueryPhaseCancellation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/sql_session_integration_test.go",
+    "name": "TestRealSQLSessionLockOwnership",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/mysqlruntime/sql_session_integration_test.go",
+    "name": "TestRealSQLPhaseCancellation",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/mysqlruntime/sql_session_test.go",
+    "name": "TestSQLSessionFraming",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/sql_session_test.go",
+    "name": "TestSQLSessionFaultsStopWrites",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/sql_session_test.go",
+    "name": "TestSQLSessionRequestQuotaHasNoSuccessorWrite",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/mysqlruntime/sql_session_test.go",
+    "name": "TestSQLSessionInputAndPrivateErrors",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/privatefiles/lock_failure_test.go",
+    "name": "TestLockFailureClassification",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/project/service_test.go",
+    "name": "TestInvalidCommands",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/diagnostic_test.go",
+    "name": "TestExecutionDiagnostics",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/diagnostic_test.go",
+    "name": "TestWorkerQueueFailure",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/diagnostic_test.go",
+    "name": "TestWorkerStorageErrors",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/proof_test.go",
+    "name": "TestActiveProofForwarded",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/receipt_test.go",
+    "name": "TestReceiptReplayWithoutAdapter",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/receipt_test.go",
+    "name": "TestReceiptProjectIsolation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/receipt_test.go",
+    "name": "TestDisabledExecutorRejectsNewCommand",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/service_errors_test.go",
+    "name": "TestPrepareRejectsUnavailableComponents",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/service_errors_test.go",
+    "name": "TestRestoreRequiresOriginalSnapshot",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/service_errors_test.go",
+    "name": "TestRetryBoundaries",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/service_errors_test.go",
+    "name": "TestReceiptAndAcceptStorageFailures",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/service_errors_test.go",
+    "name": "TestFreezeDiagnosticPreserved",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/service_test.go",
+    "name": "TestCommandValidation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/worker_test.go",
+    "name": "TestUnknownLeaseNeverExecutes",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/worker_test.go",
+    "name": "TestRevokedLeaseNeverExecutes",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectrun/worker_test.go",
+    "name": "TestInterruptedBoundary",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectstate/model_test.go",
+    "name": "TestCursorBoundary",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/projectstate/model_test.go",
+    "name": "TestStateServiceBoundaries",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/artifact_test.go",
+    "name": "TestActualOutputFileBoundaries",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/artifact_test.go",
+    "name": "TestActualImageMetadata",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/artifact_test.go",
+    "name": "TestSafeDiagnosticsAndCompletions",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/capability_contract_test.go",
+    "name": "TestDisabledCapabilityContract",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/checks_boundaries_test.go",
+    "name": "TestChecksStopAtUnconfirmedBoundary",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/checks_boundaries_test.go",
+    "name": "TestNoGoFilesCannotPassFormatting",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/environment_test.go",
+    "name": "TestEnvironmentDiscoveryBoundaries",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/environment_test.go",
+    "name": "TestRemoteAndBuilderRejection",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/environment_test.go",
+    "name": "TestPrivateBuildInstallation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/execution_integration_test.go",
+    "name": "TestRealFixedCommitBuild",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/servicebuild/failures_integration_test.go",
+    "name": "TestRealInvalidMaterialsAndCancellation",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/servicebuild/frozen_boundaries_test.go",
+    "name": "TestUnconfirmedFreezeCannotProduceImage",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/frozen_boundaries_test.go",
+    "name": "TestLoadedImageRequiresFullIdentity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/image_identity_test.go",
+    "name": "TestContainerdManifestIdentity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/image_identity_test.go",
+    "name": "TestCompletionKeepsActualManifestID",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/image_identity_test.go",
+    "name": "TestCompletionWithObservedProofs",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/image_identity_test.go",
+    "name": "TestEmptyMetadataWarningObject",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/image_proof_test.go",
+    "name": "TestObservedDescriptorWithoutConfig",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/image_proof_test.go",
+    "name": "TestObservedClassicConfigOnly",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/image_proof_test.go",
+    "name": "TestImageEvidenceVariants",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/image_proof_test.go",
+    "name": "TestImageProofContradictions",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/image_proof_test.go",
+    "name": "TestMetadataConflictsRejected",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/ownership_test.go",
+    "name": "TestForeignSandboxConfigurationRejected",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/ownership_test.go",
+    "name": "TestForeignCleanupHasNoMutations",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/recovery_boundaries_test.go",
+    "name": "TestRecoveryRequiresOriginalProof",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/recovery_boundaries_test.go",
+    "name": "TestRecoveryOnlyReclaimsOriginalResources",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/recovery_boundaries_test.go",
+    "name": "TestOrphanOutputVolumeOwnership",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/service_boundaries_test.go",
+    "name": "TestPublicBuildRequestBoundaries",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/service_boundaries_test.go",
+    "name": "TestHistoricalCandidateAvailability",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/validation_test.go",
+    "name": "TestIncompleteBuildProofRejected",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/validation_test.go",
+    "name": "TestBuildTerminalAndInputBoundaries",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/validation_test.go",
+    "name": "TestBuildInputIdentity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/worker_monitor_test.go",
+    "name": "TestWatchShutdownKeepsSuccessfulBuild",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/worker_monitor_test.go",
+    "name": "TestWatchKeepsQueryFailures",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/container_test.go",
+    "name": "TestDockerDefaultPATHRemainsExact",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/container_test.go",
+    "name": "TestRoleMaterialAndIsolation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/existing_execution_test.go",
+    "name": "TestExistingActionLedger",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/existing_execution_test.go",
+    "name": "TestExistingActionFailureOwnership",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/existing_execution_test.go",
+    "name": "TestExistingActionLaterUnknown",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/existing_execution_test.go",
+    "name": "TestExistingActionCompletionFailure",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/existing_execution_test.go",
+    "name": "TestExistingActionUnknownWriteFailure",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/isolation_test.go",
+    "name": "TestContainerIsolationDrift",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/network_test.go",
+    "name": "TestIngressOwnership",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/network_test.go",
+    "name": "TestDockerListingAmbiguity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/observation_test.go",
+    "name": "TestReadinessProbeResponseBoundary",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/readonly_test.go",
+    "name": "TestDeploymentReadOnlyPreconditions",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicecompose/readonly_test.go",
+    "name": "TestRuntimeOverlayReadFailureIsNotAbsence",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/plan_boundaries_test.go",
+    "name": "TestDeploymentDeclarationAndCandidateBoundaries",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/plan_boundaries_test.go",
+    "name": "TestDeploymentInvalidObservationsAndCompletion",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/plan_test.go",
+    "name": "TestDeploymentProducerContract",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/plan_test.go",
+    "name": "TestDeploymentRejectsChangedEvidence",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/plan_test.go",
+    "name": "TestDeploymentDigestAndCompletionBoundaries",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/service_read_test.go",
+    "name": "TestDeploymentPreviewReadFailures",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/service_read_test.go",
+    "name": "TestDeploymentStorageReadFailurePreserved",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/service_test.go",
+    "name": "TestOriginalDeploymentReceiptSurvivesDisabled",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/service_test.go",
+    "name": "TestDeploymentDiagnosticKeepsOnlySafeCodes",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/worker_lifecycle_test.go",
+    "name": "TestDeploymentRunStorageFailuresRemainSafe",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/worker_lifecycle_test.go",
+    "name": "TestDeploymentLifecyclePanicsStayUnknown",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/worker_lifecycle_test.go",
+    "name": "TestDeploymentObservationFailureIsRecordedThenReturned",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/worker_lifecycle_test.go",
+    "name": "TestDeploymentObservationCanceledBeforeInspect",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/worker_test.go",
+    "name": "TestDeploymentWatchNormalStopKeepsSuccess",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/worker_test.go",
+    "name": "TestDeploymentWatchPreservesFailures",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/worker_test.go",
+    "name": "TestDeploymentWorkerInterruptionAndFence",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicedeploy/worker_test.go",
+    "name": "TestDeploymentWorkerPanicRetainsUnknown",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/deployment_fact_test.go",
+    "name": "TestDeploymentObservationOrdering",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_boundaries_integration_test.go",
+    "name": "TestProjectRunAcceptanceVersionGuards",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_boundaries_integration_test.go",
+    "name": "TestProjectRunExplicitRetryGuards",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_boundaries_integration_test.go",
+    "name": "TestProjectRunLeaseAndInterruptedGuards",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_boundaries_integration_test.go",
+    "name": "TestProjectRunReceiptCorruption",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_boundaries_integration_test.go",
+    "name": "TestProjectRunKnownRetryDelay",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_boundaries_integration_test.go",
+    "name": "TestProjectRunCrossProjectRetry",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_integration_test.go",
+    "name": "TestProjectRunUnknownSurvivesReclaim",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_integration_test.go",
+    "name": "TestProjectRunKnownBoundaryResumes",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_integration_test.go",
+    "name": "TestProjectRunOrderAndObservationFence",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_proof_test.go",
+    "name": "TestProjectRunActiveFreezeProof",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_steps_test.go",
+    "name": "TestProjectRunStrictSteps",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_steps_test.go",
+    "name": "TestProjectRunStopFactTime",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_validation_test.go",
+    "name": "TestProjectRunPreviousState",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_validation_test.go",
+    "name": "TestProjectRunUnsettledComponents",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_validation_test.go",
+    "name": "TestProjectRunImmutableLedger",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/store/projectrun_validation_test.go",
+    "name": "TestProjectRunCompletionFailures",
+    "isolated": false
+  },
+  {
+    "file": "web/e2e/bindings.spec.ts",
+    "name": "显式接口、具名拖线、失败重连、删除与平台重启恢复稳定关系身份",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/bindings.spec.ts",
+    "name": "已落库响应丢失时核实原键，非法角色重连保留原边和候选",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/bindings.spec.ts",
+    "name": "另一窗口改动产生版本冲突时保留连线候选并载入完整新图",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/build.spec.ts",
+    "name": "原键恢复真实构建，布局草稿与脏源码保持；重开/重启保留候选，相关输入改变使旧证据失效",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/build.spec.ts",
+    "name": "取消与控制面退出保留原操作，不自动重跑业务代码或发布候选",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/components.spec.ts",
+    "name": "MySQL 草稿规范化、配置修改、混合拖动布局与重启后恢复版本和身份",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/components.spec.ts",
+    "name": "非法配置与服务器拒绝保留候选，响应丢失可核实原键且不重复创建",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/components.spec.ts",
+    "name": "不同窗口配置冲突显式恢复，其他窗口的组件与自己的候选均保留",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/deployment.spec.ts",
+    "name": "审阅固定候选后部署，受理响应丢失保持原键；独立入口与控制面重启保留原服务",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/projects.spec.ts",
+    "name": "创建、只读登记、实际拖动、保存与平台重启后恢复稳定身份和位置",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/projects.spec.ts",
+    "name": "错误路径、不可读、空仓库、重复及同名仓库有明确结果",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/projects.spec.ts",
+    "name": "保存响应丢失时保留草稿并核实原回执，不重复提交",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/projects.spec.ts",
+    "name": "未送达保存用原请求重试；版本冲突显式重放草稿",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/runtime-ui.spec.ts",
+    "name": "具名连线与运行事实共存，原键重试和重开保留声明，状态流不覆盖位置草稿",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/runtime.spec.ts",
+    "name": "真实MySQL受理、原键重放、控制面重启和停止后恢复均保持数据身份",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/source.spec.ts",
+    "name": "固定只读源码，后续 HEAD 与脏工作区不漂移，重开及重启恢复固定关联",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/source.spec.ts",
+    "name": "源码响应丢失可核实原键，仓库失联仍保留固定记录",
+    "isolated": true
+  },
+  {
+    "file": "web/e2e/state.spec.ts",
+    "name": "真实断网、错位游标和平台重启恢复状态流，未保存布局及连线候选不丢失",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/cmd/service/main_test.go",
+    "name": "TestCommandBoundary",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/integration/lifecycle_test.go",
+    "name": "TestMigrationReadinessAndRestart",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/integration/lifecycle_test.go",
+    "name": "TestDirtyAndEvidenceRemainBlocked",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/integration/lifecycle_test.go",
+    "name": "TestRestrictedMigrationAndCancellation",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/integration/lifecycle_test.go",
+    "name": "TestUnavailableDatabaseKeepsLiveness",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/internal/app/handler_test.go",
+    "name": "TestProbesAndResponses",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/internal/app/handler_test.go",
+    "name": "TestGracefulShutdown",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/internal/app/handler_test.go",
+    "name": "TestCanceledDependencyContext",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/internal/config/config_test.go",
+    "name": "TestConfigurationRoles",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/internal/config/config_test.go",
+    "name": "TestPasswordFiles",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/engineering/assets/go-net-http-v1/_template/internal/config/config_test.go",
+    "name": "TestPasswordFIFO",
+    "isolated": false
+  }
+]

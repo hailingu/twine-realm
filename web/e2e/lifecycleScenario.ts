@@ -1,7 +1,8 @@
 /** 复用已真实部署的浏览器夹具核实父停止、会话恢复和原资源恢复，不另建Docker资源。 */
-import { expect, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 import type { ErrorResponse, ProjectRunCommand, ProjectRunReceipt, ProjectRunSnapshot, ProjectRunStateSnapshot } from '../src/contract/generated'
 import { parseContract } from '../src/project/api'
+import { interceptionCompletion } from './interceptionCompletion'
 
 /** @param request HTTP边界 @param route 父状态路由 @returns 真实持久父快照。 */
 async function snapshot(request: APIRequestContext, route: string): Promise<ProjectRunSnapshot> {
@@ -17,18 +18,30 @@ export async function verifyLifecycle(page: Page, request: APIRequestContext, ur
   const route = `${url}/api/v6/projects/${id}/lifecycle`
   const commands: ProjectRunCommand[] = []
   let accepted: ProjectRunReceipt | undefined
+  const stopInterception = interceptionCompletion()
   await page.route(route, async intercepted => {
     if (intercepted.request().method() !== 'POST') { await intercepted.continue(); return }
     commands.push(parseContract<ProjectRunCommand>('ProjectRunCommand', intercepted.request().postDataJSON()))
     if (commands.length !== 1) { await intercepted.continue(); return }
-    const response = await intercepted.fetch()
-    if (response.status() !== 202) {
-      const failure = parseContract<ErrorResponse>('ErrorResponse', await response.json())
-      await intercepted.fulfill({ response })
-      throw new Error(`真实父停止受理失败：${response.status()} ${failure.error.code} ${failure.error.message}`)
-    }
-    accepted = parseContract<ProjectRunReceipt>('ProjectRunReceipt', await response.json())
-    await intercepted.abort('failed')
+    await stopInterception.run(async () => {
+      const started = Date.now()
+      let status: number | null = null
+      let fetchElapsedMs: number | null = null
+      try {
+        const response = await intercepted.fetch()
+        fetchElapsedMs = Date.now() - started
+        status = response.status()
+        if (status !== 202) {
+          const failure = parseContract<ErrorResponse>('ErrorResponse', await response.json())
+          await intercepted.fulfill({ response })
+          throw new Error(`真实父停止受理失败：${status} ${failure.error.code} ${failure.error.message}`)
+        }
+        accepted = parseContract<ProjectRunReceipt>('ProjectRunReceipt', await response.json())
+        await intercepted.abort('failed')
+      } finally {
+        await test.info().attach('父停止受理时间与状态', { body: JSON.stringify({ elapsedMs: Date.now() - started, fetchElapsedMs, status }), contentType: 'application/json' })
+      }
+    })
   })
   // 控制面刚重启，等真实组件认证与观察完成，不以历史成功操作替代近期事实。
   await expect.poll(async () => {
@@ -39,7 +52,10 @@ export async function verifyLifecycle(page: Page, request: APIRequestContext, ur
   }, { timeout: 30000 }).toBe(true)
   await expect(page.getByRole('button', { name: '停止项目并保留数据' })).toBeEnabled()
   await page.getByRole('button', { name: '停止项目并保留数据' }).click()
-  await expect(page.getByRole('button', { name: '核实原项目请求' })).toBeVisible()
+  await test.step('等待真实202受理并完成模拟丢响应', () => stopInterception.wait())
+  await test.step('显示原项目请求恢复入口', async () => {
+    await expect(page.getByRole('button', { name: '核实原项目请求' })).toBeVisible()
+  })
   await expect.poll(async () => (await snapshot(request, route)).operation?.state, { timeout: 120000 }).toBe('succeeded')
   const stopped = await snapshot(request, route)
   expect(stopped.facts?.applicationStopped).toBe(true); expect(stopped.facts?.databaseStopped).toBe(true)

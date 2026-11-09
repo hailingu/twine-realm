@@ -4,14 +4,22 @@ import { access, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/p
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { runPlatformChecks, mergeAtomicCoverage } from './platform-check.mjs'
+import { runPlatformChecks as platformChecks, mergeAtomicCoverage } from './platform-check.mjs'
+
+/** 资源预算本身有独立协议测试，本套只模拟预算已授予的编排。 */
+const runPlatformChecks = options => platformChecks({ ...options, budgetFactory: async ({ execute, env }) => ({ execute, env, assertIdle: async () => {}, release: async () => {} }) })
 
 /** 模拟工具协议并在真实临时文件系统产生本次报告。 */
 async function fixture(options, action) {
   const temporary = await mkdtemp(join(tmpdir(), 'twine-platform-protocol-'))
+  const inventory = JSON.parse(await readFile(join(process.cwd(), 'scripts/platform-test-inventory.json'), 'utf8'))
   const calls = []; const output = []; let configuration
   const execute = async (command, args, settings) => {
     calls.push({ command, args, settings })
+    if (command === 'go' && args.includes('-list=.')) return { code: 0, output: inventory.filter(row => row.file.endsWith('.go') && !row.file.includes('/_template/')).map(row => JSON.stringify({ Package: 'github.com/hailingu/twine-realm/server/' + row.file.slice(7, row.file.lastIndexOf('/')), Output: row.name + '\n' })).join('\n') }
+    if (command === process.execPath && args.includes('--list')) return { code: 0, output: JSON.stringify({ suites: [{ specs: inventory.filter(row => row.file.endsWith('.spec.ts')).map((row, index) => ({ file: row.file.slice(8), title: row.name, line: index + 1, tests: [{ expectedStatus: 'passed' }] })) }] }) }
+    if (command === 'npm' && args.includes('test:e2e')) { await writeFile(settings.env.PLAYWRIGHT_JSON_OUTPUT_NAME, JSON.stringify({ stats: { expected: 1, unexpected: 0, skipped: 0, flaky: 0 } })); return { code: 0, output: '> twine-web test:e2e\n> playwright test\n' } }
+
     if (command.endsWith('/runtime-init')) return { code: 0, output: JSON.stringify({ schemaVersion: 1, installationId: '10000000-0000-4000-8000-000000000012', adapter: 'file-secrets-v1', context: 'local', daemonId: 'test-daemon' }) }
     if (command.endsWith('/build-init')) return { code: 0, output: JSON.stringify({ schemaVersion: 1, installationId: '10000000-0000-4000-8000-000000000014', adapter: 'local-go-container-v1', environment: { context: 'local', daemonId: 'test-daemon', imageId: 'sha256:'+'a'.repeat(64), architecture: 'amd64' } }) }
     if (command === 'docker' && args[0] === '--context' && args[2] === 'info') return { code: 0, output: JSON.stringify('test-daemon') }
@@ -26,11 +34,12 @@ async function fixture(options, action) {
     if (command === 'gofmt' && options.formatFailure) return { code: 0, output: 'server/unformatted.go\n' }
     if (command === 'go' && args[0] === 'env') return { code: 0, output: 'go1.27.3\n' }
     if (command === 'npm' && args.includes('lint') && options.lintFailure) return { code: 1, output: '类型规则拒绝\n' }
-    if (command === 'go' && args[0] === 'test' && options.goGroupFailure && args.includes(options.goGroupFailure)) return { code: 1, output: '真实测试分组失败\n' }
+    if (command === 'go' && args[0] === 'test' && options.goGroupFailure && args.some(value => value.includes(options.goGroupFailure))) return { code: 1, output: '真实测试分组失败\n' }
     if (command === 'go' && args[0] === 'test') {
       const flag = args.find(value => value.startsWith('-coverprofile='))
       const module = settings.cwd.endsWith('service-template') ? 'example.invalid/service/internal/app/handler.go' : 'github.com/hailingu/twine-realm/server/internal/project/service.go'
       await writeFile(flag.slice('-coverprofile='.length), `mode: atomic\n${module}:1.1,2.1 1 1\n`)
+      if (args.includes('-json')) return { code: 0, output: args.find(value => value.startsWith('-run=')).slice(7, -2).split('|').map(Test => JSON.stringify({ Test, Action: 'pass' })).join('\n') }
     }
     if (command === 'npm' && args.includes('--coverage.reportsDirectory')) {
       const report = args[args.indexOf('--coverage.reportsDirectory') + 1]
@@ -51,13 +60,12 @@ test('完整检查使用独立数据库与临时构建，传递新报告并清�
   await fixture({}, async fake => {
     const result = await runPlatformChecks({ root: process.cwd(), temporary: fake.temporary, env: { NO_COLOR: '1', FORCE_COLOR: '1' }, execute: fake.execute, write: value => fake.output.push(value) })
     const coverage = await readFile(result.goCoverageReportPaths[0], 'utf8')
-    assert.match(coverage, /server\/internal\/project\/service.go:1.1,2.1 1 2/)
-    const groups = fake.calls.filter(call => call.command === 'go' && call.args[0] === 'test' && !call.settings.cwd.endsWith('service-template'))
-    assert.equal(groups.length, 2)
-    assert.ok(groups[0].args.includes('-skip=^TestRealProjectRun'))
-    assert.equal(groups[0].args.at(-1), './...')
-    assert.ok(groups[1].args.includes('-run=^TestRealProjectRun'))
-    assert.equal(groups[1].args.at(-1), './internal/httpapi')
+    assert.match(coverage, /server\/internal\/project\/service.go:1.1,2.1 1 \d+/)
+    const groups = fake.calls.filter(call => call.command === 'go' && call.args[0] === 'test' && !call.settings.cwd.endsWith('service-template') && !call.args.includes('-list=.'))
+    assert.ok(groups.length > 10)
+    assert.ok(groups.every(group => group.args.some(value => value.startsWith('-run=^('))))
+    for (const group of groups.filter(group => group.args.some(value => value.includes('TestReal')))) assert.ok(!group.args.find(value => value.startsWith('-run=')).includes('|'))
+    assert.equal(fake.calls.filter(call => call.args.includes('test:e2e')).length, 18)
     for (const group of groups) for (const flag of ['-count=1', '-p=1', '-race', '-tags=integration', '-coverpkg=./...']) assert.ok(group.args.includes(flag))
     assert.match(await readFile(result.goCoverageReportPaths[0], 'utf8'), /server\/internal\/engineering\/assets\/go-net-http-v1\/_template\/internal\/app/)
     assert.match(await readFile(result.lcovReportPaths[0], 'utf8'), /SF:web\/src/)
@@ -102,12 +110,11 @@ test('atomic分组覆盖率累加且拒绝模式坐标和语句数冲突，不�
   } finally { await rm(directory, { recursive: true, force: true }) }
 })
 
-for (const selector of ['-skip=^TestRealProjectRun', '-run=^TestRealProjectRun']) {
+for (const selector of ['TestBuildInitializationArguments', 'TestRealProjectRun']) {
   test(`任一Go分组失败均拒绝成功报告并清理：${selector}`, async () => {
     await fixture({ goGroupFailure: selector }, async fake => {
       await assert.rejects(runPlatformChecks({ root: process.cwd(), temporary: fake.temporary, env: {}, execute: fake.execute, write: () => {} }))
       assert.ok(fake.calls.some(call => call.command === 'docker' && call.args[0] === 'rm'))
-      if (selector.startsWith('-skip')) assert.ok(!fake.calls.some(call => call.args.includes('-run=^TestRealProjectRun')))
     })
   })
 }
@@ -122,4 +129,20 @@ test('真实Go空函数与空分支生成同坐标零语句atomic块，必须保
     await mergeAtomicCoverage([source, source], target)
     assert.equal(await readFile(target, 'utf8'), profile.replaceAll(' 1\n', ' 2\n'))
   } finally { await rm(directory, { recursive: true, force: true }) }
+})
+
+test('预算释放失败保留现场且只释放一次，不在catch重复释放', async () => {
+  await fixture({}, async fake => {
+    let releases = 0
+    await assert.rejects(platformChecks({ root: process.cwd(), temporary: fake.temporary, execute: fake.execute, env: {}, write: () => {}, budgetFactory: async ({ execute, env }) => ({ execute, env, assertIdle: async () => {}, release: async () => { releases++; throw new Error('释放未知') } }) }), error => error instanceof AggregateError && error.errors.some(value => value.preserveTemporary))
+    assert.equal(releases, 1)
+  })
+})
+
+test('检查原错与预算drain失败一同保留，未知不释放', async () => {
+  await fixture({}, async fake => {
+    let releases = 0
+    await assert.rejects(platformChecks({ root: process.cwd(), temporary: fake.temporary, execute: fake.execute, env: {}, write: () => {}, budgetFactory: async ({ env }) => ({ env, execute: async () => { throw new Error('原始检查失败') }, assertIdle: async () => { throw new Error('启动未知') }, release: async () => { releases++ } }) }), error => error instanceof AggregateError && error.errors[0].message === '原始检查失败' && error.errors[1].preserveTemporary === true)
+    assert.equal(releases, 0)
+  })
 })
