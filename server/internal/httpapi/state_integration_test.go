@@ -205,7 +205,7 @@ func TestProjectStateObservationRefresh(t *testing.T) {
 	receipt := f.accept(t, f.command)
 	now := time.Now().UTC()
 	fact := mysqlruntime.Observation{State: "running", Running: true, Ready: true, ServerUUID: id(t), ContainerID: strings.Repeat("a", 64), VolumeFound: true, ObservedAt: mysqlruntime.Timestamp(now)}
-	if err := f.base.database.ObserveRuntime(context.Background(), receipt.Target, &fact, "", now); err != nil {
+	if err := f.base.database.ObserveRuntime(context.Background(), captureRuntimeTarget(t, f.base.database, receipt.Target), &fact, "", now); err != nil {
 		t.Fatal(err)
 	}
 	before, err := f.base.database.ProjectState(context.Background(), f.current.ID)
@@ -213,7 +213,7 @@ func TestProjectStateObservationRefresh(t *testing.T) {
 		t.Fatal(err)
 	}
 	fact.ObservedAt = mysqlruntime.Timestamp(now.Add(time.Millisecond))
-	if err := f.base.database.ObserveRuntime(context.Background(), receipt.Target, &fact, "", now.Add(time.Millisecond)); err != nil {
+	if err := f.base.database.ObserveRuntime(context.Background(), captureRuntimeTarget(t, f.base.database, receipt.Target), &fact, "", now.Add(time.Millisecond)); err != nil {
 		t.Fatal(err)
 	}
 	after, err := f.base.database.ProjectState(context.Background(), f.current.ID)
@@ -228,14 +228,14 @@ func TestProjectStateObservationRefresh(t *testing.T) {
 	if page.Events[0].Reference == nil || page.Events[0].Reference.OperationID != receipt.OperationID || page.Events[0].Scope != "runtime" {
 		t.Fatal("通知缺少独立操作出处")
 	}
-	if err := f.base.database.ObserveRuntime(context.Background(), receipt.Target, nil, "DOCKER_UNAVAILABLE", now.Add(2*time.Millisecond)); err != nil {
+	if err := f.base.database.ObserveRuntime(context.Background(), captureRuntimeTarget(t, f.base.database, receipt.Target), nil, "DOCKER_UNAVAILABLE", now.Add(2*time.Millisecond)); err != nil {
 		t.Fatal(err)
 	}
 	unknown, err := f.base.database.ProjectState(context.Background(), f.current.ID)
 	if err != nil || unknown.Runtime.Observation == nil || unknown.Runtime.Freshness != "unknown" || unknown.Runtime.Observation.ServerUUID != fact.ServerUUID {
 		t.Fatal("未知采样抹除最后事实或保持假健康", err)
 	}
-	if err := f.base.database.ObserveRuntime(context.Background(), receipt.Target, &fact, "", now); err != nil {
+	if err := f.base.database.ObserveRuntime(context.Background(), captureRuntimeTarget(t, f.base.database, receipt.Target), &fact, "", now); err != nil {
 		t.Fatal(err)
 	}
 	late, err := f.base.database.ProjectState(context.Background(), f.current.ID)

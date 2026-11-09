@@ -18,9 +18,9 @@ type networkState struct {
 
 // volumeState 不暴露 Docker 数据目录，只核实固定卷的归属和驱动。
 type volumeState struct {
-	Name, Driver string
-	Labels       map[string]string
-	Options      map[string]string
+	Name, Driver, CreatedAt string
+	Labels                  map[string]string
+	Options                 map[string]string
 }
 
 // containerState 将检查字段限制在可信计划边界，不执行返回值中的命令。

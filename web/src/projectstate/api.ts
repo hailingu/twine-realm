@@ -1,7 +1,8 @@
 /** 同源有界状态读取与fetch流，不创建令牌、账号会话或独立编辑真相。 */
-import type { ErrorResponse, StateSnapshot } from '../contract/generated'
+import type { ErrorResponse, ProjectRunStateSnapshot } from '../contract/generated'
+import { ownedLifecycleState, type LifecycleState as StateSnapshot } from '../projectrun/model'
 import { parseContract, RequestError } from '../project/api'
-import { invalidState, ownedState, parseStateMessage, type StateMessage } from './model'
+import { invalidState, parseStateMessage, type StateMessage } from './model'
 import { SSEParser } from './sseParser'
 
 /** 明确窗口恢复、限流等待及不支持的重试期限，不静默忽略Retry-After。 */
@@ -52,10 +53,11 @@ async function responseFailure(response: Response): Promise<StateReadError> {
 
 /** @param id 项目 @param signal 读取寿命 @returns 同库完整信封，不将多个旧接口拼接成快照。 */
 async function snapshot(id: string, signal: AbortSignal): Promise<StateSnapshot> {
-  const response = await fetch(`/api/v5/projects/${encodeURIComponent(id)}/state`, { signal: AbortSignal.any([signal, AbortSignal.timeout(12000)]), cache: 'no-store', redirect: 'error' })
+  const response = await fetch(`/api/v6/projects/${encodeURIComponent(id)}/state`, { signal: AbortSignal.any([signal, AbortSignal.timeout(12000)]), cache: 'no-store', redirect: 'error' })
   if (!response.ok) throw await responseFailure(response)
   if (response.status !== 200) throw invalidState()
-  return ownedState(await boundedJSON(response, 64 * 1024 * 1024), id)
+  const value = parseContract<ProjectRunStateSnapshot>('ProjectRunStateSnapshot', await boundedJSON(response, 64 * 1024 * 1024))
+  return ownedLifecycleState({ ...value.state, lifecycle: value.lifecycle }, id)
 }
 
 /** @param id 项目 @param cursor 实际已重放游标 @param signal 读取寿命 @param receive 当前拥有者 @returns 正常EOF同样交给重连拥有者核实。 */

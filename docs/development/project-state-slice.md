@@ -1,6 +1,6 @@
 # 项目一致状态、SSE 与断线恢复切片
 
-对应 [Issue #18](https://github.com/hailingu/twine-realm/issues/18)。v5 读取契约与 v1–v4 并存，提供统一元数据信封、有序通知、窗口恢复及草稿保护。项目聚合停止仍由后续原任务承接；不增加账号、登录、配对、RBAC、AI、产品 GitHub 同步或跨系统事务。
+对应 [Issue #18](https://github.com/hailingu/twine-realm/issues/18)。v5 读取契约与 v1–v4 并存，提供统一元数据信封、有序通知、窗口恢复及草稿保护。项目聚合停止由 [Issue #20 生命周期切片](project-lifecycle-slice.md)独立承接；不增加账号、登录、配对、RBAC、AI、产品 GitHub 同步或跨系统事务。
 
 ## 事实与执行边界
 

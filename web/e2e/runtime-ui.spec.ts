@@ -58,7 +58,7 @@ test('具名连线与运行事实共存，原键重试和重开保留声明，�
     const coordinate = reopened.getByRole('spinbutton', { name: /显式服务 X/ })
     await coordinate.fill('710')
     await expect(reopened.getByRole('status', { name: '画布保存状态' })).toContainText('布局有未保存的修改')
-    const polled = await reopened.waitForResponse(response => response.url() === `${platform.url}/api/v5/projects/${project.id}/state` && response.request().method() === 'GET' && response.ok())
+    const polled = await reopened.waitForResponse(response => response.url() === `${platform.url}/api/v6/projects/${project.id}/state` && response.request().method() === 'GET' && response.ok())
     await polled.finished()
     await expect(reopened.locator('.react-flow__edge')).toHaveCount(1)
     await expect(coordinate).toHaveValue('710')

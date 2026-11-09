@@ -51,6 +51,9 @@ func acceptDeploymentLocked(ctx context.Context, tx *sql.Tx, input servicedeploy
 	if err := lockRevision(ctx, tx, p.ProjectID, input.Command.Preview.BaseRevision); err != nil {
 		return value, err
 	}
+	if err := projectRunPermission(ctx, tx, p.ProjectID); err != nil {
+		return value, err
+	}
 	if err := revalidateDeployment(ctx, tx, input); err != nil {
 		return value, err
 	}

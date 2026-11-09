@@ -16,7 +16,7 @@ import (
 // ClaimRuntime 先找候选再按项目锁复核，租约只在同库条件成立时推进。
 func (store *Store) ClaimRuntime(ctx context.Context, now, leaseUntil time.Time) (*mysqlruntime.Lease, error) {
 	var id string
-	err := store.db.QueryRowContext(ctx, `SELECT i.project_id FROM runtime_instances i JOIN runtime_operations o ON o.id=i.current_operation_id WHERE ((o.state IN ('accepted','waiting_retry') AND o.next_attempt<=?) OR (o.state='executing' AND o.lease_until<=?)) ORDER BY o.created_at,o.id LIMIT 1`, now, now).Scan(&id)
+	err := store.db.QueryRowContext(ctx, `SELECT i.project_id FROM runtime_instances i JOIN runtime_operations o ON o.id=i.current_operation_id WHERE ((o.state IN ('accepted','waiting_retry') AND o.next_attempt<=?) OR (o.state='executing' AND o.lease_until<=?)) AND NOT EXISTS (SELECT 1 FROM projectrun_instances p WHERE p.project_id=i.project_id AND (p.desired<>'running' OR p.state<>'succeeded')) ORDER BY o.created_at,o.id LIMIT 1`, now, now).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -28,6 +28,12 @@ func (store *Store) ClaimRuntime(ctx context.Context, now, leaseUntil time.Time)
 
 // claimRuntimeLocked 所有运行写入统一先锁实例再锁定原操作所属信息。
 func claimRuntimeLocked(ctx context.Context, tx *sql.Tx, id string, now, leaseUntil time.Time) (*mysqlruntime.Lease, error) {
+	if err := lockBuildProject(ctx, tx, id); err != nil {
+		return nil, err
+	}
+	if err := projectRunPermission(ctx, tx, id); err != nil {
+		return nil, err
+	}
 	instance, err := readRuntimeInstance(ctx, tx, id, true)
 	if err != nil || instance == nil {
 		return nil, err
@@ -152,6 +158,12 @@ func saveRuntimeCheckpoint(ctx context.Context, tx *sql.Tx, instance *runtimeIns
 
 // lockRuntimeLease 不凭过期租约接受迟到写入，实例锁始终先于操作读取。
 func lockRuntimeLease(ctx context.Context, tx *sql.Tx, lease mysqlruntime.Lease) (*runtimeInstanceRow, runtimeOperationRow, bool, error) {
+	if err := lockBuildProject(ctx, tx, lease.Target.ProjectID); err != nil {
+		return nil, runtimeOperationRow{}, false, err
+	}
+	if err := projectRunPermission(ctx, tx, lease.Target.ProjectID); err != nil {
+		return nil, runtimeOperationRow{}, false, err
+	}
 	instance, err := readRuntimeInstance(ctx, tx, lease.Target.ProjectID, true)
 	if err != nil || instance == nil {
 		return nil, runtimeOperationRow{}, false, err

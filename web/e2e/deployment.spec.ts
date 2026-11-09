@@ -9,6 +9,7 @@ import { SERVICE_CONTRACT_EXAMPLE } from '../src/contract/graph.generated'
 import { parseContract } from '../src/project/api'
 import { test, type Platform } from './platformFixture'
 import { expectBuiltCandidate } from './failureEvidence'
+import { verifyLifecycle } from './lifecycleScenario'
 
 const execute = promisify(execFile)
 
@@ -60,7 +61,7 @@ async function deployment(request: APIRequestContext, route: string): Promise<De
 }
 
 test('审阅固定候选后部署，受理响应丢失保持原键；独立入口与控制面重启保留原服务', async ({ page, platform, request }) => {
-  test.setTimeout(270000)
+  test.setTimeout(540000)
   const path = await repository(platform); const before = await platform.fingerprint(path)
   await page.goto(platform.url); await page.getByLabel('新项目名称').fill('独立服务部署验收'); await page.getByRole('button', { name: '创建项目' }).click()
   await page.getByLabel('Git 工作区路径').fill(path); await page.getByLabel('服务显示名称').fill('部署服务'); await page.getByRole('button', { name: '加入画布' }).click()
@@ -100,5 +101,6 @@ test('审阅固定候选后部署，受理响应丢失保持原键；独立入�
   const reopened = await deployment(request, route)
   expect(reopened.target?.id).toBe(ready.target?.id); expect(reopened.observation?.containerId).toBe(ready.observation?.containerId)
   await expect(page.getByRole('link', { name: '打开业务入口 ↗' })).toBeVisible()
+  await verifyLifecycle(page, request, platform.url, id, ready.observation?.entryUrl ?? '')
   expect(await platform.fingerprint(path)).toBe(before)
 })

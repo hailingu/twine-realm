@@ -263,7 +263,7 @@ func assertOriginalContainerRecovery(t *testing.T, f *deploymentFixture, receipt
 	if err != nil || stopped == nil || stopped.Running {
 		t.Fatal("被动采集未显示真实停止", err)
 	}
-	if err := f.runtime.base.database.ObserveDeployment(context.Background(), receipt.Target, stopped, "", time.Now().UTC()); err != nil {
+	if err := f.runtime.base.database.ObserveDeployment(context.Background(), captureDeploymentTarget(t, f.runtime.base.database, receipt.Target), stopped, "", time.Now().UTC()); err != nil {
 		t.Fatal(err)
 	}
 	f.request.BaseGeneration = receipt.Target.Generation

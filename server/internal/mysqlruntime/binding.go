@@ -73,6 +73,14 @@ func (driver *Driver) WithBinding(ctx context.Context, request BindingRequest, a
 		return err
 	}
 	defer func() { err = errors.Join(err, unlock()) }()
+	return driver.WithExistingBinding(ctx, request, action)
+}
+
+// WithExistingBinding 仅在调用者持有原项目文件锁时使用，避免聚合操作重复获取同一flock。
+func (driver *Driver) WithExistingBinding(ctx context.Context, request BindingRequest, action func(*BindingSession) error) (err error) {
+	if err := driver.validateBinding(request); err != nil {
+		return err
+	}
 	info, err := driver.BindingDatabase(ctx, request.Resource)
 	if err != nil {
 		return err

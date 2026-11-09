@@ -39,6 +39,27 @@ async function mergeGoCoverage(reports, target) {
   await writeFile(target, 'mode: atomic\n' + lines.join('\n') + '\n')
 }
 
+/** 合并同一次运行的两个atomic测试分组；拒绝损坏或版本不一致的覆盖率块。 */
+export async function mergeAtomicCoverage(reports, target) {
+  const blocks = new Map()
+  const coordinates = new Map()
+  for (const report of reports) {
+    const lines = (await readFile(report, 'utf8')).trim().split('\n')
+    if (lines.shift() !== 'mode: atomic') throw new Error('测试分组覆盖率模式必须为atomic')
+    for (const line of lines) {
+      const { location, numbers } = parseAtomicBlock(line, coordinates)
+      const previous = blocks.get(location)
+      if (previous && previous.statements !== numbers[4]) throw new Error('测试分组覆盖率语句数不一致')
+      const total = (previous?.count ?? 0) + numbers[5]
+      if (!Number.isSafeInteger(total)) throw new Error('测试分组覆盖率计数溢出')
+      blocks.set(location, { statements: numbers[4], count: total })
+    }
+  }
+  if (!blocks.size) throw new Error('测试分组覆盖率为空')
+  const lines = [...blocks].map(([location, value]) => `${location} ${value.statements} ${value.count}`)
+  await writeFile(target, `mode: atomic\n${lines.join('\n')}\n`)
+}
+
 /** 清理错误与原检查错误一同报告，不让 finally 替换原失败。 */
 async function cleanupDatabase(started, name, envFile, execute, env) {
   const failures = []
@@ -111,7 +132,10 @@ export async function runPlatformChecks({ root, temporary, env = process.env, ex
     await cleanupDeploymentResources({ runtimeInstallation, buildInstallation, env, execute })
     await cleanupRuntimeResources({ installation: runtimeInstallation, env, execute })
     await cleanupBuildResources({ installation: buildInstallation, env, execute })
-    await checked('go', ['test', '-count=1', '-race', '-tags=integration', '-coverpkg=./...', `-coverprofile=${goCoverage}`, './...'], join(root, 'server'))
+    const lifecycleCoverage = join(temporary, 'lifecycle-go.out')
+    await checked('go', ['test', '-count=1', '-p=1', '-race', '-tags=integration', '-coverpkg=./...', '-skip=^TestRealProjectRun', `-coverprofile=${goCoverage}`, './...'], join(root, 'server'))
+    await checked('go', ['test', '-count=1', '-p=1', '-race', '-tags=integration', '-coverpkg=./...', '-run=^TestRealProjectRun', `-coverprofile=${lifecycleCoverage}`, './internal/httpapi'], join(root, 'server'))
+    await mergeAtomicCoverage([goCoverage, lifecycleCoverage], goCoverage)
     const browserProfile = join(temporary, 'browser-go.out')
     await checked('go', ['tool', 'covdata', 'textfmt', `-i=${browserGoCoverage}`, `-o=${browserProfile}`], join(root, 'server'))
     // Sonar 以仓库为基准解析 Go 模块覆盖率路径，显式转换本次报告。
@@ -141,4 +165,19 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try { await runPlatformChecks({ root: process.cwd(), temporary }); process.stdout.write('[PLATFORM_OK] 检查通过\n') }
   catch (error) { preserve = requiresPreservation(error); process.stderr.write(`${error.message}\n`); process.exitCode = 1 }
   finally { if (preserve) process.stderr.write(`运行测试现场保留在 ${temporary}\n`); else await rm(temporary, { recursive: true, force: true }) }
+}
+
+/** 验证单个Go覆盖率块及跨报告同起点坐标，不拒绝编译器生成的零长度块。 */
+function parseAtomicBlock(line, coordinates) {
+  const match = /^(\S+):(\d+)\.(\d+),(\d+)\.(\d+) (\d+) (\d+)$/.exec(line)
+  if (!match) throw new Error('测试分组覆盖率块格式无效')
+  const [, file, startLine, startColumn, endLine, endColumn, statements, count] = match
+  const numbers = [startLine, startColumn, endLine, endColumn, statements, count].map(Number)
+  if (numbers.some(value => !Number.isSafeInteger(value)) || numbers.slice(0, 4).some(value => value < 1)) throw new Error('测试分组覆盖率数值无效')
+  if (numbers[0] > numbers[2] || numbers[0] === numbers[2] && numbers[1] > numbers[3]) throw new Error('测试分组覆盖率坐标无效')
+  const location = `${file}:${startLine}.${startColumn},${endLine}.${endColumn}`
+  const start = `${file}:${startLine}.${startColumn}`
+  if (coordinates.has(start) && coordinates.get(start) !== location) throw new Error('测试分组覆盖率块坐标不一致')
+  coordinates.set(start, location)
+  return { location, numbers }
 }

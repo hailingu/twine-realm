@@ -1,8 +1,9 @@
 /** 单一读取拥有者分别维护完整信封游标与实际重放游标，不确认任何编辑。 */
-import type { StateSnapshot } from '../contract/generated'
+import type { LifecycleState as StateSnapshot } from '../projectrun/model'
 import { RequestError } from '../project/api'
 import { StateReadError, type StateAPI } from './api'
-import { invalidState, ownedState, stateNumber, type StateMessage } from './model'
+import { ownedLifecycleState } from '../projectrun/model'
+import { invalidState, stateNumber, type StateMessage } from './model'
 
 /** 状态运输阶段不代表业务操作成功或资源已经就绪。 */
 export type FeedPhase = 'connecting' | 'catchingUp' | 'live' | 'disconnected' | 'failed'
@@ -88,7 +89,7 @@ export class ProjectFeed {
 
   /** @param signal 当前读取寿命 @returns 不回退已应用版本的一致信封。 */
   private async readFull(signal: AbortSignal): Promise<void> {
-    const value = ownedState(await this.api.snapshot(this.id, signal), this.id)
+    const value = ownedLifecycleState(await this.api.snapshot(this.id, signal), this.id)
     if (signal.aborted || this.signal.aborted) return
     if (this.current && (stateNumber(value.cursor) < stateNumber(this.current.cursor) || stateNumber(value.project.revision) < stateNumber(this.current.project.revision))) throw invalidState()
     if (this.current?.cursor === value.cursor && Date.parse(value.capturedAt) < Date.parse(this.current.capturedAt)) return

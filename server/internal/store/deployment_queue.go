@@ -21,7 +21,7 @@ func (store *Store) ClaimDeployment(ctx context.Context, now, until time.Time) (
 		return nil, fmt.Errorf("部署租约期限无效")
 	}
 	var id string
-	err := store.db.QueryRowContext(ctx, `SELECT o.project_id FROM deployment_operations o JOIN deployment_instances i ON i.current_operation_id=o.id WHERE o.state='accepted' OR (o.state='executing' AND (o.lease_until IS NULL OR o.lease_until<=?)) ORDER BY o.created_at,o.id LIMIT 1`, now).Scan(&id)
+	err := store.db.QueryRowContext(ctx, `SELECT o.project_id FROM deployment_operations o JOIN deployment_instances i ON i.current_operation_id=o.id WHERE (o.state='accepted' OR (o.state='executing' AND (o.lease_until IS NULL OR o.lease_until<=?))) AND NOT EXISTS (SELECT 1 FROM projectrun_instances p WHERE p.project_id=i.project_id AND (p.desired<>'running' OR p.state<>'succeeded')) ORDER BY o.created_at,o.id LIMIT 1`, now).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -34,6 +34,9 @@ func (store *Store) ClaimDeployment(ctx context.Context, now, until time.Time) (
 // claimDeploymentLocked 失效执行不能继续结算，即使旧操作在外部稍后完成。
 func claimDeploymentLocked(ctx context.Context, tx *sql.Tx, id string, now, until time.Time) (*servicedeploy.Lease, error) {
 	if err := lockBuildProject(ctx, tx, id); err != nil {
+		return nil, err
+	}
+	if err := projectRunPermission(ctx, tx, id); err != nil {
 		return nil, err
 	}
 	instance, err := readDeploymentInstance(ctx, tx, id, true)
@@ -70,15 +73,19 @@ func claimDeploymentLocked(ctx context.Context, tx *sql.Tx, id string, now, unti
 
 // DeploymentAuthorized 供外部命令期间只读核实当前执行许可。
 func (store *Store) DeploymentAuthorized(ctx context.Context, lease servicedeploy.Lease) (bool, error) {
-	var count int
-	err := store.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM deployment_operations o JOIN deployment_instances i ON i.current_operation_id=o.id WHERE o.id=? AND o.project_id=? AND o.service_id=? AND o.target_id=? AND o.execution=? AND o.state='executing' AND o.lease_until>?`, lease.Operation.ID, lease.Target.ProjectID, lease.Target.ServiceID, lease.Target.ID, lease.Execution, time.Now().UTC()).Scan(&count)
-	return count == 1, err
+	return runtimeWrite(ctx, store.db, func(tx *sql.Tx) (bool, error) {
+		_, valid, err := lockedDeploymentLease(ctx, tx, lease)
+		return valid, err
+	})
 }
 
 // lockedDeploymentLease 所有写入都按项目、实例、操作的相同顺序核实围栏。
 func lockedDeploymentLease(ctx context.Context, tx *sql.Tx, lease servicedeploy.Lease) (deploymentOperationRow, bool, error) {
 	var empty deploymentOperationRow
 	if err := lockBuildProject(ctx, tx, lease.Target.ProjectID); err != nil {
+		return empty, false, err
+	}
+	if err := projectRunPermission(ctx, tx, lease.Target.ProjectID); err != nil {
 		return empty, false, err
 	}
 	instance, err := readDeploymentInstance(ctx, tx, lease.Target.ProjectID, true)

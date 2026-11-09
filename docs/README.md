@@ -42,3 +42,5 @@
 - 本仓库文档、代码注释与提交信息均使用中文。
 
 当前运行见[根 README](../README.md)、[本地切片](development/local-project-slice.md)、[组件目录](development/component-catalog-slice.md)、[服务依赖声明](development/service-bindings-slice.md)、[MySQL 运行切片](development/mysql-runtime-slice.md)、[固定源码隔离构建](development/service-build-slice.md)、[单服务 MySQL 部署](development/service-deployment-slice.md)和[Go 工程包 / 最小模板](development/service-profile-slice.md)。
+
+项目保留数据停止与恢复的开发中范围和验收矩阵见[项目生命周期切片](development/project-lifecycle-slice.md)。
