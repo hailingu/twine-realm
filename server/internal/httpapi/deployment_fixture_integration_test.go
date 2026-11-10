@@ -5,6 +5,7 @@ package httpapi_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net"
@@ -217,10 +218,10 @@ func (f *deploymentFixture) buildCandidate(t *testing.T) {
 	if err != nil || lease == nil || lease.Target.ProjectID != f.project.ID {
 		t.Fatal("未领取本次真实构建", err)
 	}
-	candidate, err := f.build.Execute(ctx, lease.Target, lease.Operation.ID, inspector, func(ctx context.Context, point servicebuild.Step) (bool, error) {
+	candidate, err := f.executeFixtureBuild(ctx, lease.Target, lease.Operation.ID, inspector, func(ctx context.Context, point servicebuild.Step) (bool, error) {
 		t.Log("部署示例构建", point.Name, point.State)
 		return base.database.CheckpointBuild(ctx, *lease, point)
-	})
+	}, t)
 	if err != nil {
 		t.Fatal("独立业务示例真实构建失败", err)
 	}
@@ -229,6 +230,42 @@ func (f *deploymentFixture) buildCandidate(t *testing.T) {
 	}
 	f.candidate = *candidate
 	f.refreshDatabase(t)
+}
+
+// executeFixtureBuild 只在门禁明确提供本轮私有缓存时复用固定夹具；生产构建API及专门真实构建验收不走此入口。
+func (f *deploymentFixture) executeFixtureBuild(ctx context.Context, target servicebuild.Target, operationID string, exporter servicebuild.SourceExporter, report servicebuild.Reporter, t *testing.T) (candidate *servicebuild.Candidate, err error) {
+	t.Helper()
+	directory, runID := os.Getenv("TWINE_TEST_FIXTURE_CACHE_DIRECTORY"), os.Getenv("TWINE_TEST_FIXTURE_CACHE_RUN_ID")
+	if directory == "" && runID == "" {
+		return f.build.Execute(ctx, target, operationID, exporter, report)
+	}
+	cache, err := servicebuild.OpenFixtureCache(directory, runID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := cache.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
+	candidate, hit, err := cache.Execute(ctx, f.build, target, operationID, exporter, report)
+	if err != nil {
+		return nil, err
+	}
+	if err := f.build.VerifyCandidate(ctx, *candidate); err != nil {
+		return nil, err
+	}
+	mode := "cold"
+	if hit {
+		mode = "hit"
+	}
+	t.Log("[FIXTURE_BUILD_CACHE]", mode, "operation", candidate.OperationID, "source", candidate.SourceDigest, "binary", candidate.Image.BinaryDigest, "process", os.Getpid())
+	for _, check := range candidate.Checks {
+		if check.Name == "vet" || check.Name == "test" || check.Name == "build" {
+			t.Log("[FIXTURE_BUILD_PROOF]", mode, check.Name, "originalCompletedAt", check.CompletedAt, "output", check.OutputDigest)
+		}
+	}
+	return candidate, nil
 }
 
 // refreshDatabase 构建耗时后重新取得真实MySQL事实，不篡改时间伪造新鲜度。

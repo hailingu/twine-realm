@@ -23,6 +23,25 @@ func (work *execution) start(ctx context.Context) (id string, err error) {
 
 // check 依赖下载后核实断网，所有业务代码只在断网沙箱内运行。
 func (work *execution) check(ctx context.Context, id string, material project.SourceMaterial) error {
+	if err := work.checkPrerequisites(ctx, id, material); err != nil {
+		return err
+	}
+	checks := []struct {
+		name string
+		args []string
+	}{{"vet", []string{"vet", "./..."}}, {"test", []string{"test", "-race", "-count=1", "./..."}}}
+	for _, check := range checks {
+		if err := work.step(ctx, check.name, func() ([]byte, error) { return work.goCommand(ctx, id, check.args...) }); err != nil {
+			return err
+		}
+	}
+	return work.step(ctx, "build", func() ([]byte, error) {
+		return work.driver.run(ctx, "exec", "--env", "CGO_ENABLED=0", id, "/usr/local/go/bin/go", "build", "-trimpath", "-buildvcs=false", "-o", "/output/service", "./cmd/service")
+	})
+}
+
+// checkPrerequisites 保持原依赖、断网、工具链、格式及模块检查，执行任何后续构建前均须真实通过。
+func (work *execution) checkPrerequisites(ctx context.Context, id string, material project.SourceMaterial) error {
 	if err := work.step(ctx, "dependencies", func() ([]byte, error) { return work.goCommand(ctx, id, "mod", "download") }); err != nil {
 		return err
 	}
@@ -44,18 +63,7 @@ func (work *execution) check(ctx context.Context, id string, material project.So
 	if err := work.step(ctx, "format", func() ([]byte, error) { return work.format(ctx, id, material) }); err != nil {
 		return err
 	}
-	checks := []struct {
-		name string
-		args []string
-	}{{"module", []string{"mod", "verify"}}, {"vet", []string{"vet", "./..."}}, {"test", []string{"test", "-race", "-count=1", "./..."}}}
-	for _, check := range checks {
-		if err := work.step(ctx, check.name, func() ([]byte, error) { return work.goCommand(ctx, id, check.args...) }); err != nil {
-			return err
-		}
-	}
-	return work.step(ctx, "build", func() ([]byte, error) {
-		return work.driver.run(ctx, "exec", "--env", "CGO_ENABLED=0", id, "/usr/local/go/bin/go", "build", "-trimpath", "-buildvcs=false", "-o", "/output/service", "./cmd/service")
-	})
+	return work.step(ctx, "module", func() ([]byte, error) { return work.goCommand(ctx, id, "mod", "verify") })
 }
 
 // goCommand 不使用shell或用户声明argv，失败输出不会写进API。
