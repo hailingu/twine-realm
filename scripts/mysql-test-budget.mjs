@@ -1,6 +1,7 @@
 /** 三实例测试预算只约束数据库数量，不复制平台构建权限或清理外部资源。 */
-import { mkdir, lstat, writeFile, readFile, unlink, rmdir } from 'node:fs/promises'
+import { mkdir, lstat, writeFile, readFile, unlink, rmdir, appendFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { constants } from 'node:fs'
 import { homedir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
@@ -79,27 +80,34 @@ function databaseProcesses(value, header = false) {
 /** Linux仅在精确容器cgroup证明下消重；VM同PID、Mac或已消失PID均不猜测归属。 */
 async function hostDatabaseCount(host, containers, { platform = process.platform, readCgroup = pid => readFile('/proc/' + pid + '/cgroup', 'utf8') }) {
   let count = 0
+  const attributed = new Map()
   for (const pid of host) {
-    const owners = containers.filter(value => value.pids.has(pid))
-    if (platform !== 'linux' || !owners.length) { count++; continue }
+    const owners = containers.filter(value => value.databaseCount > 0)
+    if (platform !== 'linux') { count++; continue }
     let cgroup
     try { cgroup = await readCgroup(pid) } catch (error) {
       if (error.code !== 'ENOENT') { throw error }
-      count++; continue
+      throw Object.assign(new Error('数据库普查快照变化'), { budgetCode: 'SNAPSHOT_CHANGED' })
     }
     const segments = new Set(cgroup.split('\n').flatMap(line => line.split(':').slice(2).join(':').split('/')))
-    if (!owners.some(value => segments.has(value.id) || segments.has('docker-' + value.id + '.scope'))) count++
+    const owner = owners.find(value => segments.has(value.id) || segments.has('docker-' + value.id + '.scope'))
+    if (owner) attributed.set(owner.id, (attributed.get(owner.id) ?? 0) + 1)
+    else count++
   }
-  return count
+  const additional = containers.reduce((total, value) => total + Math.max(0, (attributed.get(value.id) ?? 0) - value.databaseCount), 0)
+  return { hostUnattributed: count, additional }
 }
 
 /** 宿主和全部运行容器均占预算，绝不停止无关实例。 */
-export async function surveyDatabases(execute, env, context, processOptions = {}) {
+async function surveySnapshot(execute, env, context, processOptions) {
   const host = databaseProcesses(await checked(execute, 'ps', ['-axo', 'pid=,comm='], env))
   const docker = args => checked(execute, 'docker', ['--context', context, ...args], env)
   const ids = (await docker(['ps', '--quiet', '--no-trunc'])).split(/\s+/).filter(Boolean)
   if (!ids.every(id => ID.test(id)) || new Set(ids).size !== ids.length) throw new Error('容器列表无效')
-  if (!ids.length) return { count: host.size, running: new Set() }
+  if (!ids.length) {
+    const { hostUnattributed } = await hostDatabaseCount(host, [], processOptions)
+    return { count: hostUnattributed, hostCandidates: host.size, containerDB: 0, hostUnattributed, running: new Set() }
+  }
   const values = JSON.parse(await docker(['inspect', ...ids]))
   if (!Array.isArray(values) || values.length !== ids.length || new Set(values.map(v => v.Id)).size !== ids.length) throw new Error('容器普查不完整')
   const containers = []; let count = 0
@@ -107,11 +115,24 @@ export async function surveyDatabases(execute, env, context, processOptions = {}
     if (!ids.includes(value.Id)) throw new Error('运行容器身份改变')
     const pids = await containerDatabaseProcesses(value, docker, ids)
     if (pids === null) continue
-    containers.push({ id: value.Id, pids })
-    count += Math.max(databaseConfig(value.Config) ? 1 : 0, pids.size)
+    const databaseCount = Math.max(databaseConfig(value.Config) ? 1 : 0, pids.size)
+    containers.push({ id: value.Id, pids, databaseCount })
+    count += databaseCount
   }
-  count += await hostDatabaseCount(host, containers, processOptions)
-  return { count, running: new Set(containers.map(value => value.id)) }
+  const { hostUnattributed, additional } = await hostDatabaseCount(host, containers, processOptions)
+  count += additional
+  return { count: count + hostUnattributed, hostCandidates: host.size, containerDB: count, hostUnattributed, running: new Set(containers.map(value => value.id)) }
+}
+
+/** PID消失只触发整轮只读重采，最多三次，不重复任何启动或解除旧未知锁。 */
+export async function surveyDatabases(execute, env, context, processOptions = {}) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try { return await surveySnapshot(execute, env, context, processOptions) }
+    catch (error) {
+      if (error.budgetCode !== 'SNAPSHOT_CHANGED') throw error
+    }
+  }
+  throw Object.assign(new Error('数据库普查持续变化'), { budgetCode: 'SNAPSHOT_UNSTABLE' })
 }
 
 /** 普通容器可在普查窗口退出；只读同ID复核和新running集合共同证明才跳过。 */
@@ -211,22 +232,81 @@ export async function executeBudgetedDocker(args, { execute, env, identity, star
     await candidateCount(args, docker, new Set())
     return execute('docker', ['--context', identity.context, ...args], { ...options, env })
   }
+  return executeBudgetedStart(args, { execute, env, identity, startLock }, options, docker)
+}
+
+/** 阶段和计数诊断只来自固定枚举及数字，任何外部错误内容均不进入诊断。 */
+async function executeBudgetedStart(args, { execute, env, identity, startLock }, options, docker) {
   const release = await waitStartLock(startLock)
-  let uncertain = false
+  let uncertain = false; let stage = 'pre_survey'; let counts = {}
   try {
     const state = await surveyDatabases(execute, env, identity.context)
+    counts = state
+    stage = 'candidates'
     const extra = await candidateCount(args, docker, state.running)
+    counts = { ...counts, extra }
     if (extra !== null && state.count + extra > 3) throw new Error('本机MySQL最多3实例，未启动额外数据库')
     uncertain = true
+    stage = 'start'
     const result = await execute('docker', ['--context', identity.context, ...args], { ...options, env })
     if (result.code !== 0 || result.uncertain === true) throw new Error('Docker启动结果未知，保留预算锁')
-    if (extra !== null && (await surveyDatabases(execute, env, identity.context)).count > 3) throw new Error('外部数据库并发变化，停止本轮测试并保留现场')
+    stage = 'post_survey'
+    counts = { extra }
+    counts = { ...await surveyDatabases(execute, env, identity.context), extra }
+    if (counts.count > 3) throw new Error('外部数据库并发变化，停止本轮测试并保留现场')
     uncertain = false
     return result
   } catch (error) {
     if (uncertain) error.preserveTemporary = true
+    error.budgetDiagnostic = diagnosticFields(error, stage, counts)
     throw error
   } finally { if (!uncertain) await release() }
+}
+
+/** 仅公开固定诊断枚举及有限整数，丢弃原错误、路径、参数和资源身份。 */
+function diagnosticFields(error, stage, counts) {
+  const code = ['SNAPSHOT_UNSTABLE'].includes(error.budgetCode) ? error.budgetCode : 'BUDGET_CHECK_FAILED'
+  const result = { code, stage }
+  for (const key of ['hostCandidates', 'containerDB', 'hostUnattributed', 'count', 'extra']) {
+    if (Number.isSafeInteger(counts[key]) && counts[key] >= 0) result[key] = counts[key]
+  }
+  return result
+}
+
+/** 子进程只输出一行白名单诊断，不暴露任意错误文本。 */
+export function budgetDiagnosticLine(error) {
+  const value = error?.budgetDiagnostic
+  const stage = ['pre_survey', 'candidates', 'start', 'post_survey'].includes(value?.stage) ? value.stage : 'guard'
+  return JSON.stringify(diagnosticFields({ budgetCode: value?.code }, stage, value ?? {})) + '\n'
+}
+
+/** 诊断sidecar限当前用户私有guard目录和小型普通文件，拒绝符号链接。 */
+async function diagnosticFile(directory) {
+  const parent = await lstat(directory)
+  if (!parent.isDirectory() || parent.uid !== process.getuid() || (parent.mode & 0o777) !== 0o700) throw new Error('诊断目录归属无效')
+  const file = join(directory, 'diagnostics.jsonl')
+  try {
+    const value = await lstat(file)
+    if (!value.isFile() || value.uid !== process.getuid() || (value.mode & 0o777) !== 0o600 || value.size > 65536) throw new Error('诊断文件归属或大小无效')
+  } catch (error) { if (error.code !== 'ENOENT') throw error }
+  return file
+}
+
+/** 写入仅经过白名单重新构造的单行诊断，不能写入原错误文本。 */
+export async function recordBudgetDiagnostic(directory, error) {
+  const file = await diagnosticFile(directory)
+  await appendFile(file, budgetDiagnosticLine(error), { mode: 0o600, flag: constants.O_APPEND | constants.O_CREAT | constants.O_WRONLY | constants.O_NOFOLLOW })
+}
+
+/** 外层失败报告只读取和再次筛选本轮固定sidecar，不解析其他文件。 */
+export async function readBudgetDiagnostics(directory) {
+  const file = await diagnosticFile(directory)
+  let content
+  try { content = await readFile(file, 'utf8') } catch (error) {
+    if (error.code === 'ENOENT') { return [] }
+    throw error
+  }
+  return content.split('\n').filter(Boolean).map(line => budgetDiagnosticLine({ budgetDiagnostic: JSON.parse(line) }).trim())
 }
 
 /** 本轮并发启动串行化；旧锁不会由新调用擅自移除。 */
@@ -262,11 +342,11 @@ export async function createMySQLBudget({ directory, execute, env, dockerPath, l
     if ((await surveyDatabases(execute, env, identity.context)).count >= 3) throw new Error('现有数据库已占满3实例预算')
     await mkdir(directory, { mode: 0o700 })
     const startLock = join(directory, 'starting'); const config = { env, identity, startLock }
-    const source = '#!' + process.execPath + '\nimport { executeBudgetedDocker, guardExecutor } from ' + JSON.stringify(import.meta.url) + ';\nconst config=' + JSON.stringify({ identity, startLock }) + ';\ntry {const result=await executeBudgetedDocker(process.argv.slice(2),{...config,env:process.env,execute:guardExecutor(' + JSON.stringify(dockerPath) + ',true)});process.exit(result.code ?? 1)}catch{process.stderr.write("数据库测试预算拒绝执行，保留现场\\n");process.exit(1)}\n'
+    const source = '#!' + process.execPath + '\nimport { executeBudgetedDocker, guardExecutor, wrapperBudgetDiagnostic } from ' + JSON.stringify(import.meta.url) + ';\nconst config=' + JSON.stringify({ identity, startLock, directory }) + ';\ntry {const result=await executeBudgetedDocker(process.argv.slice(2),{...config,env:process.env,execute:guardExecutor(' + JSON.stringify(dockerPath) + ',true)});process.exit(result.code ?? 1)}catch(error){process.stderr.write(await wrapperBudgetDiagnostic(config.directory,error));process.exit(1)}\n'
     await writeFile(join(directory, 'docker'), source, { mode: 0o700, flag: 'wx' })
     const childEnv = guardedEnvironment(directory, env)
     const assertIdle = async () => { const unlock = await waitStartLock(startLock); await unlock() }
-    return { context: identity.context, daemonID: identity.daemonID, env: childEnv, release: async () => { await assertIdle(); await release() }, assertIdle, execute: budgetExecutor({ directory, dockerPath, execute, config, childEnv }) }
+    return { context: identity.context, daemonID: identity.daemonID, env: childEnv, release: async () => { await assertIdle(); await release() }, assertIdle, readDiagnostics: () => readBudgetDiagnostics(directory), execute: budgetExecutor({ directory, dockerPath, execute, config, childEnv }) }
   } catch (error) { await release(); throw error }
 }
 
@@ -279,9 +359,12 @@ function guardedEnvironment(directory, env) {
 /** Docker使用已核实绝对路径，避免受控PATH再次进入guard；所有分支尊重精简环境。 */
 function budgetExecutor({ directory, dockerPath, execute, config, childEnv }) {
   const invoke = (command, args, options) => execute(command === 'docker' ? dockerPath : command, args, options)
-  return (command, args, options = {}) => {
+  return async (command, args, options = {}) => {
     const env = guardedEnvironment(directory, options.env ?? childEnv)
-    if (command === 'docker') return executeBudgetedDocker(args, { ...config, env, execute: invoke }, { ...options, env })
+    if (command === 'docker') {
+      try { return await executeBudgetedDocker(args, { ...config, env, execute: invoke }, { ...options, env }) }
+      catch (error) { return preserveBudgetFailure(directory, error) }
+    }
     return execute(command, args, { ...options, env })
   }
 }
@@ -292,4 +375,18 @@ export async function privateBudgetPath(directory = join(homedir(), '.twine-real
   const value = await lstat(directory)
   if (!value.isDirectory() || value.uid !== process.getuid() || (value.mode & 0o777) !== 0o700) throw new Error('测试锁目录不是当前用户私有目录')
   return join(directory, 'mysql-budget')
+}
+
+/** 诊断落盘失败不能替换原未知动作错误或允许清理现场。 */
+async function preserveBudgetFailure(directory, error) {
+  try { await recordBudgetDiagnostic(directory, error) }
+  catch (diagnosticError) { throw Object.assign(new AggregateError([error, diagnosticError], '预算诊断未确认，保留现场'), { preserveTemporary: true }) }
+  throw error
+}
+
+/** wrapper记录失败也只返回固定诊断，禁止Node输出原异常堆栈或路径。 */
+export async function wrapperBudgetDiagnostic(directory, error) {
+  try { await recordBudgetDiagnostic(directory, error) }
+  catch { return JSON.stringify({ code: 'DIAGNOSTIC_WRITE_FAILED', stage: 'guard' }) + '\n' }
+  return budgetDiagnosticLine(error)
 }

@@ -7,7 +7,7 @@ import test from 'node:test'
 import { runPlatformChecks as platformChecks, mergeAtomicCoverage } from './platform-check.mjs'
 
 /** 资源预算本身有独立协议测试，本套只模拟预算已授予的编排。 */
-const runPlatformChecks = options => platformChecks({ ...options, budgetFactory: async ({ execute, env }) => ({ execute, env, assertIdle: async () => {}, release: async () => {} }) })
+const runPlatformChecks = options => platformChecks({ ...options, budgetFactory: async ({ execute, env }) => ({ execute, env, assertIdle: async () => {}, release: async () => {}, readDiagnostics: async () => [] }) })
 
 /** 模拟工具协议并在真实临时文件系统产生本次报告。 */
 async function fixture(options, action) {
@@ -144,5 +144,23 @@ test('检查原错与预算drain失败一同保留，未知不释放', async () 
     let releases = 0
     await assert.rejects(platformChecks({ root: process.cwd(), temporary: fake.temporary, execute: fake.execute, env: {}, write: () => {}, budgetFactory: async ({ env }) => ({ env, execute: async () => { throw new Error('原始检查失败') }, assertIdle: async () => { throw new Error('启动未知') }, release: async () => { releases++ } }) }), error => error instanceof AggregateError && error.errors[0].message === '原始检查失败' && error.errors[1].preserveTemporary === true)
     assert.equal(releases, 0)
+  })
+})
+
+test('失败时输出本轮安全诊断，未知不释放且原失败仍失败', async () => {
+  await fixture({}, async fake => {
+    const output = []; let releases = 0; let reads = 0
+    const original = Object.assign(new Error('原始未知失败'), { preserveTemporary: true })
+    const line = '{"code":"BUDGET_LIMIT","stage":"preflight","count":3}'
+    await assert.rejects(platformChecks({ root: process.cwd(), temporary: fake.temporary, env: {}, write: value => output.push(value), budgetFactory: async ({ env }) => ({ env, execute: async () => { throw original }, assertIdle: async () => {}, release: async () => { releases++ }, readDiagnostics: async () => { reads++; return [line] } }) }), error => error instanceof AggregateError && error.errors[0] === original)
+    assert.deepEqual(output, [line + '\n']); assert.equal(reads, 1); assert.equal(releases, 0)
+  })
+})
+
+test('诊断读取失败不覆盖原检查和释放错误，不回显读取异常内容', async () => {
+  await fixture({}, async fake => {
+    const output = []; let releases = 0
+    await assert.rejects(platformChecks({ root: process.cwd(), temporary: fake.temporary, env: {}, write: value => output.push(value), budgetFactory: async ({ env }) => ({ env, execute: async () => { throw new Error('原检查错误') }, assertIdle: async () => {}, release: async () => { releases++; throw new Error('释放错误') }, readDiagnostics: async () => { throw new Error('不可回显的读取细节') } }) }), error => error instanceof AggregateError && error.errors.length === 3 && error.errors[0].message === '原检查错误' && error.errors[1].message === '释放错误' && !error.message.includes('不可回显'))
+    assert.deepEqual(output, []); assert.equal(releases, 1)
   })
 })

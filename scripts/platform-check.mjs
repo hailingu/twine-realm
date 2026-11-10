@@ -88,8 +88,20 @@ export async function runPlatformChecks({ root, temporary, env = process.env, ex
     try { await budget.assertIdle(); await budget.release() }
     catch (error) { error.preserveTemporary = true; failures.push(error) }
   }
-  if (failures.length) throw new AggregateError(failures, failures.map(error => error.message).join('\n'))
+  if (failures.length) {
+    await reportBudgetDiagnostics(budget, write, failures)
+    throw new AggregateError(failures, failures.map(error => error.message).join('\n'))
+  }
   return reports
+}
+
+/** 只读预算模块白名单诊断，不能回显底层stderr或覆盖原始失败。 */
+async function reportBudgetDiagnostics(budget, write, failures) {
+  try {
+    for (const line of await budget.readDiagnostics()) write(line + '\n')
+  } catch {
+    failures.push(new Error('本轮预算安全诊断读取或输出失败'))
+  }
 }
 
 /** 默认入口固定已核实的Docker二进制，不修改用户默认context。 */

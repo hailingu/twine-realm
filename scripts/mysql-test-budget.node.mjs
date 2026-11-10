@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { mkdtemp, rm, readFile, writeFile, rename, mkdir, access, chmod, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { acquireBudgetLock, localDockerIdentity, surveyDatabases, executeBudgetedDocker, createMySQLBudget, privateBudgetPath } from './mysql-test-budget.mjs'
+import { acquireBudgetLock, localDockerIdentity, surveyDatabases, executeBudgetedDocker, createMySQLBudget, privateBudgetPath, budgetDiagnosticLine, recordBudgetDiagnostic, readBudgetDiagnostics } from './mysql-test-budget.mjs'
 const identity = { context: 'local', endpoint: 'unix:///local.sock', daemonID: 'original-daemon' }
 const ids = ['a', 'b', 'c'].map(value => value.repeat(64))
 
@@ -167,7 +167,7 @@ test('容器ID前缀和退出后PID缺失不作为消重证明', async () => {
   const prefix = async pid => '0::/docker/' + ids[pid - 101] + 'extra\n'
   assert.equal((await surveyDatabases(execute, {}, 'local', { platform: 'linux', readCgroup: prefix })).count, 4)
   const missing = async () => { throw Object.assign(new Error('进程已退出'), { code: 'ENOENT' }) }
-  assert.equal((await surveyDatabases(execute, {}, 'local', { platform: 'linux', readCgroup: missing })).count, 4)
+  await assert.rejects(surveyDatabases(execute, {}, 'local', { platform: 'linux', readCgroup: missing }), error => error.budgetCode === 'SNAPSHOT_UNSTABLE')
 })
 
 test('PID解析拒绝混合数字及越界值，普通含空格进程名不误计', async () => {
@@ -177,7 +177,7 @@ test('PID解析拒绝混合数字及越界值，普通含空格进程名不误�
     await assert.rejects(surveyDatabases(execute, {}, 'local'))
   }
   const execute = (command, args, options) => command === 'ps' ? { code: 0, output: '  123\t/Applications/Normal App\n 124  /usr/sbin/mysqld  \n' } : base(command, args, options)
-  assert.equal((await surveyDatabases(execute, {}, 'local')).count, 1)
+  assert.equal((await surveyDatabases(execute, {}, 'local', { platform: 'linux', readCgroup: async () => '0::/user.slice/host' })).count, 1)
 })
 
 /** 普查窗口内退出的原容器仍可inspect，后续running集合能明确证实退出。 */
@@ -270,4 +270,90 @@ test('只读短context覆写拒绝，不误拦非白名单exec的shell参数', a
   for (const option of ['-c', '-cother']) await assert.rejects(executeBudgetedDocker(['inspect', ids[0], option], config))
   await executeBudgetedDocker(['exec', ids[0], 'sh', '-c', 'true'], config)
   assert.equal(state.starts, 1)
+})
+
+test('Linux旧宿主PID已换但仍归已计DB容器，不重复计数', async () => {
+  const result = await surveyDatabases(linuxSurvey('199 mysqld\n'), {}, 'local', { platform: 'linux', readCgroup: async () => '0::/docker/' + ids[0] })
+  assert.equal(result.count, 2)
+})
+
+test('Linux消失PID只重采普查三次，持续变化失败关闭', async () => {
+  let reads = 0
+  await assert.rejects(surveyDatabases(linuxSurvey('199 mysqld\n'), {}, 'local', { platform: 'linux', readCgroup: async () => { reads++; throw Object.assign(new Error('gone'), { code: 'ENOENT' }) } }))
+  assert.equal(reads, 3)
+})
+
+test('ENOENT后整轮重采成功，稳定外部宿主和非DB容器不被吞掉', async () => {
+  let reads = 0
+  const options = { platform: 'linux', readCgroup: async () => { if (++reads === 1) throw Object.assign(new Error('gone'), { code: 'ENOENT' }); return '0::/user.slice/host' } }
+  assert.equal((await surveyDatabases(linuxSurvey('199 mysqld\n'), {}, 'local', options)).count, 3)
+  assert.equal(reads, 2)
+  const base = fake(1).execute
+  const execute = (command, args, options) => command === 'ps' ? { code: 0, output: '199 mysqld\n' } : args.includes('inspect') ? { code: 0, output: JSON.stringify([{ Id: ids[0], State: { Running: true }, Config: { Image: 'non-db' } }]) } : args.includes('top') ? { code: 0, output: 'PID COMMAND\n200 tail\n' } : base(command, args, options)
+  assert.equal((await surveyDatabases(execute, {}, 'local', { platform: 'linux', readCgroup: async () => '0::/docker/' + ids[0] })).count, 1)
+})
+
+test('已存在未知锁不能由随后成功只读普查结算，诊断只含固定字段', async t => {
+  const state = fake(); state.unknown = true; const config = await settings(t, state)
+  await assert.rejects(executeBudgetedDocker(['run', 'mysql'], config), error => {
+    const data = JSON.parse(budgetDiagnosticLine(error))
+    assert.equal(data.stage, 'start'); assert.equal(data.extra, 1)
+    return error.preserveTemporary === true
+  })
+  state.unknown = false
+  await surveyDatabases(state.execute, {}, 'local')
+  await access(join(config.startLock, 'owner')); assert.equal(state.starts, 1)
+  const output = budgetDiagnosticLine({ message: 'SECRET', budgetDiagnostic: { code: 'SECRET', stage: 'SECRET', count: 3, extra: 'SECRET', argv: 'SECRET' } })
+  assert.deepEqual(JSON.parse(output), { code: 'BUDGET_CHECK_FAILED', stage: 'guard', count: 3 })
+  assert.equal(output.includes('SECRET'), false)
+})
+
+test('同容器host两进程top一进程仍按max保守计数', async () => {
+  const result = await surveyDatabases(linuxSurvey('199 mysqld\n198 mysqld\n'), {}, 'local', { platform: 'linux', readCgroup: async () => '0::/docker/' + ids[0] })
+  assert.equal(result.count, 3)
+})
+
+test('旧PID消失后重新获取宿主新PID快照，成功且只读', async () => {
+  let snapshots = 0; const base = linuxSurvey('')
+  const execute = (command, args, options) => command === 'ps' ? { code: 0, output: ++snapshots === 1 ? '199 mysqld\n' : '101 mysqld\n' } : base(command, args, options)
+  const readCgroup = async pid => { if (pid === 199) throw Object.assign(new Error('gone'), { code: 'ENOENT' }); return '0::/docker/' + ids[0] }
+  assert.equal((await surveyDatabases(execute, {}, 'local', { platform: 'linux', readCgroup })).count, 2)
+  assert.equal(snapshots, 2)
+})
+
+test('私有sidecar写读双重白名单，原错误及伪造字段不能进入日志', async t => {
+  const root = await temporary(t)
+  assert.deepEqual(await readBudgetDiagnostics(root), [])
+  await recordBudgetDiagnostic(root, { message: 'SECRET', budgetDiagnostic: { code: 'SNAPSHOT_UNSTABLE', stage: 'post_survey', count: 4, extra: 'SECRET' } })
+  let lines = await readBudgetDiagnostics(root)
+  assert.deepEqual(JSON.parse(lines[0]), { code: 'SNAPSHOT_UNSTABLE', stage: 'post_survey', count: 4 })
+  await writeFile(join(root, 'diagnostics.jsonl'), JSON.stringify({ code: 'SECRET', stage: 'SECRET', count: 3, token: 'SECRET' }) + '\n')
+  lines = await readBudgetDiagnostics(root)
+  assert.equal(lines[0].includes('SECRET'), false); assert.equal(lines[0].includes('\n'), false)
+})
+
+test('sidecar拒绝符号链接与非私有权限，不读取任意文件', async t => {
+  const root = await temporary(t); const target = join(root, 'unrelated'); await writeFile(target, 'SECRET')
+  await symlink(target, join(root, 'diagnostics.jsonl'))
+  await assert.rejects(recordBudgetDiagnostic(root, new Error('SECRET')))
+  await assert.rejects(readBudgetDiagnostics(root))
+  assert.equal(await readFile(target, 'utf8'), 'SECRET')
+  const other = await temporary(t); await chmod(other, 0o755)
+  await assert.rejects(readBudgetDiagnostics(other))
+})
+
+test('真实wrapper子进程诊断落盘失败仅固定码，不泄露异常路径或清未知锁', async t => {
+  const { spawnSync } = await import('node:child_process')
+  const root = await temporary(t); const guard = join(root, 'guard'); const state = fake()
+  const budget = await createMySQLBudget({ directory: guard, execute: state.execute, env: { PATH: '/fake/bin' }, dockerPath: '/fake/SECRET_DOCKER', lockPath: join(root, 'lock') })
+  const target = join(root, 'SECRET_FILE'); await writeFile(target, 'SECRET')
+  await symlink(target, join(guard, 'diagnostics.jsonl'))
+  await mkdir(join(guard, 'starting')); await writeFile(join(guard, 'starting', 'owner'), 'preserve-unknown')
+  const result = spawnSync(process.execPath, [join(guard, 'docker'), '--context', 'other', 'inspect'], { encoding: 'utf8' })
+  assert.equal(result.status, 1)
+  assert.deepEqual(JSON.parse(result.stderr.trim()), { code: 'DIAGNOSTIC_WRITE_FAILED', stage: 'guard' })
+  assert.equal(result.stderr.includes(root), false); assert.equal(result.stderr.includes('SECRET'), false)
+  assert.equal(await readFile(join(guard, 'starting', 'owner'), 'utf8'), 'preserve-unknown')
+  assert.equal(await readFile(target, 'utf8'), 'SECRET')
+  assert.equal(typeof budget.release, 'function')
 })
