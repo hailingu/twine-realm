@@ -77,19 +77,41 @@ function databaseProcesses(value, header = false) {
   return result
 }
 
-/** Linux仅在精确容器cgroup证明下消重；VM同PID、Mac或已消失PID均不猜测归属。 */
-async function hostDatabaseCount(host, containers, { platform = process.platform, readCgroup = pid => readFile('/proc/' + pid + '/cgroup', 'utf8') }) {
+/** 宿主PID与cgroup紧邻采样，不在两者之间插入缓慢Docker读取；失败仍整轮重采。 */
+async function captureHostGroups(host, { platform = process.platform, readCgroup = pid => readFile('/proc/' + pid + '/cgroup', 'utf8'), readStat = pid => readFile('/proc/' + pid + '/stat', 'utf8') }) {
+  const groups = new Map()
+  if (platform !== 'linux') return groups
+  for (const pid of host) {
+    let cgroup
+    try { cgroup = await readCgroup(pid) } catch (error) {
+      if (error.code !== 'ENOENT') { throw error }
+      throw Object.assign(new Error('数据库普查快照变化'), { budgetCode: 'SNAPSHOT_CHANGED', missingKind: await missingProcessKind(pid, readStat) })
+    }
+    groups.set(pid, new Set(cgroup.split('\n').flatMap(line => line.split(':').slice(2).join(':').split('/'))))
+  }
+  return groups
+}
+
+/** cgroup缺失后的stat只用于固定诊断，不用于减数、判定PID身份或结算旧命令。 */
+async function missingProcessKind(pid, readStat) {
+  let value
+  try { value = await readStat(pid) } catch (error) { return error.code === 'ENOENT' ? 'STAT_MISSING' : 'STAT_UNREADABLE' }
+  if (typeof value !== 'string' || value.length > 65536 || !value.startsWith(pid + ' (')) return 'STAT_UNREADABLE'
+  const end = value.lastIndexOf(')')
+  const fields = value.slice(end + 1).trim().split(/\s+/)
+  if (end < 0 || fields.length < 20 || !/^\d+$/.test(fields[19])) return 'STAT_UNREADABLE'
+  if (['Z', 'X', 'x'].includes(fields[0])) return 'STAT_EXITED'
+  return ['R', 'S', 'D', 'T', 't', 'W', 'I', 'P'].includes(fields[0]) ? 'STAT_LIVE' : 'STAT_UNREADABLE'
+}
+
+/** 仅凭本轮已采cgroup证据与核实容器ID精确归属，保留宿主和top计数的较大值。 */
+function hostDatabaseCount(host, containers, groups) {
   let count = 0
   const attributed = new Map()
   for (const pid of host) {
     const owners = containers.filter(value => value.databaseCount > 0)
-    if (platform !== 'linux') { count++; continue }
-    let cgroup
-    try { cgroup = await readCgroup(pid) } catch (error) {
-      if (error.code !== 'ENOENT') { throw error }
-      throw Object.assign(new Error('数据库普查快照变化'), { budgetCode: 'SNAPSHOT_CHANGED' })
-    }
-    const segments = new Set(cgroup.split('\n').flatMap(line => line.split(':').slice(2).join(':').split('/')))
+    const segments = groups.get(pid)
+    if (!segments) { count++; continue }
     const owner = owners.find(value => segments.has(value.id) || segments.has('docker-' + value.id + '.scope'))
     if (owner) attributed.set(owner.id, (attributed.get(owner.id) ?? 0) + 1)
     else count++
@@ -101,11 +123,12 @@ async function hostDatabaseCount(host, containers, { platform = process.platform
 /** 宿主和全部运行容器均占预算，绝不停止无关实例。 */
 async function surveySnapshot(execute, env, context, processOptions) {
   const host = databaseProcesses(await checked(execute, 'ps', ['-axo', 'pid=,comm='], env))
+  const groups = await captureHostGroups(host, processOptions)
   const docker = args => checked(execute, 'docker', ['--context', context, ...args], env)
   const ids = (await docker(['ps', '--quiet', '--no-trunc'])).split(/\s+/).filter(Boolean)
   if (!ids.every(id => ID.test(id)) || new Set(ids).size !== ids.length) throw new Error('容器列表无效')
   if (!ids.length) {
-    const { hostUnattributed } = await hostDatabaseCount(host, [], processOptions)
+    const { hostUnattributed } = hostDatabaseCount(host, [], groups)
     return { count: hostUnattributed, hostCandidates: host.size, containerDB: 0, hostUnattributed, running: new Set() }
   }
   const values = JSON.parse(await docker(['inspect', ...ids]))
@@ -119,20 +142,22 @@ async function surveySnapshot(execute, env, context, processOptions) {
     containers.push({ id: value.Id, pids, databaseCount })
     count += databaseCount
   }
-  const { hostUnattributed, additional } = await hostDatabaseCount(host, containers, processOptions)
+  const { hostUnattributed, additional } = hostDatabaseCount(host, containers, groups)
   count += additional
   return { count: count + hostUnattributed, hostCandidates: host.size, containerDB: count, hostUnattributed, running: new Set(containers.map(value => value.id)) }
 }
 
 /** PID消失只触发整轮只读重采，最多三次，不重复任何启动或解除旧未知锁。 */
 export async function surveyDatabases(execute, env, context, processOptions = {}) {
+  let missingKind
   for (let attempt = 0; attempt < 3; attempt++) {
     try { return await surveySnapshot(execute, env, context, processOptions) }
     catch (error) {
       if (error.budgetCode !== 'SNAPSHOT_CHANGED') throw error
+      missingKind = error.missingKind
     }
   }
-  throw Object.assign(new Error('数据库普查持续变化'), { budgetCode: 'SNAPSHOT_UNSTABLE' })
+  throw Object.assign(new Error('数据库普查持续变化'), { budgetCode: 'SNAPSHOT_UNSTABLE', missingKind })
 }
 
 /** 普通容器可在普查窗口退出；只读同ID复核和新running集合共同证明才跳过。 */
@@ -267,6 +292,8 @@ async function executeBudgetedStart(args, { execute, env, identity, startLock },
 function diagnosticFields(error, stage, counts) {
   const code = ['SNAPSHOT_UNSTABLE'].includes(error.budgetCode) ? error.budgetCode : 'BUDGET_CHECK_FAILED'
   const result = { code, stage }
+  const missingKind = error.missingKind ?? counts.missingKind
+  if (['STAT_MISSING', 'STAT_LIVE', 'STAT_EXITED', 'STAT_UNREADABLE'].includes(missingKind)) result.missingKind = missingKind
   for (const key of ['hostCandidates', 'containerDB', 'hostUnattributed', 'count', 'extra']) {
     if (Number.isSafeInteger(counts[key]) && counts[key] >= 0) result[key] = counts[key]
   }

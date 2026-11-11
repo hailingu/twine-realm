@@ -357,3 +357,38 @@ test('真实wrapper子进程诊断落盘失败仅固定码，不泄露异常路�
   assert.equal(await readFile(target, 'utf8'), 'SECRET')
   assert.equal(typeof budget.release, 'function')
 })
+
+test('每轮宿主PID在Docker读取期间退出，先连续采cgroup可消除人为长窗口', async () => {
+  let exited = false; let snapshots = 0; const base = linuxSurvey('199 mysqld\n')
+  const execute = (command, args, options) => {
+    if (command === 'ps') { exited = false; snapshots++ } else exited = true
+    return base(command, args, options)
+  }
+  const readCgroup = async () => { if (exited) throw Object.assign(new Error('gone'), { code: 'ENOENT' }); return '0::/docker/' + ids[0] }
+  const result = await surveyDatabases(execute, {}, 'local', { platform: 'linux', readCgroup })
+  assert.equal(result.count, 2); assert.equal(snapshots, 1)
+})
+
+test('cgroup缺失诊断只分类stat，不改变三次重采失败规则', async () => {
+  const makeStat = state => '199 (private name) ' + [state, ...Array(18).fill('0'), '123'].join(' ')
+  const cases = [
+    ['STAT_LIVE', async () => makeStat('S')],
+    ['STAT_EXITED', async () => makeStat('Z')],
+    ['STAT_MISSING', async () => { throw Object.assign(new Error('private path'), { code: 'ENOENT' }) }],
+    ['STAT_UNREADABLE', async () => { throw Object.assign(new Error('private path'), { code: 'EACCES' }) }],
+    ['STAT_UNREADABLE', async () => 'malformed SECRET'],
+  ]
+  for (const [expected, readStat] of cases) {
+    let reads = 0
+    await assert.rejects(surveyDatabases(linuxSurvey('199 mysqld\n'), {}, 'local', { platform: 'linux', readStat, readCgroup: async () => { reads++; throw Object.assign(new Error('private'), { code: 'ENOENT' }) } }), error => error.budgetCode === 'SNAPSHOT_UNSTABLE' && error.missingKind === expected)
+    assert.equal(reads, 3)
+  }
+})
+
+test('sidecar诊断保留合法missingKind且删除恶意枚举', async t => {
+  const root = await temporary(t)
+  for (const missingKind of ['STAT_LIVE', 'STAT_EXITED', 'STAT_MISSING', 'STAT_UNREADABLE', 'SECRET/path']) await recordBudgetDiagnostic(root, { budgetDiagnostic: { code: 'SNAPSHOT_UNSTABLE', stage: 'post_survey', missingKind } })
+  const lines = (await readBudgetDiagnostics(root)).map(JSON.parse)
+  assert.equal(lines[0].missingKind, 'STAT_LIVE'); assert.equal(lines[3].missingKind, 'STAT_UNREADABLE')
+  assert.equal(lines[4].missingKind, undefined)
+})
