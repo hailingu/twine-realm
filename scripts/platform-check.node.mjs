@@ -164,3 +164,20 @@ test('诊断读取失败不覆盖原检查和释放错误，不回显读取异�
     assert.deepEqual(output, []); assert.equal(releases, 1)
   })
 })
+
+test('注入预算的纯模拟检查在PATH没有Docker时仍完整执行', async () => {
+  await fixture({}, async fake => {
+    const empty = join(fake.temporary, 'empty-path'); await mkdir(empty)
+    const result = await runPlatformChecks({ root: process.cwd(), temporary: fake.temporary, env: { PATH: empty }, execute: fake.execute, write: () => {} })
+    assert.equal(result.goCoverageReportPaths.length, 1)
+    assert.equal(fake.calls.filter(call => call.args.includes('test:e2e')).length, 18)
+  })
+})
+
+test('默认真实预算在PATH没有Docker时严格拒绝且不执行任何工具', async () => {
+  await fixture({}, async fake => {
+    const empty = join(fake.temporary, 'empty-path'); await mkdir(empty)
+    await assert.rejects(platformChecks({ root: process.cwd(), temporary: fake.temporary, env: { PATH: empty }, execute: fake.execute, write: () => {} }), /未找到Docker命令/)
+    assert.equal(fake.calls.length, 0)
+  })
+})

@@ -76,9 +76,8 @@ async function cleanupDatabase(started, name, envFile, execute, env) {
 }
 
 /** 执行真实模块检查并返回本次覆盖率路径；调用者拥有 temporary 的清理。 */
-export async function runPlatformChecks({ root, temporary, env = process.env, execute = runCommand, write = message => process.stdout.write(message), budgetFactory = createMySQLBudget }) {
-  const dockerPath = await findDocker(env)
-  const budget = await budgetFactory({ directory: join(temporary, 'docker-budget'), execute, env, dockerPath })
+export async function runPlatformChecks({ root, temporary, env = process.env, execute = runCommand, write = message => process.stdout.write(message), budgetFactory = createDefaultBudget }) {
+  const budget = await budgetFactory({ directory: join(temporary, 'docker-budget'), execute, env })
   const failures = []
   let reports
   try {
@@ -102,6 +101,12 @@ async function reportBudgetDiagnostics(budget, write, failures) {
   } catch {
     failures.push(new Error('本轮预算安全诊断读取或输出失败'))
   }
+}
+
+/** 只有默认真实预算需要发现宿主Docker；注入模拟预算不访问宿主工具。 */
+async function createDefaultBudget(options) {
+  const dockerPath = await findDocker(options.env)
+  return createMySQLBudget({ ...options, dockerPath })
 }
 
 /** 默认入口固定已核实的Docker二进制，不修改用户默认context。 */
