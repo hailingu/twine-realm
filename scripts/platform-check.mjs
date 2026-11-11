@@ -12,7 +12,7 @@ import { runServiceProfileChecks } from './service-profile-check.mjs'
 import { parseBuildInstallation, cleanupBuildResources } from './build-check.mjs'
 import { cleanupDeploymentResources } from './deployment-check.mjs'
 import { createMySQLBudget } from './mysql-test-budget.mjs'
-import { discoverPlatformTests, discoverBrowserTests, goGroups, isolatedCase, verifyGoCompletion } from './platform-isolation.mjs'
+import { discoverPlatformTests, discoverBrowserTests, goGroups, isolatedCase, verifyGoCompletion, fixtureCacheEvidence, verifyFixtureCacheEvidence } from './platform-isolation.mjs'
 
 const MYSQL_IMAGE = 'mysql:9.7.4@sha256:df90258da46f6e7ff8574ff84f17618aba0765cac749928299c69fd4e7cb8ad8'
 const BUILD_IMAGE = 'golang:1.27.3@sha256:0c050feb47802ae436b9030833694a0b80160d08e3b3049ad30bf7c9e724e09d'
@@ -171,7 +171,7 @@ async function runPlatformImplementation({ root, temporary, env, execute, write,
       if (result.code !== 0) throw new Error('本次隔离schema管理失败')
     }
     await runBrowserCases({ browserTests, childEnv, schemaCommand, cleanup, checked, root, temporary })
-    const profiles = await runGoCases({ plan, childEnv, schemaCommand, cleanup, checked, root, temporary })
+    const profiles = await runGoCases({ plan, childEnv, schemaCommand, cleanup, checked, root, temporary, write })
     await mergeAtomicCoverage(profiles, goCoverage)
     reports = await platformReports({ temporary, checked, browserGoCoverage, goCoverage, root, templateReports, webCoverage })
   } catch (error) {
@@ -227,17 +227,25 @@ async function runBrowserCases({ browserTests, childEnv, schemaCommand, cleanup,
 }
 
 /** 每个物理顶层用例独立执行；纯/元数据测试按包精确分组，所有报告都累加。 */
-async function runGoCases({ plan, childEnv, schemaCommand, cleanup, checked, root, temporary }) {
+async function runGoCases({ plan, childEnv, schemaCommand, cleanup, checked, root, temporary, write }) {
   const reports = []
+  const evidence = []
+  const directory = join(temporary, 'fixture-cache')
+  const runId = randomUUID()
+  await mkdir(directory, { mode: 0o700 })
+  await writeFile(join(directory, 'run.json'), JSON.stringify({ schemaVersion: 1, runId }), { flag: 'wx', mode: 0o600 })
+  Object.assign(childEnv, { TWINE_TEST_FIXTURE_CACHE_DIRECTORY: directory, TWINE_TEST_FIXTURE_CACHE_RUN_ID: runId })
   for (const [index, group] of goGroups(plan.tests).entries()) {
     const report = join(temporary, `go-case-${index}.out`)
     const pattern = `^(${group.names.join('|')})$`
     await isolatedCase({ env: childEnv, schemaCommand, cleanup, action: async () => {
       const output = await checked('go', ['test', '-json', '-count=1', '-p=1', '-race', '-tags=integration', '-coverpkg=./...', `-run=${pattern}`, `-coverprofile=${report}`, group.pkg], join(root, 'server'))
       verifyGoCompletion(output, group.names)
+      evidence.push(...fixtureCacheEvidence(output, group.names))
     } })
     reports.push(report)
   }
+  write(`[FIXTURE_BUILD_CACHE_OK] ${JSON.stringify(verifyFixtureCacheEvidence(evidence))}\n`)
   return reports
 }
 

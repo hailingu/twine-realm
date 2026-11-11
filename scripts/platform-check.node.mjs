@@ -39,7 +39,14 @@ async function fixture(options, action) {
       const flag = args.find(value => value.startsWith('-coverprofile='))
       const module = settings.cwd.endsWith('service-template') ? 'example.invalid/service/internal/app/handler.go' : 'github.com/hailingu/twine-realm/server/internal/project/service.go'
       await writeFile(flag.slice('-coverprofile='.length), `mode: atomic\n${module}:1.1,2.1 1 1\n`)
-      if (args.includes('-json')) return { code: 0, output: args.find(value => value.startsWith('-run=')).slice(7, -2).split('|').map(Test => JSON.stringify({ Test, Action: 'pass' })).join('\n') }
+      if (args.includes('-json')) {
+        const names = args.find(value => value.startsWith('-run=')).slice(7, -2).split('|')
+        const rows = names.map(Test => JSON.stringify({ Test, Action: 'pass' }))
+        for (const [name, mode, suffix] of [['TestRealServiceMigrationFailureRetainsDirty', 'cold', '1'], ['TestRealServiceDeploymentCRUDAndRecovery', 'hit', '2']]) {
+          if (names.includes(name)) rows.push(JSON.stringify({ Test: name, Action: 'output', Output: `[FIXTURE_BUILD_CACHE] ${mode} operation 10000000-0000-4000-8000-00000000000${suffix} source sha256:${'a'.repeat(64)} binary sha256:${'b'.repeat(64)} process ${suffix}\n` }))
+        }
+        return { code: 0, output: rows.join('\n') }
+      }
     }
     if (command === 'npm' && args.includes('--coverage.reportsDirectory')) {
       const report = args[args.indexOf('--coverage.reportsDirectory') + 1]
@@ -77,6 +84,12 @@ test('完整检查使用独立数据库与临时构建，传递新报告并清�
     assert.ok(browser.settings.env.TWINE_TEST_WEB_DIRECTORY.startsWith(fake.temporary))
     assert.equal(browser.settings.env.FORCE_COLOR, '0')
     assert.equal(browser.settings.env.NO_COLOR, undefined)
+    const cache = groups[0].settings.env.TWINE_TEST_FIXTURE_CACHE_DIRECTORY
+    assert.equal((await stat(cache)).mode & 0o777, 0o700)
+    const marker = JSON.parse(await readFile(join(cache, 'run.json'), 'utf8'))
+    assert.equal(marker.schemaVersion, 1)
+    assert.equal(marker.runId, groups[0].settings.env.TWINE_TEST_FIXTURE_CACHE_RUN_ID)
+    assert.match(fake.output.join(''), /FIXTURE_BUILD_CACHE_OK/)
     assert.doesNotMatch(fake.output.join(''), /twine:[a-f0-9]{48}/)
   })
 })

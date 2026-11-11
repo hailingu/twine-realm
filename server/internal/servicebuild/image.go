@@ -23,6 +23,11 @@ func (driver *Driver) buildImage(ctx context.Context, box sandbox, id string) (v
 	if err != nil {
 		return value, err
 	}
+	return driver.buildFrozenImage(ctx, box, value)
+}
+
+// buildFrozenImage 只打包已冻结并核实的本次输出，完整镜像身份与归属检查保持不变。
+func (driver *Driver) buildFrozenImage(ctx context.Context, box sandbox, value Image) (Image, error) {
 	value.Tag = box.name + "-candidate:local"
 	args := []string{dockerContextOption, driver.Environment().Context, "buildx", "build", "--builder", box.target.Environment.BuilderName, "--network", "none", "--pull=false", "--no-cache", "--load", "--provenance=false", "--platform", "linux/" + box.target.Environment.Architecture, "--metadata-file", filepath.Join(box.directory, "image-metadata.json"), "--tag", value.Tag}
 	for _, key := range sortedKeys(box.labels()) {

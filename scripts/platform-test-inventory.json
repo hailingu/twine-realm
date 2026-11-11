@@ -1548,5 +1548,95 @@
     "file": "server/internal/engineering/assets/go-net-http-v1/_template/internal/config/config_test.go",
     "name": "TestPasswordFIFO",
     "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_boundaries_test.go",
+    "name": "TestFixtureCacheCorruptionClosed",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_boundaries_test.go",
+    "name": "TestFixtureCacheCrossProcess",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_boundaries_test.go",
+    "name": "TestFixtureCacheManifestTampering",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_boundaries_test.go",
+    "name": "TestFixtureCachePendingAndLock",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_boundaries_test.go",
+    "name": "TestFixtureCacheProcessHelper",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_boundaries_test.go",
+    "name": "TestFixtureCacheRejectUnsafeRoot",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_test.go",
+    "name": "TestFixtureCacheIdentity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_test.go",
+    "name": "TestFixtureCacheInvalidSource",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_test.go",
+    "name": "TestFixtureCacheProvenance",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_test.go",
+    "name": "TestFixtureCacheRejectIncompleteOrigin",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_test.go",
+    "name": "TestFixtureCacheRoundTrip",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_execution_integration_test.go",
+    "name": "TestFixtureCachePrerequisiteFailure",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_execution_integration_test.go",
+    "name": "TestFixtureCachePreservesChecks",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_real_integration_test.go",
+    "name": "TestRealFixtureBuildCache",
+    "isolated": true
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_lock_test.go",
+    "name": "TestFixtureCacheLockReplacementClosed",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_lock_test.go",
+    "name": "TestFixtureCacheLockRestoredIdentity",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_cache_store_lock_test.go",
+    "name": "TestFixtureCacheLockAcquisitionReplacementClosed",
+    "isolated": false
+  },
+  {
+    "file": "server/internal/servicebuild/fixture_execution_integration_test.go",
+    "name": "TestFixtureCachePublicationFailureCleanup",
+    "isolated": false
   }
 ]

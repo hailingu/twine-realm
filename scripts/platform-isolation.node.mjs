@@ -1,7 +1,19 @@
 /** 三实例编排的纯函数与失败边界，不启动数据库。 */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { goGroups, isolatedCase, verifyGoCompletion } from './platform-isolation.mjs'
+import { goGroups, isolatedCase, verifyGoCompletion, fixtureCacheEvidence, verifyFixtureCacheEvidence } from './platform-isolation.mjs'
+
+test('夹具缓存证据必须包含本轮先真实构建再命中，操作和内容身份均可追溯', () => {
+  const row = (mode, operation, source = 'a', process = mode === 'cold' ? 100 : 200) => JSON.stringify({ Action: 'output', Test: 'TestRealFixture', Output: `[FIXTURE_BUILD_CACHE] ${mode} operation ${operation} source sha256:${source.repeat(64)} binary sha256:${'b'.repeat(64)} process ${process}\n` })
+  const first = '10000000-0000-4000-8000-000000000001'; const second = '10000000-0000-4000-8000-000000000002'
+  const cold = fixtureCacheEvidence(row('cold', first), ['TestRealFixture'])
+  const hit = fixtureCacheEvidence(row('hit', second), ['TestRealFixture'])
+  assert.deepEqual(verifyFixtureCacheEvidence([...cold, ...hit]), { cold: 1, hits: 1, contents: 1, crossProcessHits: 1 })
+  assert.throws(() => verifyFixtureCacheEvidence([...cold, ...fixtureCacheEvidence(row('hit', second, 'a', 100), ['TestRealFixture'])]))
+  for (const invalid of [[], cold, hit, [...hit, ...cold], [...cold, ...cold], [...cold, ...fixtureCacheEvidence(row('hit', second, 'c'), ['TestRealFixture'])]]) assert.throws(() => verifyFixtureCacheEvidence(invalid))
+  assert.throws(() => fixtureCacheEvidence(row('unknown', first), ['TestRealFixture']))
+  assert.throws(() => fixtureCacheEvidence(row('cold', first), ['TestOther']))
+})
 
 test('真实物理逐顶层用例且跨包完整，普通用例按包不遗失', () => {
   const entries = ['TestA', 'TestB', 'TestRealOne', 'TestRealTwo'].map(name => ({ file: 'server/internal/a/a_test.go', name, isolated: name.startsWith('TestReal') }))

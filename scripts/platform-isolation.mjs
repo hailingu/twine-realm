@@ -87,3 +87,34 @@ export function verifyGoCompletion(output, names) {
   if (events.some(row => ['skip', 'fail'].includes(row.Action))) throw new Error('Go用例跳过或失败')
   sameSet(events.filter(row => row.Action === 'pass' && !row.Test.includes('/')).map(row => row.Test), names)
 }
+
+/** @param output 本次Go JSON事件 @param names 本组精确测试名 @returns 当前测试真实输出的夹具缓存证据。 */
+export function fixtureCacheEvidence(output, names) {
+  const entries = []
+  const pattern = /\[FIXTURE_BUILD_CACHE\] (cold|hit) operation ([0-9a-f-]{36}) source (sha256:[0-9a-f]{64}) binary (sha256:[0-9a-f]{64}) process ([1-9]\d*)\s*$/
+  for (const row of output.trim().split('\n').filter(Boolean).map(line => JSON.parse(line))) {
+    if (!row.Output?.includes('[FIXTURE_BUILD_CACHE]')) continue
+    const match = row.Output.match(pattern)
+    if (row.Action !== 'output' || !names.includes(row.Test) || !match || !Number.isSafeInteger(Number(match[5]))) throw new Error('夹具缓存证据格式或测试归属不明确')
+    entries.push({ mode: match[1], operation: match[2], source: match[3], binary: match[4], process: Number(match[5]) })
+  }
+  return entries
+}
+
+/** @param entries 同轮所有夹具证据 @returns 有真实冷构建和后续命中的审计摘要；不能用全部miss冒充缓存提速。 */
+export function verifyFixtureCacheEvidence(entries) {
+  const operations = new Set(); const contents = new Map(); let cold = 0; let hits = 0; let crossProcessHits = 0
+  for (const entry of entries) {
+    if (operations.has(entry.operation)) throw new Error('夹具缓存重复使用操作身份')
+    operations.add(entry.operation)
+    const key = `${entry.source}/${entry.binary}`
+    if (entry.mode === 'cold') { cold++; contents.set(key, new Set([...(contents.get(key) ?? []), entry.process])) }
+    else if (entry.mode === 'hit' && contents.has(key)) {
+      hits++
+      if ([...contents.get(key)].some(process => process !== entry.process)) crossProcessHits++
+    }
+    else throw new Error('夹具缓存命中缺少本轮较早的真实构建证明')
+  }
+  if (!cold || !hits || !crossProcessHits) throw new Error('夹具缓存未证明本轮冷构建和跨进程命中')
+  return { cold, hits, contents: contents.size, crossProcessHits }
+}

@@ -29,13 +29,17 @@ type realBuildFixture struct {
 
 // newRealBuildFixture 复用真实离线工程包导出，固定commit后故意留下脏修改。
 func newRealBuildFixture(t *testing.T) realBuildFixture {
+	return realBuildFixtureAt(t, t.TempDir())
+}
+
+// realBuildFixtureAt 允许缓存真实验收在清理未知时保留其独立安装材料，其余构建步骤与原夹具相同。
+func realBuildFixtureAt(t *testing.T, root string) realBuildFixture {
 	t.Helper()
 	ctx := context.Background()
 	environment, err := DiscoverEnvironment(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	root := t.TempDir()
 	repositories := filepath.Join(root, "repositories")
 	if err := os.Mkdir(repositories, 0700); err != nil {
 		t.Fatal(err)
