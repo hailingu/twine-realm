@@ -263,18 +263,18 @@ func TestRuntimeObservationOrdering(t *testing.T) {
 	base := time.Now().UTC().Add(-3 * time.Second).Truncate(time.Second)
 	fact := mysqlruntime.Observation{State: "running", Running: true, Ready: true, ServerUUID: id(t), ContainerID: strings.Repeat("a", 64), VolumeFound: true, ObservedAt: mysqlruntime.Timestamp(base)}
 	now := time.Now().UTC()
-	if err := f.base.database.ObserveRuntime(context.Background(), receipt.Target, &fact, "", now); err != nil {
+	if err := f.base.database.ObserveRuntime(context.Background(), captureRuntimeTarget(t, f.base.database, receipt.Target), &fact, "", now); err != nil {
 		t.Fatal(err)
 	}
 	newer := fact
 	newer.ObservedAt = mysqlruntime.Timestamp(base.Add(500 * time.Millisecond))
-	if err := f.base.database.ObserveRuntime(context.Background(), receipt.Target, &newer, "", now.Add(time.Millisecond)); err != nil {
+	if err := f.base.database.ObserveRuntime(context.Background(), captureRuntimeTarget(t, f.base.database, receipt.Target), &newer, "", now.Add(time.Millisecond)); err != nil {
 		t.Fatal(err)
 	}
 	if value := f.snapshot(t); value.Observation.ObservedAt != newer.ObservedAt {
 		t.Fatal("不等长RFC3339小数的字典排序覆盖了较新事实")
 	}
-	if err := f.base.database.ObserveRuntime(context.Background(), receipt.Target, nil, "DOCKER_UNAVAILABLE", now.Add(2*time.Millisecond)); err != nil {
+	if err := f.base.database.ObserveRuntime(context.Background(), captureRuntimeTarget(t, f.base.database, receipt.Target), nil, "DOCKER_UNAVAILABLE", now.Add(2*time.Millisecond)); err != nil {
 		t.Fatal(err)
 	}
 	value := f.snapshot(t)
@@ -288,12 +288,12 @@ func TestRuntimeDatabaseIdentityChangeRemainsVisible(t *testing.T) {
 	f := openRuntimeFixture(t)
 	receipt := f.accept(t, f.command)
 	fact := mysqlruntime.Observation{State: "running", Running: true, Ready: true, ServerUUID: id(t), ContainerID: strings.Repeat("a", 64), VolumeFound: true, ObservedAt: mysqlruntime.Timestamp(time.Now())}
-	if err := f.base.database.ObserveRuntime(context.Background(), receipt.Target, &fact, "", time.Now()); err != nil {
+	if err := f.base.database.ObserveRuntime(context.Background(), captureRuntimeTarget(t, f.base.database, receipt.Target), &fact, "", time.Now()); err != nil {
 		t.Fatal(err)
 	}
 	fact.ServerUUID = id(t)
 	fact.ObservedAt = mysqlruntime.Timestamp(time.Now())
-	if err := f.base.database.ObserveRuntime(context.Background(), receipt.Target, &fact, "", time.Now()); err != nil {
+	if err := f.base.database.ObserveRuntime(context.Background(), captureRuntimeTarget(t, f.base.database, receipt.Target), &fact, "", time.Now()); err != nil {
 		t.Fatal(err)
 	}
 	value := f.snapshot(t)

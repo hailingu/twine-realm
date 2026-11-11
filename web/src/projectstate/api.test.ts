@@ -11,7 +11,7 @@ afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
 function streamResponse(text: string): Response { return new Response(text, { headers: { 'Content-Type': 'text/event-stream; charset=utf-8' } }) }
 
 it('快照完整校验，错误归属、空体与超过64MiB都会失败而非部分成功', async () => {
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(stateSnapshot())))); vi.stubGlobal('fetch', fetch)
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ schemaVersion: 1, state: stateSnapshot(), lifecycle: { schemaVersion: 1, projectId: INITIAL_PROJECT.id, generation: '0', target: null, operation: null, facts: null } })))); vi.stubGlobal('fetch', fetch)
   const signal = new AbortController().signal
   expect((await STATE_API.snapshot(INITIAL_PROJECT.id, signal)).cursor).toBe('1')
   expect((await STATE_API.snapshot(INITIAL_PROJECT.id, signal)).project.id).toBe(INITIAL_PROJECT.id)

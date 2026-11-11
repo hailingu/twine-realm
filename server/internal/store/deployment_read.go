@@ -160,6 +160,12 @@ func deploymentObservation(value servicedeploy.Snapshot, instance *deploymentIns
 		}
 	}
 	value.ObservationCode = instance.code
+	if instance.code == "PROJECT_STOPPED" && value.Observation != nil {
+		value.Observation.State = "stopped"
+		value.Observation.Running = false
+		value.Observation.Healthy = false
+		value.Observation.Ready = false
+	}
 	if instance.lastAttempt.Valid {
 		value.LastAttemptAt = instance.lastAttempt.Time.UTC().Format(time.RFC3339Nano)
 		if instance.code == "" && value.Observation != nil {

@@ -86,12 +86,13 @@ type Plan struct {
 
 // Target 将已接受预览冻结为不可变运行目标，不把画布保存当部署。
 type Target struct {
-	ID         string `json:"id"`
-	ProjectID  string `json:"projectId"`
-	ServiceID  string `json:"serviceId"`
-	Generation string `json:"generation"`
-	Plan       Plan   `json:"plan"`
-	CreatedAt  string `json:"createdAt"`
+	ObservationEpoch string `json:"-"`
+	ID               string `json:"id"`
+	ProjectID        string `json:"projectId"`
+	ServiceID        string `json:"serviceId"`
+	Generation       string `json:"generation"`
+	Plan             Plan   `json:"plan"`
+	CreatedAt        string `json:"createdAt"`
 }
 
 // Step 记录有界外部阶段，未知结果不通过重启伪装为未开始。

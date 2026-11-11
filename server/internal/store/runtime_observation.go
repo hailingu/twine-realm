@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hailingu/twine-realm/server/internal/project"
 	"strconv"
 	"time"
 
@@ -52,6 +53,10 @@ func readObservationInstance(ctx context.Context, database queryer, id string) (
 	if err := database.QueryRowContext(ctx, "SELECT state FROM runtime_operations WHERE id=?", instance.operationID).Scan(&state); err != nil {
 		return mysqlruntime.Instance{}, err
 	}
+	target.ObservationEpoch, err = projectRunEpoch(ctx, database, id)
+	if err != nil {
+		return mysqlruntime.Instance{}, err
+	}
 	return mysqlruntime.Instance{Target: target, OperationState: state, VolumeConfirmed: instance.volumeConfirmed, ServerUUID: instance.serverUUID}, nil
 }
 
@@ -75,18 +80,7 @@ func runtimeInstanceIDs(ctx context.Context, database queryer, after string) (id
 // ObserveRuntime 只更新仍匹配的当前目标，迟到的旧目标采集结果直接丢弃。
 func (store *Store) ObserveRuntime(ctx context.Context, target mysqlruntime.Target, fact *mysqlruntime.Observation, code string, now time.Time) error {
 	_, err := runtimeWrite(ctx, store.db, func(tx *sql.Tx) (bool, error) {
-		instance, err := readRuntimeInstance(ctx, tx, target.ProjectID, true)
-		if err != nil || instance == nil {
-			return false, err
-		}
-		if strconv.FormatUint(instance.generation, 10) != target.Generation {
-			return false, nil
-		}
-		if err := matchRuntimeTarget(instance, target); err != nil {
-			return false, err
-		}
-		_, err = recordRuntimeObservation(ctx, tx, instance, fact, code, now)
-		return true, err
+		return observeRuntimeLocked(ctx, tx, target, fact, code, now)
 	})
 	return err
 }
@@ -233,4 +227,37 @@ func observationChanged(previous, current *mysqlruntime.Observation, oldCode, ne
 	left, right := *previous, *current
 	left.ObservedAt, right.ObservedAt = "", ""
 	return left != right
+}
+
+// observeRuntimeLocked 在持有项目事务后完成单一状态转换。
+func observeRuntimeLocked(ctx context.Context, tx *sql.Tx, target mysqlruntime.Target, fact *mysqlruntime.Observation, code string, now time.Time) (bool, error) {
+	if err := lockBuildProject(ctx, tx, target.ProjectID); err != nil {
+		return false, err
+	}
+	if err := projectRunPermission(ctx, tx, target.ProjectID); err != nil {
+		var blocked *project.Error
+		if errors.As(err, &blocked) && blocked.Code == "PROJECT_RUN_BUSY" {
+			return false, nil
+		}
+		return false, err
+	}
+	epoch, err := projectRunEpoch(ctx, tx, target.ProjectID)
+	if err != nil {
+		return false, err
+	}
+	if target.ObservationEpoch != epoch {
+		return false, nil
+	}
+	instance, err := readRuntimeInstance(ctx, tx, target.ProjectID, true)
+	if err != nil || instance == nil {
+		return false, err
+	}
+	if strconv.FormatUint(instance.generation, 10) != target.Generation {
+		return false, nil
+	}
+	if err := matchRuntimeTarget(instance, target); err != nil {
+		return false, err
+	}
+	_, err = recordRuntimeObservation(ctx, tx, instance, fact, code, now)
+	return true, err
 }

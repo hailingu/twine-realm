@@ -19,20 +19,20 @@ func assertMonotonicDeploymentFacts(t *testing.T, f *deploymentFixture, receipt 
 	newer := *fact
 	newer.ObservedAt = mysqlruntime.Timestamp(at)
 	store := f.runtime.base.database
-	if err := store.ObserveDeployment(context.Background(), receipt.Target, &newer, "", at); err != nil {
+	if err := store.ObserveDeployment(context.Background(), captureDeploymentTarget(t, store, receipt.Target), &newer, "", at); err != nil {
 		t.Fatal(err)
 	}
 	older := newer
 	older.State, older.Ready, older.Running, older.Healthy, older.EntryURL = "stopped", false, false, false, ""
 	older.ObservedAt = mysqlruntime.Timestamp(at.Add(-time.Second))
-	if err := store.ObserveDeployment(context.Background(), receipt.Target, &older, "", at.Add(-time.Second)); err != nil {
+	if err := store.ObserveDeployment(context.Background(), captureDeploymentTarget(t, store, receipt.Target), &older, "", at.Add(-time.Second)); err != nil {
 		t.Fatal(err)
 	}
 	value := f.snapshot(t)
 	if value.Observation == nil || !value.Observation.Ready || value.Observation.ObservedAt != newer.ObservedAt {
 		t.Fatal("同目标迟到采集覆盖了较新的就绪事实")
 	}
-	if err := store.ObserveDeployment(context.Background(), receipt.Target, nil, "DEPLOY_RESULT_UNKNOWN", at.Add(-time.Second)); err != nil {
+	if err := store.ObserveDeployment(context.Background(), captureDeploymentTarget(t, store, receipt.Target), nil, "DEPLOY_RESULT_UNKNOWN", at.Add(-time.Second)); err != nil {
 		t.Fatal(err)
 	}
 	value = f.snapshot(t)

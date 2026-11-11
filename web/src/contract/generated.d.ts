@@ -150,6 +150,15 @@ export interface Contract {
   stateEvent?: StateEvent
   stateCaughtUp?: StateCaughtUp
   stateResync?: StateResync
+  ProjectRunCommand?: ProjectRunCommand
+  ProjectRunFrozen?: ProjectRunFrozen
+  ProjectRunTarget?: ProjectRunTarget
+  ProjectRunStep?: ProjectRunStep
+  ProjectRunOperation?: ProjectRunOperation
+  ProjectRunFacts?: ProjectRunFacts
+  ProjectRunSnapshot?: ProjectRunSnapshot
+  ProjectRunReceipt?: ProjectRunReceipt
+  ProjectRunStateSnapshot?: ProjectRunStateSnapshot
 }
 /**
  * 版本一Position契约
@@ -1129,4 +1138,79 @@ export interface StateResync {
   schemaVersion: 1
   projectId: string
   code: 'STATE_CURSOR_EXPIRED' | 'STATE_CURSOR_AHEAD' | 'STATE_EVENT_GAP'
+}
+export interface ProjectRunCommand {
+  mutationId: string
+  baseRevision: string
+  baseGeneration: string
+  desired: 'running' | 'stopped'
+}
+export interface ProjectRunFrozen {
+  runtime: RuntimeTarget
+  deployment: DeployTarget
+  databaseContainerId: string
+  applicationContainerId: string
+  migrationContainerId: string
+  serverUuid: string
+  databaseNetworkId: string
+  ingressNetworkId: string
+  databaseVolumeCreatedAt: string
+}
+export interface ProjectRunTarget {
+  projectId: string
+  generation: string
+  desired: 'running' | 'stopped'
+  frozen: ProjectRunFrozen
+  createdAt: string
+}
+export interface ProjectRunStep {
+  name: string
+  state: 'pending' | 'executing' | 'unknown' | 'succeeded' | 'failed' | 'skipped'
+  externalId: string
+  code: string
+  updatedAt: string
+}
+export interface ProjectRunOperation {
+  id: string
+  projectId: string
+  mutationId: string
+  generation: string
+  version: string
+  state: 'accepted' | 'executing' | 'waiting_retry' | 'needs_attention' | 'succeeded' | 'failed' | 'superseded'
+  code: string
+  message: string
+  /**
+   * @maxItems 64
+   */
+  steps: ProjectRunStep[]
+  createdAt: string
+  updatedAt: string
+}
+export interface ProjectRunFacts {
+  applicationStopped: boolean
+  databaseStopped: boolean
+  applicationObservedAt: string
+  databaseObservedAt: string
+  runtime: RuntimeObservation | null
+  deployment: DeployObservation | null
+}
+export interface ProjectRunSnapshot {
+  schemaVersion: 1
+  projectId: string
+  generation: string
+  target: ProjectRunTarget | null
+  operation: ProjectRunOperation | null
+  facts: ProjectRunFacts | null
+}
+export interface ProjectRunReceipt {
+  schemaVersion: 1
+  mutationId: string
+  operationId: string
+  target: ProjectRunTarget
+  replayed: boolean
+}
+export interface ProjectRunStateSnapshot {
+  schemaVersion: 1
+  state: StateSnapshot
+  lifecycle: ProjectRunSnapshot
 }

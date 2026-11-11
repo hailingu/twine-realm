@@ -244,7 +244,7 @@ func (f *deploymentFixture) refreshDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.runtime.base.database.ObserveRuntime(ctx, *snapshot.Target, fact, "", time.Now().UTC()); err != nil {
+	if err := f.runtime.base.database.ObserveRuntime(ctx, captureRuntimeTarget(t, f.runtime.base.database, *snapshot.Target), fact, "", time.Now().UTC()); err != nil {
 		t.Fatal(err)
 	}
 }

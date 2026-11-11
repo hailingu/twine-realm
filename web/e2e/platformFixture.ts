@@ -1,11 +1,12 @@
 /** 浏览器验收使用真实平台进程与 Git 夹具；重启复用同一个数据库。 */
+import { finishOwnedPlatform, startOwnedPlatform, stopPlatformProcess } from '../../scripts/platform-process.mjs'
 import { test as base } from '@playwright/test'
 import { spawn, execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { isAbsolute, join, resolve } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { promisify } from 'node:util'
 import type { ChildProcess } from 'node:child_process'
@@ -57,12 +58,8 @@ async function createPlatform(root: string): Promise<Platform & { stop(): Promis
   let child: ChildProcess | undefined
   const stop = async () => {
     const current = child
-    if (!current || current.exitCode !== null) return
-    const done = new Promise<void>((resolve, reject) => { current.once('exit', code => { if (code === 0) resolve(); else reject(new Error('测试平台非正常退出')) }) })
-    current.kill('SIGTERM')
-    try { await Promise.race([done, delay(15000).then(() => { throw new Error('测试平台退出超时') })]) }
-    catch (error) { current.kill('SIGKILL'); throw error }
-    finally { child = undefined }
+    await stopPlatformProcess(current)
+    child = undefined
   }
   const start = async () => {
     child = spawn(binary, [], { cwd: resolve('..'), env: { ...process.env, TWINE_ADDRESS: address, TWINE_REPOSITORY_ROOTS: JSON.stringify([root]), TWINE_WEB_DIRECTORY: process.env.TWINE_TEST_WEB_DIRECTORY ?? resolve('dist') }, stdio: ['ignore', 'ignore', 'pipe'] })
@@ -77,8 +74,8 @@ async function createPlatform(root: string): Promise<Platform & { stop(): Promis
     }
     throw new Error('测试平台未就绪')
   }
-  await start()
-  return { url, root, stop, fingerprint, git: async (path, args) => (await execute('git', ['-C', path, ...args])).stdout.trim(), restart: async () => { await stop(); await start() }, repository: async (name, commit = true) => {
+  await startOwnedPlatform(start, stop)
+  return { url, root, stop, fingerprint, git: async (path, args) => (await execute('git', ['-C', path, ...args])).stdout.trim(), restart: async () => { await stop(); await startOwnedPlatform(start, stop) }, repository: async (name, commit = true) => {
     const path = join(root, name, 'service'); await mkdir(path, { recursive: true })
     await execute('git', ['-C', path, 'init', '-b', 'develop'])
     await writeFile(join(path, 'AGENTS.md'), '用户维护的服务规范\n')
@@ -91,9 +88,17 @@ async function createPlatform(root: string): Promise<Platform & { stop(): Promis
 /** 浏览器用例共享串行平台实例，结束后等待进程退出再清理测试仓库。 */
 export const test = base.extend<object, { platform: Platform }>({
   platform: [async ({ browserName }, provide) => {
+    const marker = process.env.TWINE_TEST_PROCESS_UNCONFIRMED_FILE
+    if (!marker || !isAbsolute(marker)) throw new Error('浏览器验收必须提供本轮绝对进程收回标记路径')
+    await writeFile(marker, '测试平台进程尚未确认全部退出\n', { flag: 'wx', mode: 0o600 })
     const directory = await mkdtemp(join(tmpdir(), `twine-browser-${browserName}-`))
+    const failures: unknown[] = []
     let platform: Awaited<ReturnType<typeof createPlatform>> | undefined
     try { platform = await createPlatform(await realpath(directory)); await provide(platform) }
-    finally { if (platform) await platform.stop(); await rm(directory, { recursive: true, force: true }) }
+    catch (error) { failures.push(error) }
+    await finishOwnedPlatform(failures, async () => { if (platform) await platform.stop() }, async () => {
+      await rm(marker)
+      await rm(directory, { recursive: true, force: true })
+    })
   }, { scope: 'worker' }]
 })

@@ -1,6 +1,6 @@
 /** 同一工作区共享只读信封；上下文不保存用户草稿、原请求或独立业务真相。 */
 import { createContext, useContext } from 'react'
-import type { StateSnapshot } from '../contract/generated'
+import type { LifecycleState as StateSnapshot } from '../projectrun/model'
 
 /** 读取状态与外部命令寿命分离，错误不取消尚未确认的命令。 */
 export interface StateProjection { snapshot: StateSnapshot | null; managed: boolean; error: string; now: number }

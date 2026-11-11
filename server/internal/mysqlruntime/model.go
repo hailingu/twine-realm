@@ -43,13 +43,14 @@ type Resource struct {
 
 // Target 是受理时固定的不可变目标；generation 不替代画布 revision。
 type Target struct {
-	ID             string   `json:"id"`
-	ProjectID      string   `json:"projectId"`
-	CanvasRevision string   `json:"canvasRevision"`
-	Generation     string   `json:"generation"`
-	Desired        string   `json:"desired"`
-	Resource       Resource `json:"resource"`
-	CreatedAt      string   `json:"createdAt"`
+	ObservationEpoch string   `json:"-"`
+	ID               string   `json:"id"`
+	ProjectID        string   `json:"projectId"`
+	CanvasRevision   string   `json:"canvasRevision"`
+	Generation       string   `json:"generation"`
+	Desired          string   `json:"desired"`
+	Resource         Resource `json:"resource"`
+	CreatedAt        string   `json:"createdAt"`
 }
 
 // Step 保存先登记后执行的步骤与未知结果，外部身份只取受控资源计划。

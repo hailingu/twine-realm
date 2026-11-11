@@ -32,7 +32,7 @@
 
 固定源码构建默认禁用。按[构建切片](docs/development/service-build-slice.md)准备固定 Go 镜像、在仓库及运行根之外执行 `build-init`，明确配置 `TWINE_BUILD_ADAPTER=local-go-container-v1` 和 `TWINE_BUILD_DIRECTORY` 后，可在服务源码详情检查并构建已保存的 commit。未知请求保留原键核实 / 重试，成功只产生本地不可变镜像候选；可以明确取消原构建，未自动部署。
 
-项目 MySQL 运行默认禁用。按[运行切片](docs/development/mysql-runtime-slice.md)在仓库范围外初始化全新私有根，明确设置 `TWINE_RUNTIME_ADAPTER=file-secrets-v1` 与 `TWINE_RUNTIME_DIRECTORY` 后启动控制面。该适配器以 0700 / 0600 文件权限保护本机明文秘密，不是加密凭据库；不自动安装工具或拉取镜像。在 MySQL 详情点击「确认运行 MySQL」，才接受独立的持久目标；202 或容器运行不等于认证就绪。每项目固定一个实例、私网与持久卷，不发布数据库宿主端口；关闭页面或平台不会停止它。需要停止时在详情确认「确认停止 MySQL」，保留数据和秘密。配置升级、删除卷与项目聚合停止仍待后续。状态回显见 [SSE 切片](docs/development/project-state-slice.md)：断线保留最后观测及草稿，其他窗口变更先比较再明确载入；状态流不会替代保存回执。
+项目 MySQL 运行默认禁用。按[运行切片](docs/development/mysql-runtime-slice.md)在仓库范围外初始化全新私有根，明确设置 `TWINE_RUNTIME_ADAPTER=file-secrets-v1` 与 `TWINE_RUNTIME_DIRECTORY` 后启动控制面。该适配器以 0700 / 0600 文件权限保护本机明文秘密，不是加密凭据库；不自动安装工具或拉取镜像。在 MySQL 详情点击「确认运行 MySQL」，才接受独立的持久目标；202 或容器运行不等于认证就绪。每项目固定一个实例、私网与持久卷，不发布数据库宿主端口；关闭页面或平台不会停止它。需要停止时在详情确认「确认停止 MySQL」，保留数据和秘密。配置升级与删除卷仍待后续。原项目聚合停止和恢复见[生命周期切片](docs/development/project-lifecycle-slice.md)：在项目面板明确受理，先停服务再停数据库，恢复只使用原资源与数据；外部结果未知时禁止不安全恢复。状态回显见 [SSE 切片](docs/development/project-state-slice.md)：断线保留最后观测及草稿，其他窗口变更先比较再明确载入；状态流不会替代保存回执。
 
 业务部署也默认禁用。在原构建与运行配置之上显式设置 `TWINE_DEPLOY_ADAPTER=go-mysql-compose-v1`，复用原运行私有根。先为服务保存接口与一条 MySQL 依赖、启动原 MySQL、固定源码并完成构建；在服务详情填写业务端口，点击「审阅部署」，核对候选与数据库后再「确认部署到本机」。后台先建立用途独立的业务库和账号、执行固定迁移，再启动原应用并核实只读探针。成功后提供独立 `127.0.0.1` 业务入口；应用使用本服务入口网络，MySQL 与迁移仍只使用 internal 私网。未知受理保持原键核实；失败保留原任务、数据与秘密，不换库、换端口、重置密码或清 dirty。首版只支持原候选 / 原配置恢复，不自动替换运行中版本。支持范围与故障边界见[部署切片](docs/development/service-deployment-slice.md)。
 

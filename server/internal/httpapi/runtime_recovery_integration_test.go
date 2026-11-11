@@ -86,7 +86,7 @@ func assertRuntimeEventPages(t *testing.T, f *runtimeFixture, target mysqlruntim
 		if i%2 == 1 {
 			code = "RUNTIME_CHECKPOINT_UNCONFIRMED"
 		}
-		if err := f.base.database.ObserveRuntime(context.Background(), target, nil, code, now.Add(time.Duration(i)*time.Millisecond)); err != nil {
+		if err := f.base.database.ObserveRuntime(context.Background(), captureRuntimeTarget(t, f.base.database, target), nil, code, now.Add(time.Duration(i)*time.Millisecond)); err != nil {
 			t.Fatal(err)
 		}
 	}

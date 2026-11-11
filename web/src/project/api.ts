@@ -44,8 +44,9 @@ export function parseContract<T>(name: string, input: unknown): T {
 }
 
 /** @param path API 路径 @param name 响应定义 @param method 方法 @param body 原请求体 @param signal 会话取消 @returns 已验证的响应。 */
-export async function request<T>(path: string, name: string, method = 'GET', body?: object, signal?: AbortSignal, version: 1 | 2 | 3 | 4 = 1): Promise<T> {
+export async function request<T>(path: string, name: string, method = 'GET', body?: object, signal?: AbortSignal, version: 1 | 2 | 3 | 4 | 6 = 1): Promise<T> {
   const options: RequestInit = { method, signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12000)]) : AbortSignal.timeout(12000) }
+  if (method !== 'GET') options.headers = { 'X-Twine-Request': '1' }
   if (body) { options.headers = { 'Content-Type': 'application/json', 'X-Twine-Request': '1' }; options.body = JSON.stringify(body) }
   let response: Response
   let data: unknown

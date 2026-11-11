@@ -58,34 +58,7 @@ func (store *Store) BindRuntime(ctx context.Context, id, daemonID string) error 
 // AcceptRuntime 回执占位、画布锁、目标与操作要么一起提交，要么一起不生效。
 func (store *Store) AcceptRuntime(ctx context.Context, input mysqlruntime.AcceptedInput) (mysqlruntime.Receipt, error) {
 	return runtimeWrite(ctx, store.db, func(tx *sql.Tx) (mysqlruntime.Receipt, error) {
-		_, err := tx.ExecContext(ctx, "INSERT INTO runtime_receipts(id,intent_hash,created_at) VALUES(?,?,?)", input.Command.MutationID, input.Hash[:], time.Now().UTC())
-		var duplicate *mysql.MySQLError
-		if errors.As(err, &duplicate) && duplicate.Number == 1062 {
-			return replayRuntime(ctx, tx, input.Command.MutationID, input.Hash)
-		}
-		if err != nil {
-			return mysqlruntime.Receipt{}, err
-		}
-		if err := lockRevision(ctx, tx, input.ProjectID, input.Command.BaseRevision); err != nil {
-			return mysqlruntime.Receipt{}, err
-		}
-		var deploying int
-		if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM deployment_instances i JOIN deployment_operations o ON i.current_operation_id=o.id WHERE i.project_id=? AND o.state IN ('accepted','executing')", input.ProjectID).Scan(&deploying); err != nil {
-			return mysqlruntime.Receipt{}, err
-		}
-		if deploying != 0 {
-			return mysqlruntime.Receipt{}, project.Failure("DEPLOY_BUSY", "业务部署仍在持有原MySQL，请先核实原操作再变更数据库运行目标")
-		}
-		value, err := acceptRuntimeTarget(ctx, tx, input)
-		if err != nil {
-			return value, err
-		}
-		data, err := json.Marshal(value)
-		if err != nil {
-			return value, err
-		}
-		_, err = tx.ExecContext(ctx, "UPDATE runtime_receipts SET response=? WHERE id=?", data, input.Command.MutationID)
-		return value, err
+		return acceptRuntimeRequest(ctx, tx, input)
 	})
 }
 
@@ -274,4 +247,39 @@ func appendRuntimeEvent(ctx context.Context, tx *sql.Tx, id, operationID, kind, 
 		return errors.Join(fmt.Errorf("运行事件缺少匹配的原操作"), err)
 	}
 	return appendDomainStateEvent(ctx, tx, id, "runtime", operationID)
+}
+
+// acceptRuntimeRequest 在持有项目事务后完成单一状态转换。
+func acceptRuntimeRequest(ctx context.Context, tx *sql.Tx, input mysqlruntime.AcceptedInput) (mysqlruntime.Receipt, error) {
+	_, err := tx.ExecContext(ctx, "INSERT INTO runtime_receipts(id,intent_hash,created_at) VALUES(?,?,?)", input.Command.MutationID, input.Hash[:], time.Now().UTC())
+	var duplicate *mysql.MySQLError
+	if errors.As(err, &duplicate) && duplicate.Number == 1062 {
+		return replayRuntime(ctx, tx, input.Command.MutationID, input.Hash)
+	}
+	if err != nil {
+		return mysqlruntime.Receipt{}, err
+	}
+	if err := lockRevision(ctx, tx, input.ProjectID, input.Command.BaseRevision); err != nil {
+		return mysqlruntime.Receipt{}, err
+	}
+	if err := projectRunPermission(ctx, tx, input.ProjectID); err != nil {
+		return mysqlruntime.Receipt{}, err
+	}
+	var deploying int
+	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM deployment_instances i JOIN deployment_operations o ON i.current_operation_id=o.id WHERE i.project_id=? AND o.state IN ('accepted','executing')", input.ProjectID).Scan(&deploying); err != nil {
+		return mysqlruntime.Receipt{}, err
+	}
+	if deploying != 0 {
+		return mysqlruntime.Receipt{}, project.Failure("DEPLOY_BUSY", "业务部署仍在持有原MySQL，请先核实原操作再变更数据库运行目标")
+	}
+	value, err := acceptRuntimeTarget(ctx, tx, input)
+	if err != nil {
+		return value, err
+	}
+	data, err := json.Marshal(value)
+	if err != nil {
+		return value, err
+	}
+	_, err = tx.ExecContext(ctx, "UPDATE runtime_receipts SET response=? WHERE id=?", data, input.Command.MutationID)
+	return value, err
 }

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/hailingu/twine-realm/server/internal/config"
+	"github.com/hailingu/twine-realm/server/internal/projectrun"
 	"github.com/hailingu/twine-realm/server/internal/servicecompose"
 	"github.com/hailingu/twine-realm/server/internal/servicedeploy"
 	"github.com/hailingu/twine-realm/server/internal/store"
@@ -12,24 +13,30 @@ import (
 
 // deploymentServices 借用原运行与构建句柄，其关闭仍由原所有者负责。
 type deploymentServices struct {
-	service *servicedeploy.Service
-	worker  *servicedeploy.Worker
+	lifecycle       *projectrun.Service
+	lifecycleWorker *projectrun.Worker
+	service         *servicedeploy.Service
+	worker          *servicedeploy.Worker
 }
 
 // configureDeployment 在启动工作器前注册Compose扩展，不在装配时执行部署。
 func configureDeployment(configuration config.Config, database *store.Store, running runtimeServices, building buildServices, logger *slog.Logger) (value deploymentServices, err error) {
 	var adapter servicedeploy.Adapter
+	var lifecycleAdapter projectrun.Adapter
 	if configuration.DeployAdapter != "" {
 		driver, err := servicecompose.NewDriver(database, running.driver, building.driver)
 		if err != nil {
 			return value, err
 		}
 		adapter = driver
+		lifecycleAdapter = driver
+		value.lifecycleWorker = projectrun.NewWorker(database, driver)
 		value.worker, err = servicedeploy.NewWorker(database, driver, logger)
 		if err != nil {
 			return value, err
 		}
 	}
+	value.lifecycle = projectrun.NewService(database, database, lifecycleAdapter)
 	value.service = servicedeploy.NewService(database, database, adapter)
 	return value, nil
 }
@@ -45,6 +52,9 @@ func platformTasks(running runtimeServices, building buildServices, deploying de
 	}
 	if deploying.worker != nil {
 		tasks.values = append(tasks.values, deploying.worker)
+	}
+	if deploying.lifecycleWorker != nil {
+		tasks.values = append(tasks.values, deploying.lifecycleWorker)
 	}
 	return tasks
 }

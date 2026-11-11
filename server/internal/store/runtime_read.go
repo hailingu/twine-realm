@@ -126,6 +126,11 @@ func attachRuntimeFact(value *mysqlruntime.Snapshot, instance *runtimeInstanceRo
 		return err
 	}
 	value.Observation = fact
+	if value.ObservationCode == "PROJECT_STOPPED" {
+		fact.State = "stopped"
+		fact.Running = false
+		fact.Ready = false
+	}
 	observed, err := time.Parse(time.RFC3339Nano, fact.ObservedAt)
 	if err != nil {
 		return fmt.Errorf("运行观测时间无效")

@@ -68,7 +68,7 @@ func run(logger *slog.Logger) (err error) {
 	}
 	cancel()
 	service := project.NewService(database, database, database, inspector, definitions)
-	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger, httpapi.Features{Runtime: running.service, Build: building.service, Deploy: deploying.service, State: projectstate.NewService(database)})
+	handler, err := httpapi.New(service, configuration.Address, configuration.Origins, configuration.WebDirectory, logger, httpapi.Features{Runtime: running.service, Build: building.service, Deploy: deploying.service, State: projectstate.NewService(database), ProjectRun: deploying.lifecycle, ProjectRunState: database})
 	if err != nil {
 		return fmt.Errorf("装配 HTTP 契约失败")
 	}

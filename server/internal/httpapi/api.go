@@ -16,6 +16,7 @@ import (
 	"github.com/hailingu/twine-realm/server/contract"
 	"github.com/hailingu/twine-realm/server/internal/mysqlruntime"
 	"github.com/hailingu/twine-realm/server/internal/project"
+	"github.com/hailingu/twine-realm/server/internal/projectrun"
 	"github.com/hailingu/twine-realm/server/internal/projectstate"
 	"github.com/hailingu/twine-realm/server/internal/servicebuild"
 	"github.com/hailingu/twine-realm/server/internal/servicedeploy"
@@ -24,22 +25,26 @@ import (
 
 // API 只依赖项目用例和已编译契约，不持有账号或会话状态。
 type API struct {
-	service *project.Service
-	schemas map[string]*jsonschema.Schema
-	logger  *slog.Logger
-	runtime *mysqlruntime.Service
-	build   *servicebuild.Service
-	deploy  *servicedeploy.Service
-	state   *projectstate.Service
-	streams *stateConnections
+	service  *project.Service
+	schemas  map[string]*jsonschema.Schema
+	logger   *slog.Logger
+	runtime  *mysqlruntime.Service
+	build    *servicebuild.Service
+	deploy   *servicedeploy.Service
+	run      *projectrun.Service
+	runState lifecycleReader
+	state    *projectstate.Service
+	streams  *stateConnections
 }
 
 // Features 显式装配独立能力，未启用的执行器不会隐式产生本机副作用。
 type Features struct {
-	Runtime *mysqlruntime.Service
-	Build   *servicebuild.Service
-	Deploy  *servicedeploy.Service
-	State   *projectstate.Service
+	Runtime         *mysqlruntime.Service
+	Build           *servicebuild.Service
+	Deploy          *servicedeploy.Service
+	State           *projectstate.Service
+	ProjectRun      *projectrun.Service
+	ProjectRunState lifecycleReader
 }
 
 // New 装配路由和最小本机防护，Host/Origin 来源必须由启动配置确定。
@@ -56,8 +61,10 @@ func New(service *project.Service, host string, origins []string, webDirectory s
 		api.runtime, api.build = features[0].Runtime, features[0].Build
 		api.deploy = features[0].Deploy
 		api.state = features[0].State
+		api.run, api.runState = features[0].ProjectRun, features[0].ProjectRunState
 	}
 	mux := http.NewServeMux()
+	api.lifecycleRoutes(mux)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		api.write(w, http.StatusOK, map[string]string{"status": "ready"})
 	})
@@ -214,15 +221,15 @@ func (api *API) failure(w http.ResponseWriter, err error) {
 			status = http.StatusNotFound
 		case "DUPLICATE_REPOSITORY", "DUPLICATE_BINDING", "CONTRACT_VERSION_CONFLICT", "REVISION_CONFLICT", "IDEMPOTENCY_CONFLICT", "DEFINITION_CONFLICT", "RUNTIME_GENERATION_CONFLICT", "RUNTIME_COMPONENT_CONFLICT", "RUNTIME_CONFIGURATION_LOCKED", "RUNTIME_RETRY_CONFLICT", "RUNTIME_BUSY", "RUNTIME_INSTALLATION_CONFLICT":
 			status = http.StatusConflict
-		case "RESULT_UNKNOWN":
+		case "RESULT_UNKNOWN", "PROJECT_RUN_ADMISSION_UNKNOWN":
 			status = http.StatusServiceUnavailable
 		case "BUILD_GENERATION_CONFLICT", "BUILD_INSTALLATION_CONFLICT", "BUILD_OPERATION_CONFLICT", "BUILD_VERSION_CONFLICT", "BUILD_BUSY", "BUILD_RETRY_CONFLICT", "BUILD_RECOVERY_REQUIRED", "BUILD_SOURCE_CHANGED":
 			status = http.StatusConflict
 		case "DEPLOY_BUSY", "DEPLOY_PLAN_CHANGED", "DEPLOY_GENERATION_CONFLICT", "DEPLOY_RETRY_CONFLICT", "DEPLOY_DATABASE_CHANGED", "DEPLOY_SOURCE_CHANGED", "DEPLOY_REPLACEMENT_UNSUPPORTED", "DEPLOY_SERVICE_LIMIT":
 			status = http.StatusConflict
-		case "RUNTIME_DISABLED", "BUILD_DISABLED", "DEPLOY_DISABLED", "STATE_DISABLED":
+		case "PROJECT_RUN_DISABLED", "RUNTIME_DISABLED", "BUILD_DISABLED", "DEPLOY_DISABLED", "STATE_DISABLED":
 			status = http.StatusServiceUnavailable
-		case "STATE_CURSOR_EXPIRED", "STATE_CURSOR_AHEAD", "STATE_EVENT_GAP":
+		case "RUNTIME_PROJECT_BUSY", "PROJECT_RUN_BUSY", "PROJECT_RUN_CONFLICT", "PROJECT_RUN_UNKNOWN", "PROJECT_RUN_NOT_STOPPED", "PROJECT_RUN_TARGET_CHANGED", "PROJECT_RESOURCE_CONFLICT", "STATE_CURSOR_EXPIRED", "STATE_CURSOR_AHEAD", "STATE_EVENT_GAP":
 			status = http.StatusConflict
 		case "STATE_SNAPSHOT_LIMIT":
 			status = http.StatusRequestEntityTooLarge

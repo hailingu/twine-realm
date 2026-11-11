@@ -1,0 +1,417 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twine-realm.local/contract/v6/lifecycle.schema.json",
+  "title": "项目停止与原数据恢复",
+  "type": "object",
+  "$defs": {
+    "ProjectRunCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mutationId",
+        "baseRevision",
+        "baseGeneration",
+        "desired"
+      ],
+      "properties": {
+        "mutationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "baseRevision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "baseGeneration": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "desired": {
+          "enum": [
+            "running",
+            "stopped"
+          ]
+        }
+      }
+    },
+    "ProjectRunFrozen": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime",
+        "deployment",
+        "databaseContainerId",
+        "applicationContainerId",
+        "migrationContainerId",
+        "serverUuid",
+        "databaseNetworkId",
+        "ingressNetworkId",
+        "databaseVolumeCreatedAt"
+      ],
+      "properties": {
+        "runtime": {
+          "$ref": "https://twine-realm.local/contract/v1/runtime.schema.json#/$defs/RuntimeTarget"
+        },
+        "deployment": {
+          "$ref": "https://twine-realm.local/contract/v4/deployment-plan.schema.json#/$defs/DeployTarget"
+        },
+        "databaseContainerId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "applicationContainerId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "migrationContainerId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "serverUuid": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "databaseNetworkId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "ingressNetworkId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "databaseVolumeCreatedAt": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      }
+    },
+    "ProjectRunTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectId",
+        "generation",
+        "desired",
+        "frozen",
+        "createdAt"
+      ],
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "desired": {
+          "enum": [
+            "running",
+            "stopped"
+          ]
+        },
+        "frozen": {
+          "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunFrozen"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      }
+    },
+    "ProjectRunStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "state",
+        "externalId",
+        "code",
+        "updatedAt"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "executing",
+            "unknown",
+            "succeeded",
+            "failed",
+            "skipped"
+          ]
+        },
+        "externalId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      }
+    },
+    "ProjectRunOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "projectId",
+        "mutationId",
+        "generation",
+        "version",
+        "state",
+        "code",
+        "message",
+        "steps",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "projectId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "mutationId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "state": {
+          "enum": [
+            "accepted",
+            "executing",
+            "waiting_retry",
+            "needs_attention",
+            "succeeded",
+            "failed",
+            "superseded"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "steps": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunStep"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      }
+    },
+    "ProjectRunFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applicationStopped",
+        "databaseStopped",
+        "applicationObservedAt",
+        "databaseObservedAt",
+        "runtime",
+        "deployment"
+      ],
+      "properties": {
+        "applicationStopped": {
+          "type": "boolean"
+        },
+        "databaseStopped": {
+          "type": "boolean"
+        },
+        "applicationObservedAt": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "databaseObservedAt": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "runtime": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v1/runtime.schema.json#/$defs/RuntimeObservation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deployment": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v4/deployment.schema.json#/$defs/DeployObservation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ProjectRunSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "projectId",
+        "generation",
+        "target",
+        "operation",
+        "facts"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "projectId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunTarget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operation": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunOperation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "facts": {
+          "anyOf": [
+            {
+              "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunFacts"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ProjectRunReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "mutationId",
+        "operationId",
+        "target",
+        "replayed"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "mutationId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "operationId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "target": {
+          "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunTarget"
+        },
+        "replayed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ProjectRunStateSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "state",
+        "lifecycle"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "state": {
+          "$ref": "https://twine-realm.local/contract/v5/state.schema.json#/$defs/StateSnapshot"
+        },
+        "lifecycle": {
+          "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunSnapshot"
+        }
+      }
+    }
+  },
+  "properties": {
+    "ProjectRunCommand": {
+      "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunCommand"
+    },
+    "ProjectRunFrozen": {
+      "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunFrozen"
+    },
+    "ProjectRunTarget": {
+      "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunTarget"
+    },
+    "ProjectRunStep": {
+      "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunStep"
+    },
+    "ProjectRunOperation": {
+      "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunOperation"
+    },
+    "ProjectRunFacts": {
+      "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunFacts"
+    },
+    "ProjectRunSnapshot": {
+      "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunSnapshot"
+    },
+    "ProjectRunReceipt": {
+      "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunReceipt"
+    },
+    "ProjectRunStateSnapshot": {
+      "$ref": "https://twine-realm.local/contract/v6/lifecycle.schema.json#/$defs/ProjectRunStateSnapshot"
+    }
+  }
+}

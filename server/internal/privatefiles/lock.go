@@ -26,7 +26,15 @@ func (files *Root) Lock(name string) (release func() error, err error) {
 		return nil, failure("LOCK_UNAVAILABLE", "资源锁不是受控0600空文件", false, false)
 	}
 	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		return nil, failure("LOCK_BUSY", "仍有外部执行器或锁不可用，不能并发操作资源", true, false)
+		return nil, lockFailure(err)
 	}
 	return func() error { return errors.Join(syscall.Flock(int(file.Fd()), syscall.LOCK_UN), file.Close()) }, nil
+}
+
+// lockFailure 只有明确系统竞争才允许调用者有界重试，其余系统错误保持失败关闭。
+func lockFailure(err error) error {
+	if errors.Is(err, syscall.EWOULDBLOCK) || errors.Is(err, syscall.EAGAIN) {
+		return failure("LOCK_BUSY", "仍有外部执行器持有资源锁，不能并发操作资源", true, false)
+	}
+	return failure("LOCK_UNAVAILABLE", "资源锁系统调用失败，不能安全获取资源", false, false)
 }
